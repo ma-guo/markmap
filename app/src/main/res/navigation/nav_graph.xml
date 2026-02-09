@@ -17,7 +17,11 @@
         <action
             android:id="@+id/action_FirstFragment_to_MapFragment"
             app:destination="@id/MapFragment" />
+        <action
+            android:id="@+id/action_FirstFragment_to_GroupListFragment"
+            app:destination="@id/GroupListFragment" />
     </fragment>
+
     <fragment
         android:id="@+id/SecondFragment"
         android:name="com.zuxing.markmap.SecondFragment"
@@ -28,9 +32,135 @@
             android:id="@+id/action_SecondFragment_to_FirstFragment"
             app:destination="@id/FirstFragment" />
     </fragment>
+
     <fragment
         android:id="@+id/MapFragment"
         android:name="com.zuxing.markmap.MapFragment"
         android:label="地图定位"
-        tools:layout="@layout/fragment_map" />
+        tools:layout="@layout/fragment_map">
+
+        <argument
+            android:name="lineId"
+            app:argType="long"
+            android:defaultValue="-1L" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/GroupListFragment"
+        android:name="com.zuxing.markmap.GroupListFragment"
+        android:label="组列表"
+        tools:layout="@layout/fragment_group_list">
+
+        <action
+            android:id="@+id/action_GroupListFragment_to_GroupEditFragment"
+            app:destination="@id/GroupEditFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right" />
+        <action
+            android:id="@+id/action_GroupListFragment_to_LineListFragment"
+            app:destination="@id/LineListFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/GroupEditFragment"
+        android:name="com.zuxing.markmap.GroupEditFragment"
+        android:label="编辑组"
+        tools:layout="@layout/fragment_group_edit">
+
+        <argument
+            android:name="groupId"
+            app:argType="long"
+            android:defaultValue="-1L" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/LineListFragment"
+        android:name="com.zuxing.markmap.LineListFragment"
+        android:label="线列表"
+        tools:layout="@layout/fragment_line_list">
+
+        <argument
+            android:name="groupId"
+            app:argType="long" />
+
+        <action
+            android:id="@+id/action_LineListFragment_to_LineEditFragment"
+            app:destination="@id/LineEditFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right" />
+        <action
+            android:id="@+id/action_LineListFragment_to_PointListFragment"
+            app:destination="@id/PointListFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/LineEditFragment"
+        android:name="com.zuxing.markmap.LineEditFragment"
+        android:label="编辑线"
+        tools:layout="@layout/fragment_line_edit">
+
+        <argument
+            android:name="groupId"
+            app:argType="long" />
+
+        <argument
+            android:name="lineId"
+            app:argType="long"
+            android:defaultValue="-1L" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/PointListFragment"
+        android:name="com.zuxing.markmap.PointListFragment"
+        android:label="点列表"
+        tools:layout="@layout/fragment_point_list">
+
+        <argument
+            android:name="lineId"
+            app:argType="long" />
+
+        <action
+            android:id="@+id/action_PointListFragment_to_PointEditFragment"
+            app:destination="@id/PointEditFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right" />
+        <action
+            android:id="@+id/action_PointListFragment_to_MapFragment"
+            app:destination="@id/MapFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/PointEditFragment"
+        android:name="com.zuxing.markmap.PointEditFragment"
+        android:label="编辑点"
+        tools:layout="@layout/fragment_point_edit">
+
+        <argument
+            android:name="lineId"
+            app:argType="long" />
+
+        <argument
+            android:name="pointId"
+            app:argType="long"
+            android:defaultValue="-1L" />
+    </fragment>
+
 </navigation>

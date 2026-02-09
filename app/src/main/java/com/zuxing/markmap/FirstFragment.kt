@@ -26,13 +26,14 @@ class FirstFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        // 跳转到第二页
         binding.buttonFirst.setOnClickListener {
             findNavController().navigate(R.id.action_FirstFragment_to_SecondFragment)
         }
-        // 跳转到地图页面
         binding.buttonMap.setOnClickListener {
             findNavController().navigate(R.id.action_FirstFragment_to_MapFragment)
+        }
+        binding.buttonGroup.setOnClickListener {
+            findNavController().navigate(R.id.action_FirstFragment_to_GroupListFragment)
         }
     }
 

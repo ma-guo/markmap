@@ -10,6 +10,9 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.Lifecycle
+import androidx.navigation.fragment.navArgs
 import com.baidu.location.BDAbstractLocationListener
 import com.baidu.location.BDLocation
 import com.baidu.location.LocationClient
@@ -18,6 +21,7 @@ import com.baidu.mapapi.map.MapStatusUpdateFactory
 import com.baidu.mapapi.map.MapView
 import com.baidu.mapapi.map.MyLocationData
 import com.baidu.mapapi.model.LatLng
+import com.zuxing.markmap.data.entity.PointEntity
 import com.zuxing.markmap.databinding.FragmentMapBinding
 import retrofit2.Call
 import retrofit2.Callback
@@ -29,6 +33,8 @@ import retrofit2.http.Query
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 /**
  * 地图页面 Fragment，实现定位和附近位置查询功能
@@ -38,9 +44,14 @@ class MapFragment : Fragment() {
     private var _binding: FragmentMapBinding? = null
     private val binding get() = _binding!!
 
+    private val args: MapFragmentArgs by navArgs()
+
     private lateinit var mapView: MapView
     private lateinit var locationClient: LocationClient
+    private lateinit var app: MarkMapApplication
     private var isFirstLocation = true
+    private var isBackgroundLocationEnabled = false
+    private var currentLocation: BDLocation? = null
 
     private val requiredPermissions = arrayOf(
         Manifest.permission.ACCESS_FINE_LOCATION,
@@ -71,9 +82,21 @@ class MapFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        app = requireActivity().application as MarkMapApplication
         mapView = binding.bmapView
+
+        // 启用地图定位图层
+        mapView.map.isMyLocationEnabled = true
+
         setupLocationClient()
         setupClickListeners()
+
+        // 根据是否传入 lineId 显示/隐藏标记按钮
+        if (args.lineId != -1L) {
+            binding.fabMark.visibility = View.VISIBLE
+        } else {
+            binding.fabMark.visibility = View.GONE
+        }
 
         if (checkPermissions()) {
             startLocation()
@@ -92,7 +115,7 @@ class MapFragment : Fragment() {
         locationClient.registerLocationListener(object : BDAbstractLocationListener() {
             override fun onReceiveLocation(location: BDLocation?) {
                 location?.let {
-                    Logger.d("收到定位: lat=${it.latitude}, lng=${it.longitude}, type=${it.locType}")
+//                    Logger.d("收到定位: lat=${it.latitude}, lng=${it.longitude}, type=${it.locType}")
                     activity?.runOnUiThread {
                         processLocation(it)
                     }
@@ -114,13 +137,13 @@ class MapFragment : Fragment() {
         val option = LocationClientOption().apply {
             locationMode = LocationClientOption.LocationMode.Hight_Accuracy
             setCoorType("bd09ll")
-            setScanSpan(0)
-            setOpenGps(true)
-            setLocationNotify(false)
+            setScanSpan(1000)
+            openGps = true
+            isLocationNotify = true
             setIgnoreKillProcess(true)
             SetIgnoreCacheException(false)
-            setWifiCacheTimeOut(5 * 60 * 1000)
-            setEnableSimulateGps(false)
+            setWifiCacheTimeOut(2 * 60 * 1000)
+            enableSimulateGps = true
             setIsNeedAddress(true)
             setIsNeedAltitude(true)
             setIsNeedLocationDescribe(true)
@@ -143,6 +166,86 @@ class MapFragment : Fragment() {
             } else {
                 requestPermissions()
             }
+        }
+
+        binding.fabBackgroundLocation.setOnClickListener {
+            toggleBackgroundLocation()
+        }
+
+        // 标记按钮：保存当前位置到点表
+        binding.fabMark.setOnClickListener {
+            if (args.lineId != -1L) {
+                markPoint()
+            }
+        }
+    }
+
+    /**
+     * 标记当前点
+     */
+    private fun markPoint() {
+        val location = currentLocation
+        if (location == null) {
+            Toast.makeText(requireContext(), "请先获取定位信息", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        if (location.locType != BDLocation.TypeGpsLocation &&
+            location.locType != BDLocation.TypeNetWorkLocation &&
+            location.locType != BDLocation.TypeOffLineLocation) {
+            Toast.makeText(requireContext(), "定位失败，无法标记", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        lifecycleScope.launch {
+            if (lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
+                try {
+                    val maxSortOrder = getMaxSortOrder(args.lineId)
+                    val sortOrder = maxSortOrder + 1
+
+                    val point = PointEntity(
+                        lineId = args.lineId,
+                        longitude = location.longitude,
+                        latitude = location.latitude,
+                        altitude = if (location.hasAltitude()) location.altitude else null,
+                        address = location.addrStr,
+                        description = location.locationDescribe,
+                        sortOrder = sortOrder,
+                        createTime = System.currentTimeMillis(),
+                        modifyTime = System.currentTimeMillis()
+                    )
+
+                    app.repository.insertPoint(point)
+                    Toast.makeText(requireContext(), "已保存", Toast.LENGTH_SHORT).show()
+                } catch (e: Exception) {
+                    Logger.e("保存点失败: ${e.message}")
+                    Toast.makeText(requireContext(), "保存失败", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    private suspend fun getMaxSortOrder(lineId: Long): Int {
+        return try {
+            val points = app.repository.getPointsByLineId(lineId).first()
+            points.maxOfOrNull { it.sortOrder } ?: 0
+        } catch (e: Exception) {
+            Logger.e("获取排序失败: ${e.message}")
+            0
+        }
+    }
+
+    /**
+     * 切换后台定位服务
+     */
+    private fun toggleBackgroundLocation() {
+        isBackgroundLocationEnabled = !isBackgroundLocationEnabled
+        if (isBackgroundLocationEnabled) {
+            LocationService.start(requireContext())
+            Toast.makeText(requireContext(), "后台定位已开启", Toast.LENGTH_SHORT).show()
+        } else {
+            LocationService.stop(requireContext())
+            Toast.makeText(requireContext(), "后台定位已关闭", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -179,6 +282,7 @@ class MapFragment : Fragment() {
      */
     private fun processLocation(location: BDLocation) {
         binding.progressBar.visibility = View.GONE
+        currentLocation = location
 
         if (location.locType == BDLocation.TypeGpsLocation ||
             location.locType == BDLocation.TypeNetWorkLocation ||
@@ -270,6 +374,7 @@ class MapFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
+        mapView.map.isMyLocationEnabled = false
         locationClient.stop()
         mapView.onDestroy()
         _binding = null

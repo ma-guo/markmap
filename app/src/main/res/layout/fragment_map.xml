@@ -64,6 +64,33 @@
     </androidx.cardview.widget.CardView>
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabMark"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="144dp"
+        android:contentDescription="标记点"
+        android:src="@android:drawable/ic_menu_add"
+        app:backgroundTint="@color/teal_700"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@id/infoPanel"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:tint="@color/white" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabBackgroundLocation"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="80dp"
+        android:contentDescription="后台定位"
+        android:src="@android:drawable/ic_lock_lock"
+        app:backgroundTint="@color/purple_500"
+        app:layout_constraintBottom_toTopOf="@id/infoPanel"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:tint="@color/white" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabLocation"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
