@@ -3,7 +3,6 @@ package com.zuxing.markmap
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -88,9 +87,12 @@ class MapFragment : Fragment() {
      */
     private fun setupLocationClient() {
         locationClient = LocationClient(requireContext())
+
+        // 必须先注册监听器
         locationClient.registerLocationListener(object : BDAbstractLocationListener() {
             override fun onReceiveLocation(location: BDLocation?) {
                 location?.let {
+                    Logger.d("收到定位: lat=${it.latitude}, lng=${it.longitude}, type=${it.locType}")
                     activity?.runOnUiThread {
                         processLocation(it)
                     }
@@ -99,39 +101,35 @@ class MapFragment : Fragment() {
 
             override fun onLocDiagnosticMessage(locType: Int, diagnosticType: Int, diagnosticInfo: String?) {
                 val msg = "定位诊断 - 类型: $locType, 诊断类型: $diagnosticType, 信息: $diagnosticInfo"
-                Log.d("BaiduLocation", msg)
+                Logger.d(msg)
             }
 
             override fun onReceiveLocString(locStr: String?) {
                 locStr?.let {
-                    Log.d("BaiduLocation", "定位字符串: $it")
+                    Logger.d("定位字符串: $it")
                 }
-            }
-
-            override fun onReceiveVdrLocation(p0: BDLocation?) {
-                super.onReceiveVdrLocation(p0)
-            }
-
-            override fun onConnectHotSpotMessage(p0: String?, p1: Int) {
-                super.onConnectHotSpotMessage(p0, p1)
             }
         })
 
         val option = LocationClientOption().apply {
             locationMode = LocationClientOption.LocationMode.Hight_Accuracy
             setCoorType("bd09ll")
-            setScanSpan(1000)
+            setScanSpan(0)
             setOpenGps(true)
-            setLocationNotify(true)
-            setIgnoreKillProcess(false)
+            setLocationNotify(false)
+            setIgnoreKillProcess(true)
             SetIgnoreCacheException(false)
             setWifiCacheTimeOut(5 * 60 * 1000)
             setEnableSimulateGps(false)
             setIsNeedAddress(true)
             setIsNeedAltitude(true)
             setIsNeedLocationDescribe(true)
+            isNeedPoiRegion = true
+            setIsNeedLocationPoiList(true)
         }
         locationClient.locOption = option
+
+        Logger.d("定位客户端配置完成")
     }
 
     /**
@@ -169,8 +167,10 @@ class MapFragment : Fragment() {
      */
     private fun startLocation() {
         binding.progressBar.visibility = View.VISIBLE
+        Logger.d("开始定位, isStarted=${locationClient.isStarted}")
         if (!locationClient.isStarted) {
-            locationClient.start()
+            val result = locationClient.start()
+            Logger.d("start() 返回: $result")
         }
     }
 
