@@ -3,6 +3,7 @@ package com.zuxing.markmap
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -14,7 +15,6 @@ import com.baidu.location.BDAbstractLocationListener
 import com.baidu.location.BDLocation
 import com.baidu.location.LocationClient
 import com.baidu.location.LocationClientOption
-import com.baidu.mapapi.map.MapStatusUpdate
 import com.baidu.mapapi.map.MapStatusUpdateFactory
 import com.baidu.mapapi.map.MapView
 import com.baidu.mapapi.map.MyLocationData
@@ -31,6 +31,9 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+/**
+ * 地图页面 Fragment，实现定位和附近位置查询功能
+ */
 class MapFragment : Fragment() {
 
     private var _binding: FragmentMapBinding? = null
@@ -54,7 +57,7 @@ class MapFragment : Fragment() {
         if (fineLocationGranted || coarseLocationGranted) {
             startLocation()
         } else {
-            Toast.makeText(requireContext(), "需要定位权限才能使用此功能", Toast.LENGTH_LONG).show()
+            Toast.makeText(requireContext(), "需要定位权限", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -69,7 +72,6 @@ class MapFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
         mapView = binding.bmapView
         setupLocationClient()
         setupClickListeners()
@@ -81,34 +83,60 @@ class MapFragment : Fragment() {
         }
     }
 
+    /**
+     * 配置定位客户端参数
+     */
     private fun setupLocationClient() {
         locationClient = LocationClient(requireContext())
         locationClient.registerLocationListener(object : BDAbstractLocationListener() {
-            override fun onReceiveLocation(location: BDLocation) {
-                activity?.runOnUiThread {
-                    processLocation(location)
+            override fun onReceiveLocation(location: BDLocation?) {
+                location?.let {
+                    activity?.runOnUiThread {
+                        processLocation(it)
+                    }
                 }
+            }
+
+            override fun onLocDiagnosticMessage(locType: Int, diagnosticType: Int, diagnosticInfo: String?) {
+                val msg = "定位诊断 - 类型: $locType, 诊断类型: $diagnosticType, 信息: $diagnosticInfo"
+                Log.d("BaiduLocation", msg)
+            }
+
+            override fun onReceiveLocString(locStr: String?) {
+                locStr?.let {
+                    Log.d("BaiduLocation", "定位字符串: $it")
+                }
+            }
+
+            override fun onReceiveVdrLocation(p0: BDLocation?) {
+                super.onReceiveVdrLocation(p0)
+            }
+
+            override fun onConnectHotSpotMessage(p0: String?, p1: Int) {
+                super.onConnectHotSpotMessage(p0, p1)
             }
         })
 
-        val option = LocationClientOption()
-        option.locationMode = LocationClientOption.LocationMode.Hight_Accuracy
-        option.setCoorType("bd09ll")
-        option.setScanSpan(1000)
-        option.setOpenGps(true)
-        option.setLocationNotify(true)
-        option.setIgnoreKillProcess(false)
-        option.SetIgnoreCacheException(false)
-        option.setWifiCacheTimeOut(5 * 60 * 1000)
-        option.setEnableSimulateGps(false)
-        option.setIsNeedAddress(true)
-        option.setIsNeedAltitude(true)
-        option.setIsNeedLocationDescribe(true)
-//        option.setIsNeedPoiList(true)
-
+        val option = LocationClientOption().apply {
+            locationMode = LocationClientOption.LocationMode.Hight_Accuracy
+            setCoorType("bd09ll")
+            setScanSpan(1000)
+            setOpenGps(true)
+            setLocationNotify(true)
+            setIgnoreKillProcess(false)
+            SetIgnoreCacheException(false)
+            setWifiCacheTimeOut(5 * 60 * 1000)
+            setEnableSimulateGps(false)
+            setIsNeedAddress(true)
+            setIsNeedAltitude(true)
+            setIsNeedLocationDescribe(true)
+        }
         locationClient.locOption = option
     }
 
+    /**
+     * 设置点击事件监听器
+     */
     private fun setupClickListeners() {
         binding.fabLocation.setOnClickListener {
             if (checkPermissions()) {
@@ -120,16 +148,25 @@ class MapFragment : Fragment() {
         }
     }
 
+    /**
+     * 检查定位权限
+     */
     private fun checkPermissions(): Boolean {
         return requiredPermissions.all { permission ->
             ContextCompat.checkSelfPermission(requireContext(), permission) == PackageManager.PERMISSION_GRANTED
         }
     }
 
+    /**
+     * 请求定位权限
+     */
     private fun requestPermissions() {
         permissionLauncher.launch(requiredPermissions)
     }
 
+    /**
+     * 开始定位
+     */
     private fun startLocation() {
         binding.progressBar.visibility = View.VISIBLE
         if (!locationClient.isStarted) {
@@ -137,6 +174,9 @@ class MapFragment : Fragment() {
         }
     }
 
+    /**
+     * 处理定位结果
+     */
     private fun processLocation(location: BDLocation) {
         binding.progressBar.visibility = View.GONE
 
@@ -144,38 +184,42 @@ class MapFragment : Fragment() {
             location.locType == BDLocation.TypeNetWorkLocation ||
             location.locType == BDLocation.TypeOffLineLocation) {
 
-            val sb = StringBuilder()
-            sb.append("定位时间: ").append(SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())).append("\n")
-            sb.append("纬度: ").append(location.latitude).append("\n")
-            sb.append("经度: ").append(location.longitude).append("\n")
-            sb.append("海拔: ").append(if (location.hasAltitude()) "${location.altitude}m" else "未知").append("\n")
-            sb.append("地址: ").append(location.addrStr).append("\n")
-            sb.append("位置描述: ").append(location.locationDescribe).append("\n")
-
+            val sb = StringBuilder().apply {
+                append("定位时间: ").append(SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())).append("\n")
+                append("纬度: ").append(location.latitude).append("\n")
+                append("经度: ").append(location.longitude).append("\n")
+                append("海拔: ").append(if (location.hasAltitude()) "${location.altitude}m" else "未知").append("\n")
+                append("地址: ").append(location.addrStr).append("\n")
+                append("位置描述: ").append(location.locationDescribe).append("\n")
+            }
             binding.tvLocationInfo.text = sb.toString()
 
+            // 更新地图上的位置显示
             val locData = MyLocationData.Builder()
                 .accuracy(location.radius)
                 .latitude(location.latitude)
                 .longitude(location.longitude)
                 .build()
-
             mapView.map.setMyLocationData(locData)
 
+            // 首次定位时移动地图到当前位置
             if (isFirstLocation) {
                 isFirstLocation = false
                 val ll = LatLng(location.latitude, location.longitude)
                 val update = MapStatusUpdateFactory.newLatLng(ll)
                 mapView.map.animateMapStatus(update)
-//                update.zoom(MapStatusUpdateFactory.zoomTo(18f))
             }
 
+            // 查询附近位置
             fetchNearbyPlaces(location.latitude, location.longitude)
         } else {
             binding.tvLocationInfo.text = "定位失败，错误码: ${location.locType}"
         }
     }
 
+    /**
+     * 调用百度地图 API 查询附近位置
+     */
     private fun fetchNearbyPlaces(latitude: Double, longitude: Double) {
         val retrofit = Retrofit.Builder()
             .baseUrl("https://api.map.baidu.com/")
@@ -189,7 +233,7 @@ class MapFragment : Fragment() {
             location = "$latitude,$longitude",
             radius = 1000,
             output = "json",
-            ak = "请替换为你的百度地图API_KEY"
+            ak = BaiduConfig.API_KEY
         ).enqueue(object : Callback<PlaceSearchResponse> {
             override fun onResponse(call: Call<PlaceSearchResponse>, response: Response<PlaceSearchResponse>) {
                 if (response.isSuccessful) {
@@ -232,6 +276,9 @@ class MapFragment : Fragment() {
     }
 }
 
+/**
+ * 百度地图附近搜索 API 接口
+ */
 interface BaiduPlaceService {
     @GET("place/v2/search")
     fun searchNearby(
