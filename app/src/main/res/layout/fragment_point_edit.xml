@@ -166,13 +166,14 @@
             tools:text="创建时间: 2024-01-01 12:00:00" />
 
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnGetCurrentLocation"
+            android:id="@+id/btnSelectOnMap"
             style="@style/Widget.Material3.Button.OutlinedButton"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginHorizontal="16dp"
             android:layout_marginTop="16dp"
-            android:text="获取当前定位"
+            android:text="在地图中选择"
+            app:icon="@android:drawable/ic_menu_compass"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/tvCreateTime" />
@@ -188,7 +189,7 @@
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/btnGetCurrentLocation" />
+            app:layout_constraintTop_toBottomOf="@id/btnSelectOnMap" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

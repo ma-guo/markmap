@@ -6,4 +6,5 @@
     <color name="teal_700">#FF018786</color>
     <color name="purple_500">#FF6200EE</color>
     <color name="divider_color">#FFE0E0E0</color>
+    <color name="gray">#FF808080</color>
 </resources>

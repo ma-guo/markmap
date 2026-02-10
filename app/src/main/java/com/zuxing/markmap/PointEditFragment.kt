@@ -1,26 +1,21 @@
 package com.zuxing.markmap
 
-import android.Manifest
-import android.content.pm.PackageManager
+import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.content.ContextCompat
 import androidx.core.widget.addTextChangedListener
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
-import com.baidu.location.BDAbstractLocationListener
-import com.baidu.location.BDLocation
-import com.baidu.location.LocationClient
-import com.baidu.location.LocationClientOption
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.zuxing.markmap.data.entity.PointEntity
 import com.zuxing.markmap.databinding.FragmentPointEditBinding
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -40,23 +35,33 @@ class PointEditFragment : Fragment() {
     private var currentAddress: String = ""
     private var currentAltitude: Double? = null
 
-    private lateinit var locationClient: LocationClient
+    private val pickLocationLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            result.data?.let { data ->
+                val latitude = data.getDoubleExtra("latitude", 0.0)
+                val longitude = data.getDoubleExtra("longitude", 0.0)
+                val address = data.getStringExtra("address") ?: ""
+                val description = data.getStringExtra("description") ?: ""
 
-    private val requiredPermissions = arrayOf(
-        Manifest.permission.ACCESS_FINE_LOCATION,
-        Manifest.permission.ACCESS_COARSE_LOCATION
-    )
+                if (latitude != 0.0 && longitude != 0.0) {
+                    currentLatitude = latitude
+                    currentLongitude = longitude
 
-    private val permissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissions ->
-        val fineLocationGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] ?: false
-        val coarseLocationGranted = permissions[Manifest.permission.ACCESS_COARSE_LOCATION] ?: false
+                    binding.etLongitude.setText(String.format("%.6f", currentLongitude))
+                    binding.etLatitude.setText(String.format("%.6f", currentLatitude))
+                    if (address.isNotEmpty()) {
+                        binding.etAddress.setText(address)
+                    }
+                    if (description.isNotEmpty()) {
+                        binding.etDescription.setText(description)
+                    }
 
-        if (fineLocationGranted || coarseLocationGranted) {
-            getCurrentLocation()
-        } else {
-            Toast.makeText(requireContext(), "需要定位权限", Toast.LENGTH_SHORT).show()
+                    updateSaveButtonState()
+                    Toast.makeText(requireContext(), "位置已选择", Toast.LENGTH_SHORT).show()
+                }
+            }
         }
     }
 
@@ -76,7 +81,6 @@ class PointEditFragment : Fragment() {
         isEditMode = args.pointId != -1L
         setupToolbar()
         setupViews()
-        setupLocationClient()
 
         if (isEditMode) {
             loadPoint()
@@ -107,8 +111,8 @@ class PointEditFragment : Fragment() {
         binding.etLongitude.addTextChangedListener { updateSaveButtonState() }
         binding.etLatitude.addTextChangedListener { updateSaveButtonState() }
 
-        binding.btnGetCurrentLocation.setOnClickListener {
-            requestLocationPermission()
+        binding.btnSelectOnMap.setOnClickListener {
+            navigateToPickLocation()
         }
 
         binding.btnSave.setOnClickListener {
@@ -122,62 +126,21 @@ class PointEditFragment : Fragment() {
         binding.btnSave.isEnabled = longitude != null && latitude != null
     }
 
-    private fun setupLocationClient() {
-        locationClient = LocationClient(requireContext())
-        locationClient.registerLocationListener(object : BDAbstractLocationListener() {
-            override fun onReceiveLocation(location: BDLocation?) {
-                location?.let {
-                    activity?.runOnUiThread {
-                        currentLatitude = it.latitude
-                        currentLongitude = it.longitude
-                        currentAddress = it.addrStr ?: ""
-                        currentAltitude = if (it.hasAltitude()) it.altitude else null
+    private fun navigateToPickLocation() {
+        val longitude = binding.etLongitude.text.toString().toDoubleOrNull() ?: currentLongitude
+        val latitude = binding.etLatitude.text.toString().toDoubleOrNull() ?: currentLatitude
 
-                        binding.etLongitude.setText(String.format("%.6f", currentLongitude))
-                        binding.etLatitude.setText(String.format("%.6f", currentLatitude))
-                        binding.etAddress.setText(currentAddress)
-                        currentAltitude?.let { alt ->
-                            binding.etAltitude.setText(String.format("%.1f", alt))
-                        }
-                        Toast.makeText(requireContext(), "定位成功", Toast.LENGTH_SHORT).show()
-                    }
-                }
-            }
-        })
-
-        val option = LocationClientOption().apply {
-            locationMode = LocationClientOption.LocationMode.Hight_Accuracy
-            setCoorType("bd09ll")
-            setScanSpan(5000)
-            setOpenGps(true)
-            setIsNeedAddress(true)
-            setIsNeedAltitude(true)
+        val intent = Intent(requireContext(), PickLocationActivity::class.java).apply {
+            putExtra("latitude", latitude)
+            putExtra("longitude", longitude)
+            putExtra("lineId", args.lineId)
+            putExtra("pointId", args.pointId)
         }
-        locationClient.locOption = option
-    }
-
-    private fun requestLocationPermission() {
-        if (checkPermissions()) {
-            getCurrentLocation()
-        } else {
-            permissionLauncher.launch(requiredPermissions)
-        }
-    }
-
-    private fun checkPermissions(): Boolean {
-        return requiredPermissions.all { permission ->
-            ContextCompat.checkSelfPermission(requireContext(), permission) == PackageManager.PERMISSION_GRANTED
-        }
-    }
-
-    private fun getCurrentLocation() {
-        if (!locationClient.isStarted) {
-            locationClient.start()
-        }
+        pickLocationLauncher.launch(intent)
     }
 
     private fun loadPoint() {
-        CoroutineScope(Dispatchers.IO).launch {
+        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
             currentPoint = app.repository.getPointById(args.pointId)
             val line = app.repository.getLineById(args.lineId)
             withContext(Dispatchers.Main) {
@@ -192,6 +155,13 @@ class PointEditFragment : Fragment() {
                     binding.tvLineName.visibility = View.VISIBLE
                     binding.tvCreateTime.text = "创建时间: ${formatTime(point.createTime)}"
                     binding.tvCreateTime.visibility = View.VISIBLE
+
+                    currentLatitude = point.latitude
+                    currentLongitude = point.longitude
+                    currentAddress = point.address ?: ""
+                    currentAltitude = point.altitude
+
+                    updateSaveButtonState()
                 }
             }
         }
@@ -211,7 +181,7 @@ class PointEditFragment : Fragment() {
         val description = binding.etDescription.text.toString().trim()
         val sortOrder = binding.etSortOrder.text.toString().toIntOrNull() ?: 0
 
-        CoroutineScope(Dispatchers.IO).launch {
+        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
             val point = PointEntity(
                 id = if (isEditMode) args.pointId else 0,
                 lineId = args.lineId,
@@ -250,7 +220,7 @@ class PointEditFragment : Fragment() {
     }
 
     private fun deletePoint() {
-        CoroutineScope(Dispatchers.IO).launch {
+        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
             app.repository.softDeletePoint(args.pointId)
             withContext(Dispatchers.Main) {
                 Toast.makeText(requireContext(), "已删除", Toast.LENGTH_SHORT).show()
@@ -266,7 +236,6 @@ class PointEditFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
-        locationClient.stop()
         _binding = null
     }
 }

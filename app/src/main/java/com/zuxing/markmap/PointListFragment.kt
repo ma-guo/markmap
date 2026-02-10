@@ -49,11 +49,11 @@ class PointListFragment : Fragment() {
         binding.recyclerView.adapter = adapter
 
         binding.fabAdd.setOnClickListener {
-            navigateToEdit(null)
+            navigateToMap()
         }
 
         binding.fabMap.setOnClickListener {
-            navigateToMap()
+            navigateToLineMap()
         }
     }
 
@@ -74,21 +74,26 @@ class PointListFragment : Fragment() {
         }
     }
 
-    private fun navigateToEdit(pointId: Long?) {
+    private fun navigateToEdit(pointId: Long) {
         val action = PointListFragmentDirections.actionPointListFragmentToPointEditFragment(
             lineId = args.lineId,
-            pointId = pointId ?: -1L
+            pointId = pointId
         )
         findNavController().navigate(action)
     }
 
     private fun navigateToMap() {
-        val action = PointListFragmentDirections.actionPointListFragmentToMapFragment(args.lineId)
+        val action = PointListFragmentDirections.actionPointListFragmentToMapFragment(
+            lineId = args.lineId
+        )
         findNavController().navigate(action)
     }
 
-    fun navigateToAdd() {
-        navigateToEdit(null)
+    private fun navigateToLineMap() {
+        val action = PointListFragmentDirections.actionPointListFragmentToLineMapFragment(
+            lineId = args.lineId
+        )
+        findNavController().navigate(action)
     }
 
     override fun onDestroyView() {

@@ -36,9 +36,6 @@ import java.util.Locale
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
-/**
- * 地图页面 Fragment，实现定位和附近位置查询功能
- */
 class MapFragment : Fragment() {
 
     private var _binding: FragmentMapBinding? = null
@@ -85,13 +82,20 @@ class MapFragment : Fragment() {
         app = requireActivity().application as MarkMapApplication
         mapView = binding.bmapView
 
-        // 启用地图定位图层
         mapView.map.isMyLocationEnabled = true
+
+        mapView.map.setOnMapStatusChangeListener(object : com.baidu.mapapi.map.BaiduMap.OnMapStatusChangeListener {
+            override fun onMapStatusChangeStart(mapStatus: com.baidu.mapapi.map.MapStatus?) {}
+            override fun onMapStatusChangeStart(mapStatus: com.baidu.mapapi.map.MapStatus?, p1: Int) {}
+            override fun onMapStatusChange(mapStatus: com.baidu.mapapi.map.MapStatus?) {}
+            override fun onMapStatusChangeFinish(mapStatus: com.baidu.mapapi.map.MapStatus?) {
+                updateCenterLocation()
+            }
+        })
 
         setupLocationClient()
         setupClickListeners()
 
-        // 根据是否传入 lineId 显示/隐藏标记按钮
         if (args.lineId != -1L) {
             binding.fabMark.visibility = View.VISIBLE
         } else {
@@ -103,19 +107,27 @@ class MapFragment : Fragment() {
         } else {
             requestPermissions()
         }
+
+        updateCenterLocation()
     }
 
-    /**
-     * 配置定位客户端参数
-     */
+    private fun updateCenterLocation() {
+        if (!isAdded || _binding == null) return
+        val centerLatLng = mapView.map.mapStatus.target
+        val sb = StringBuilder().apply {
+            append("中心位置\n")
+            append("纬度: ").append(String.format("%.6f", centerLatLng.latitude)).append("\n")
+            append("经度: ").append(String.format("%.6f", centerLatLng.longitude))
+        }
+        binding.tvCenterLocation.text = sb.toString()
+    }
+
     private fun setupLocationClient() {
         locationClient = LocationClient(requireContext())
 
-        // 必须先注册监听器
         locationClient.registerLocationListener(object : BDAbstractLocationListener() {
             override fun onReceiveLocation(location: BDLocation?) {
                 location?.let {
-//                    Logger.d("收到定位: lat=${it.latitude}, lng=${it.longitude}, type=${it.locType}")
                     activity?.runOnUiThread {
                         processLocation(it)
                     }
@@ -155,9 +167,6 @@ class MapFragment : Fragment() {
         Logger.d("定位客户端配置完成")
     }
 
-    /**
-     * 设置点击事件监听器
-     */
     private fun setupClickListeners() {
         binding.fabLocation.setOnClickListener {
             if (checkPermissions()) {
@@ -172,17 +181,21 @@ class MapFragment : Fragment() {
             toggleBackgroundLocation()
         }
 
-        // 标记按钮：保存当前位置到点表
         binding.fabMark.setOnClickListener {
             if (args.lineId != -1L) {
                 markPoint()
             }
         }
+
+        binding.btnSaveCenter.setOnClickListener {
+            if (args.lineId != -1L) {
+                saveCenterPoint()
+            } else {
+                Toast.makeText(requireContext(), "请先选择路线", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
-    /**
-     * 标记当前点
-     */
     private fun markPoint() {
         val location = currentLocation
         if (location == null) {
@@ -225,6 +238,128 @@ class MapFragment : Fragment() {
         }
     }
 
+    private fun saveCenterPoint() {
+        if (!isAdded || _binding == null) return
+        val centerLatLng = mapView.map.mapStatus.target
+        val latitude = centerLatLng.latitude
+        val longitude = centerLatLng.longitude
+
+        binding.btnSaveCenter.animate()
+            .scaleX(0.8f)
+            .scaleY(0.8f)
+            .setDuration(150)
+            .withEndAction {
+                if (isAdded && _binding != null) {
+                    binding.btnSaveCenter.animate()
+                        .scaleX(1.0f)
+                        .scaleY(1.0f)
+                        .setDuration(150)
+                        .start()
+                }
+            }
+            .start()
+
+        binding.btnSaveCenter.isEnabled = false
+        binding.btnSaveCenter.text = "保存中..."
+
+        fetchAddressAndSave(latitude, longitude)
+    }
+
+    private fun fetchAddressAndSave(latitude: Double, longitude: Double) {
+        val retrofit = Retrofit.Builder()
+            .baseUrl("https://api.map.baidu.com/")
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+
+        val service = retrofit.create(BaiduPlaceService::class.java)
+
+        service.searchNearby(
+            query = "周边",
+            location = "$latitude,$longitude",
+            radius = 500,
+            output = "json",
+            ak = BaiduConfig.API_KEY
+        ).enqueue(object : Callback<PlaceSearchResponse> {
+            override fun onResponse(call: Call<PlaceSearchResponse>, response: Response<PlaceSearchResponse>) {
+                var address = ""
+                var description = ""
+
+                if (response.isSuccessful) {
+                    val result = response.body()
+                    if (result != null && result.status == "SUCCESS" && result.results.isNotEmpty()) {
+                        val firstPlace = result.results.first()
+                        address = firstPlace.address
+                        description = firstPlace.name
+                    }
+                }
+
+                savePointToDatabase(latitude, longitude, address, description)
+            }
+
+            override fun onFailure(call: Call<PlaceSearchResponse>, t: Throwable) {
+                Logger.e("获取地址失败: ${t.message}")
+                savePointToDatabase(latitude, longitude, "", "")
+            }
+        })
+    }
+
+    private fun savePointToDatabase(latitude: Double, longitude: Double, address: String, description: String) {
+        lifecycleScope.launch {
+            try {
+                val maxSortOrder = getMaxSortOrder(args.lineId)
+                val sortOrder = maxSortOrder + 1
+
+                val point = PointEntity(
+                    lineId = args.lineId,
+                    longitude = longitude,
+                    latitude = latitude,
+                    altitude = null,
+                    address = address.ifEmpty { null },
+                    description = description.ifEmpty { null },
+                    sortOrder = sortOrder,
+                    createTime = System.currentTimeMillis(),
+                    modifyTime = System.currentTimeMillis()
+                )
+
+                app.repository.insertPoint(point)
+
+                activity?.runOnUiThread {
+                    if (!isAdded || _binding == null) return@runOnUiThread
+                    binding.btnSaveCenter.animate()
+                        .scaleX(1.2f)
+                        .scaleY(1.2f)
+                        .setDuration(200)
+                        .withEndAction {
+                            if (!isAdded || _binding == null) return@withEndAction
+                            binding.btnSaveCenter.animate()
+                                .scaleX(1.0f)
+                                .scaleY(1.0f)
+                                .setDuration(200)
+                                .start()
+                        }
+                        .start()
+
+                    binding.btnSaveCenter.text = "已保存"
+                    Toast.makeText(requireContext(), "位置已保存", Toast.LENGTH_SHORT).show()
+
+                    binding.btnSaveCenter.postDelayed({
+                        if (!isAdded || _binding == null) return@postDelayed
+                        binding.btnSaveCenter.text = "保存"
+                        binding.btnSaveCenter.isEnabled = true
+                    }, 2000)
+                }
+            } catch (e: Exception) {
+                Logger.e("保存点失败: ${e.message}")
+                activity?.runOnUiThread {
+                    if (!isAdded || _binding == null) return@runOnUiThread
+                    binding.btnSaveCenter.text = "保存"
+                    binding.btnSaveCenter.isEnabled = true
+                    Toast.makeText(requireContext(), "保存失败", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
     private suspend fun getMaxSortOrder(lineId: Long): Int {
         return try {
             val points = app.repository.getPointsByLineId(lineId).first()
@@ -235,9 +370,6 @@ class MapFragment : Fragment() {
         }
     }
 
-    /**
-     * 切换后台定位服务
-     */
     private fun toggleBackgroundLocation() {
         isBackgroundLocationEnabled = !isBackgroundLocationEnabled
         if (isBackgroundLocationEnabled) {
@@ -249,26 +381,18 @@ class MapFragment : Fragment() {
         }
     }
 
-    /**
-     * 检查定位权限
-     */
     private fun checkPermissions(): Boolean {
         return requiredPermissions.all { permission ->
             ContextCompat.checkSelfPermission(requireContext(), permission) == PackageManager.PERMISSION_GRANTED
         }
     }
 
-    /**
-     * 请求定位权限
-     */
     private fun requestPermissions() {
         permissionLauncher.launch(requiredPermissions)
     }
 
-    /**
-     * 开始定位
-     */
     private fun startLocation() {
+        if (!isAdded || _binding == null) return
         binding.progressBar.visibility = View.VISIBLE
         Logger.d("开始定位, isStarted=${locationClient.isStarted}")
         if (!locationClient.isStarted) {
@@ -277,10 +401,8 @@ class MapFragment : Fragment() {
         }
     }
 
-    /**
-     * 处理定位结果
-     */
     private fun processLocation(location: BDLocation) {
+        if (!isAdded || _binding == null) return
         binding.progressBar.visibility = View.GONE
         currentLocation = location
 
@@ -298,7 +420,6 @@ class MapFragment : Fragment() {
             }
             binding.tvLocationInfo.text = sb.toString()
 
-            // 更新地图上的位置显示
             val locData = MyLocationData.Builder()
                 .accuracy(location.radius)
                 .latitude(location.latitude)
@@ -306,7 +427,6 @@ class MapFragment : Fragment() {
                 .build()
             mapView.map.setMyLocationData(locData)
 
-            // 首次定位时移动地图到当前位置
             if (isFirstLocation) {
                 isFirstLocation = false
                 val ll = LatLng(location.latitude, location.longitude)
@@ -314,16 +434,12 @@ class MapFragment : Fragment() {
                 mapView.map.animateMapStatus(update)
             }
 
-            // 查询附近位置
             fetchNearbyPlaces(location.latitude, location.longitude)
         } else {
             binding.tvLocationInfo.text = "定位失败，错误码: ${location.locType}"
         }
     }
 
-    /**
-     * 调用百度地图 API 查询附近位置
-     */
     private fun fetchNearbyPlaces(latitude: Double, longitude: Double) {
         val retrofit = Retrofit.Builder()
             .baseUrl("https://api.map.baidu.com/")
@@ -340,6 +456,7 @@ class MapFragment : Fragment() {
             ak = BaiduConfig.API_KEY
         ).enqueue(object : Callback<PlaceSearchResponse> {
             override fun onResponse(call: Call<PlaceSearchResponse>, response: Response<PlaceSearchResponse>) {
+                if (!isAdded || _binding == null) return
                 if (response.isSuccessful) {
                     val result = response.body()
                     if (result != null && result.status == "SUCCESS") {
@@ -357,6 +474,7 @@ class MapFragment : Fragment() {
             }
 
             override fun onFailure(call: Call<PlaceSearchResponse>, t: Throwable) {
+                if (!isAdded || _binding == null) return
                 binding.tvNearbyPlaces.text = "网络错误: ${t.message}"
             }
         })
@@ -381,9 +499,6 @@ class MapFragment : Fragment() {
     }
 }
 
-/**
- * 百度地图附近搜索 API 接口
- */
 interface BaiduPlaceService {
     @GET("place/v2/search")
     fun searchNearby(
