@@ -10,7 +10,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.zuxing.markmap.data.adapter.GroupAdapter
-import com.zuxing.markmap.data.entity.GroupEntity
 import com.zuxing.markmap.databinding.FragmentGroupListBinding
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch

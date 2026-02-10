@@ -1,5 +1,6 @@
 package com.zuxing.markmap
 
+import android.content.SharedPreferences
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -10,7 +11,6 @@ import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.zuxing.markmap.data.adapter.LineAdapter
-import com.zuxing.markmap.data.entity.LineEntity
 import com.zuxing.markmap.databinding.FragmentLineListBinding
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -24,6 +24,7 @@ class LineListFragment : Fragment() {
 
     private lateinit var app: MarkMapApplication
     private lateinit var adapter: LineAdapter
+    private lateinit var prefs: SharedPreferences
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -37,9 +38,27 @@ class LineListFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         app = requireActivity().application as MarkMapApplication
+        prefs = requireActivity().getSharedPreferences("scroll_positions", 0)
 
         setupRecyclerView()
         loadLines()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        saveScrollPosition()
+    }
+
+    private fun saveScrollPosition() {
+        if (_binding != null) {
+            val position = (binding.recyclerView.layoutManager as? LinearLayoutManager)
+                ?.findFirstCompletelyVisibleItemPosition() ?: 0
+            prefs.edit().putInt("line_list_${args.groupId}", position).apply()
+        }
+    }
+
+    private fun getSavedScrollPosition(): Int {
+        return prefs.getInt("line_list_${args.groupId}", 0)
     }
 
     private fun setupRecyclerView() {
@@ -75,6 +94,12 @@ class LineListFragment : Fragment() {
                     binding.tvEmpty.visibility = View.GONE
                     binding.recyclerView.visibility = View.VISIBLE
                     adapter.submitList(lines)
+                    val savedPosition = getSavedScrollPosition()
+                    if (savedPosition > 0 && savedPosition < lines.size) {
+                        binding.recyclerView.post {
+                            binding.recyclerView.scrollToPosition(savedPosition)
+                        }
+                    }
                 }
             }
         }
@@ -94,11 +119,11 @@ class LineListFragment : Fragment() {
     }
 
     private fun navigateToLineMap() {
-        val action = LineListFragmentDirections.actionLineListFragmentToLineMapFragment(
-            lineId = -1L,
-            groupId = args.groupId
-        )
-        findNavController().navigate(action)
+        val intent = android.content.Intent(requireContext(), LineMapActivity::class.java).apply {
+            putExtra("lineId", -1L)
+            putExtra("groupId", args.groupId)
+        }
+        startActivity(intent)
     }
 
     fun navigateToAdd() {

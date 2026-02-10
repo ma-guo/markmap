@@ -432,46 +432,10 @@ class MapFragment : Fragment() {
                 mapView.map.animateMapStatus(update)
             }
 
-            fetchNearbyPlaces(location.latitude, location.longitude)
+//            fetchNearbyPlaces(location.latitude, location.longitude)
         } else {
             binding.tvLocationInfo.text = "定位失败，错误码: ${location.locType}"
         }
-    }
-
-    private fun fetchNearbyPlaces(latitude: Double, longitude: Double) {
-        val retrofit = Retrofit.Builder()
-            .baseUrl(BaiduConfig.baseUrl)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-
-        val service = retrofit.create(BaiduPlaceService::class.java)
-
-        service.reverseGeocoding(
-            longitude = longitude.toString(),
-            latitude = latitude.toString(),
-        ).enqueue(object : Callback<ReverseGeocodingResponse> {
-            override fun onResponse(call: Call<ReverseGeocodingResponse>, response: Response<ReverseGeocodingResponse>) {
-                if (!isAdded || _binding == null) return
-                if (response.isSuccessful) {
-                    val result = response.body()
-                    if (result != null && result.result == 0) {
-                        val sb = StringBuilder("附近位置:\n")
-                        val data = result.data
-                        sb.append("${data?.description ?: ""} (${data?.address ?: ""})\n")
-                        binding.tvNearbyPlaces.text = sb.toString()
-                    } else {
-                        binding.tvNearbyPlaces.text = "未找到附近位置"
-                    }
-                } else {
-                    binding.tvNearbyPlaces.text = "查询失败"
-                }
-            }
-
-            override fun onFailure(call: Call<ReverseGeocodingResponse>, t: Throwable) {
-                if (!isAdded || _binding == null) return
-                binding.tvNearbyPlaces.text = "网络错误: ${t.message}"
-            }
-        })
     }
 
     override fun onResume() {

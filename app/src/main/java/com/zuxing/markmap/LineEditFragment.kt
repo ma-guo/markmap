@@ -4,29 +4,42 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.core.widget.addTextChangedListener
 import androidx.fragment.app.Fragment
-import androidx.navigation.fragment.findNavController
-import androidx.navigation.fragment.navArgs
+import androidx.lifecycle.lifecycleScope
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.zuxing.markmap.data.entity.GroupEntity
 import com.zuxing.markmap.data.entity.LineEntity
 import com.zuxing.markmap.databinding.FragmentLineEditBinding
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 class LineEditFragment : Fragment() {
 
     private var _binding: FragmentLineEditBinding? = null
     private val binding get() = _binding!!
 
-    private val args: LineEditFragmentArgs by navArgs()
+    private var groupId: Long = -1L
+    private var lineId: Long = -1L
 
     private lateinit var app: MarkMapApplication
     private var currentLine: LineEntity? = null
     private var isEditMode: Boolean = false
+    private var groupList: List<GroupEntity> = emptyList()
+    private var groupItems: List<GroupItem> = emptyList()
+    private var selectedGroupId: Long = -1L
+    private var selectedGroupName: String = ""
+
+    data class GroupItem(val id: Long, val name: String)
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        groupId = arguments?.getLong("groupId") ?: -1L
+        lineId = arguments?.getLong("lineId") ?: -1L
+        isEditMode = lineId != -1L
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -41,39 +54,27 @@ class LineEditFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         app = requireActivity().application as MarkMapApplication
 
-        isEditMode = args.lineId != -1L
-        setupToolbar()
         setupViews()
+        loadGroups()
 
         if (isEditMode) {
             loadLine()
-        } else {
-            loadGroupName()
         }
-    }
-
-    private fun setupToolbar() {
-//        binding.toolbar.title = if (isEditMode) "编辑线" else "新增线"
-//        binding.toolbar.setNavigationOnClickListener {
-//            findNavController().navigateUp()
-//        }
-//
-//        if (isEditMode) {
-//            binding.toolbar.inflateMenu(R.menu.menu_line_edit)
-//            binding.toolbar.setOnMenuItemClickListener { menuItem ->
-//                when (menuItem.itemId) {
-//                    R.id.action_delete -> {
-//                        showDeleteConfirmDialog()
-//                        true
-//                    }
-//                    else -> false
-//                }
-//            }
-//        }
     }
 
     private fun setupViews() {
         binding.etName.addTextChangedListener {
+            updateSaveButtonState()
+        }
+
+        binding.etSortOrder.addTextChangedListener {
+            updateSaveButtonState()
+        }
+
+        binding.actvGroup.setOnItemClickListener { _, _, position, _ ->
+            val selectedItem = groupItems[position]
+            selectedGroupId = selectedItem.id
+            selectedGroupName = selectedItem.name
             updateSaveButtonState()
         }
 
@@ -82,37 +83,67 @@ class LineEditFragment : Fragment() {
         }
     }
 
-    private fun updateSaveButtonState() {
-        binding.btnSave.isEnabled = binding.etName.text!!.isNotBlank()
+    private fun loadGroups() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            groupList = app.repository.getAllGroups().first()
+            setupGroupDropdown()
+        }
     }
 
-    private fun loadGroupName() {
-        CoroutineScope(Dispatchers.IO).launch {
-            val group = app.repository.getGroupById(args.groupId)
-            withContext(Dispatchers.Main) {
-                group?.let {
-                    binding.tvGroupName.text = "所属组: ${it.name}"
-                    binding.tvGroupName.visibility = View.VISIBLE
-                }
+    private fun setupGroupDropdown() {
+        groupItems = groupList.map { GroupItem(it.id, it.name) }
+        val groupNames = groupList.map { it.name }
+        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, groupNames)
+        binding.actvGroup.setAdapter(adapter)
+
+        if (isEditMode && currentLine != null) {
+            val group = groupList.find { it.id == currentLine!!.groupId }
+            group?.let {
+                selectedGroupId = it.id
+                selectedGroupName = it.name
+                binding.actvGroup.setText(it.name, false)
+            }
+        } else if (groupId != -1L) {
+            val group = groupList.find { it.id == groupId }
+            group?.let {
+                selectedGroupId = it.id
+                selectedGroupName = it.name
+                binding.actvGroup.setText(it.name, false)
             }
         }
     }
 
+    private fun updateSaveButtonState() {
+        if (isEditMode && currentLine != null) {
+            val name = binding.etName.text.toString().trim()
+            val sortOrder = binding.etSortOrder.text.toString().toIntOrNull() ?: 0
+            val hasChanges = name.isNotBlank() &&
+                    selectedGroupId != -1L &&
+                    (name != currentLine!!.name ||
+                            selectedGroupId != currentLine!!.groupId ||
+                            sortOrder != currentLine!!.sortOrder)
+            binding.btnSave.isEnabled = hasChanges
+        } else {
+            binding.btnSave.isEnabled = binding.etName.text!!.isNotBlank() && selectedGroupId != -1L
+        }
+    }
+
     private fun loadLine() {
-        CoroutineScope(Dispatchers.IO).launch {
-            currentLine = app.repository.getLineById(args.lineId)
-            val group = app.repository.getGroupById(args.groupId)
-            withContext(Dispatchers.Main) {
-                currentLine?.let { line ->
-                    binding.etName.setText(line.name)
-                    binding.etSortOrder.setText(line.sortOrder.toString())
-                    binding.tvGroupName.text = "所属组: ${group?.name ?: ""}"
-                    binding.tvGroupName.visibility = View.VISIBLE
-                    binding.tvCreateTime.text = "创建时间: ${formatTime(line.createTime)}"
-                    binding.tvCreateTime.visibility = View.VISIBLE
-                } ?: run {
-                    loadGroupName()
+        viewLifecycleOwner.lifecycleScope.launch {
+            currentLine = app.repository.getLineById(lineId)
+            currentLine?.let { line ->
+                binding.etName.setText(line.name)
+                binding.etSortOrder.setText(line.sortOrder.toString())
+                binding.tvCreateTime.text = "创建时间: ${formatTime(line.createTime)}"
+                binding.tvCreateTime.visibility = View.VISIBLE
+
+                selectedGroupId = line.groupId
+                val group = groupList.find { it.id == line.groupId }
+                group?.let {
+                    selectedGroupName = it.name
+                    binding.actvGroup.setText(it.name, false)
                 }
+                updateSaveButtonState()
             }
         }
     }
@@ -124,27 +155,47 @@ class LineEditFragment : Fragment() {
             return
         }
 
+        if (selectedGroupId == -1L) {
+            Toast.makeText(requireContext(), "请选择所属组", Toast.LENGTH_SHORT).show()
+            return
+        }
+
         val sortOrder = binding.etSortOrder.text.toString().toIntOrNull() ?: 0
 
-        CoroutineScope(Dispatchers.IO).launch {
-            val line = LineEntity(
-                id = if (isEditMode) args.lineId else 0,
-                name = name,
-                groupId = args.groupId,
-                sortOrder = sortOrder,
-                createTime = currentLine?.createTime ?: System.currentTimeMillis()
-            )
+        viewLifecycleOwner.lifecycleScope.launch {
+            if (isEditMode && currentLine != null) {
+                val hasChanges = name != currentLine!!.name ||
+                        selectedGroupId != currentLine!!.groupId ||
+                        sortOrder != currentLine!!.sortOrder
 
-            if (isEditMode) {
+                if (!hasChanges) {
+                    Toast.makeText(requireContext(), "未有任何变化", Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
+
+                val line = currentLine!!.copy(
+                    name = name,
+                    groupId = selectedGroupId,
+                    sortOrder = sortOrder
+                )
                 app.repository.updateLine(line)
             } else {
-                app.repository.insertLine(line)
+                val line = LineEntity(
+                    id = if (isEditMode) lineId else 0,
+                    name = name,
+                    groupId = selectedGroupId,
+                    sortOrder = sortOrder,
+                    createTime = currentLine?.createTime ?: System.currentTimeMillis()
+                )
+                if (isEditMode) {
+                    app.repository.updateLine(line)
+                } else {
+                    app.repository.insertLine(line)
+                }
             }
 
-            withContext(Dispatchers.Main) {
-                Toast.makeText(requireContext(), "保存成功", Toast.LENGTH_SHORT).show()
-                findNavController().navigateUp()
-            }
+            Toast.makeText(requireContext(), "保存成功", Toast.LENGTH_SHORT).show()
+            parentFragmentManager.popBackStack()
         }
     }
 
@@ -160,12 +211,10 @@ class LineEditFragment : Fragment() {
     }
 
     private fun deleteLine() {
-        CoroutineScope(Dispatchers.IO).launch {
-            app.repository.softDeleteLine(args.lineId)
-            withContext(Dispatchers.Main) {
-                Toast.makeText(requireContext(), "已删除", Toast.LENGTH_SHORT).show()
-                findNavController().navigateUp()
-            }
+        viewLifecycleOwner.lifecycleScope.launch {
+            app.repository.softDeleteLine(lineId)
+            Toast.makeText(requireContext(), "已删除", Toast.LENGTH_SHORT).show()
+            parentFragmentManager.popBackStack()
         }
     }
 

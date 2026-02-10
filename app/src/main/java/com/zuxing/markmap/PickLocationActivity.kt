@@ -63,7 +63,7 @@ class PickLocationActivity : AppCompatActivity() {
             selectedLongitude = longitude
             addOriginalMarker(latitude, longitude)
             centerMap(latitude, longitude)
-            updateSelectedLocationInfo()
+            updateSelectedLocationInfo(false)
         } else if (isEditMode) {
             loadExistingPoint()
         } else {
@@ -88,7 +88,7 @@ class PickLocationActivity : AppCompatActivity() {
             override fun onMapStatusChangeStart(mapStatus: MapStatus?, p1: Int) {}
             override fun onMapStatusChange(mapStatus: MapStatus?) {}
             override fun onMapStatusChangeFinish(mapStatus: MapStatus?) {
-                updateSelectedLocationInfo()
+                updateSelectedLocationInfo(false)
             }
         })
     }
@@ -114,7 +114,7 @@ class PickLocationActivity : AppCompatActivity() {
 
                         addOriginalMarker(point.latitude, point.longitude)
                         centerMap(point.latitude, point.longitude)
-                        updateSelectedLocationInfo()
+                        updateSelectedLocationInfo(false)
                     } ?: run {
                         Toast.makeText(this@PickLocationActivity, "点不存在", Toast.LENGTH_SHORT).show()
                         finish()
@@ -132,7 +132,8 @@ class PickLocationActivity : AppCompatActivity() {
     }
 
     private fun centerMap(latitude: Double, longitude: Double) {
-        val update = MapStatusUpdateFactory.newLatLng(LatLng(latitude, longitude))
+        val point = LatLng(latitude, longitude)
+        val update = MapStatusUpdateFactory.newLatLngZoom(point, 18f)
         mapView.map.animateMapStatus(update)
     }
 
@@ -146,18 +147,18 @@ class PickLocationActivity : AppCompatActivity() {
         hasOriginalMarker = true
     }
 
-    private fun updateSelectedLocationInfo() {
+    private fun updateSelectedLocationInfo(fetchInfo: Boolean) {
         val centerLatLng = mapView.map.mapStatus.target
         selectedLatitude = centerLatLng.latitude
         selectedLongitude = centerLatLng.longitude
 
-        val tvSelectedLocation = findViewById<android.widget.TextView>(R.id.tvSelectedLocation)
-        val progressBar = findViewById<android.widget.ProgressBar>(R.id.progressBar)
-
-        progressBar.visibility = View.VISIBLE
-        tvSelectedLocation.text = "获取位置信息中..."
-
-        fetchAddress(selectedLatitude, selectedLongitude)
+        if(fetchInfo) {
+            val tvSelectedLocation = findViewById<android.widget.TextView>(R.id.tvSelectedLocation)
+            val progressBar = findViewById<android.widget.ProgressBar>(R.id.progressBar)
+            progressBar.visibility = View.VISIBLE
+            tvSelectedLocation.text = "获取位置信息中..."
+            fetchAddress(selectedLatitude, selectedLongitude)
+        }
     }
 
     private fun fetchAddress(latitude: Double, longitude: Double) {

@@ -61,6 +61,16 @@
             android:name=".PickLocationActivity"
             android:exported="false"
             android:theme="@style/Theme.MarkMap" />
+
+        <activity
+            android:name=".PointEditActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MarkMap" />
+
+        <activity
+            android:name=".LineMapActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MarkMap" />
     </application>
 
 </manifest>

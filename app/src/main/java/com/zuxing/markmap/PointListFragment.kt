@@ -1,5 +1,6 @@
 package com.zuxing.markmap
 
+import android.content.SharedPreferences
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -25,6 +26,7 @@ class PointListFragment : Fragment() {
 
     private lateinit var app: MarkMapApplication
     private lateinit var adapter: PointAdapter
+    private lateinit var prefs: SharedPreferences
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -38,9 +40,27 @@ class PointListFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         app = requireActivity().application as MarkMapApplication
+        prefs = requireActivity().getSharedPreferences("scroll_positions", 0)
 
         setupRecyclerView()
         loadPoints()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        saveScrollPosition()
+    }
+
+    private fun saveScrollPosition() {
+        if (_binding != null) {
+            val position = (binding.recyclerView.layoutManager as? LinearLayoutManager)
+                ?.findFirstCompletelyVisibleItemPosition() ?: 0
+            prefs.edit().putInt("point_list_${args.lineId}", position).apply()
+        }
+    }
+
+    private fun getSavedScrollPosition(): Int {
+        return prefs.getInt("point_list_${args.lineId}", 0)
     }
 
     private fun setupRecyclerView() {
@@ -71,17 +91,23 @@ class PointListFragment : Fragment() {
                     binding.tvEmpty.visibility = View.GONE
                     binding.recyclerView.visibility = View.VISIBLE
                     adapter.submitList(points)
+                    val savedPosition = getSavedScrollPosition()
+                    if (savedPosition > 0 && savedPosition < points.size) {
+                        binding.recyclerView.post {
+                            binding.recyclerView.scrollToPosition(savedPosition)
+                        }
+                    }
                 }
             }
         }
     }
 
     private fun navigateToEdit(pointId: Long) {
-        val action = PointListFragmentDirections.actionPointListFragmentToPointEditFragment(
-            lineId = args.lineId,
-            pointId = pointId
-        )
-        findNavController().navigate(action)
+        val intent = android.content.Intent(requireContext(), PointEditActivity::class.java).apply {
+            putExtra("lineId", args.lineId)
+            putExtra("pointId", pointId)
+        }
+        startActivity(intent)
     }
 
     private fun navigateToMap() {
@@ -97,11 +123,11 @@ class PointListFragment : Fragment() {
                 app.repository.getLineById(args.lineId)
             }
             val groupId = line?.groupId ?: -1L
-            val action = PointListFragmentDirections.actionPointListFragmentToLineMapFragment(
-                lineId = args.lineId,
-                groupId = groupId
-            )
-            findNavController().navigate(action)
+            val intent = android.content.Intent(requireContext(), LineMapActivity::class.java).apply {
+                putExtra("lineId", args.lineId)
+                putExtra("groupId", groupId)
+            }
+            startActivity(intent)
         }
     }
 
