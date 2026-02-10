@@ -53,23 +53,23 @@ class LineEditFragment : Fragment() {
     }
 
     private fun setupToolbar() {
-        binding.toolbar.title = if (isEditMode) "编辑线" else "新增线"
-        binding.toolbar.setNavigationOnClickListener {
-            findNavController().navigateUp()
-        }
-
-        if (isEditMode) {
-            binding.toolbar.inflateMenu(R.menu.menu_line_edit)
-            binding.toolbar.setOnMenuItemClickListener { menuItem ->
-                when (menuItem.itemId) {
-                    R.id.action_delete -> {
-                        showDeleteConfirmDialog()
-                        true
-                    }
-                    else -> false
-                }
-            }
-        }
+//        binding.toolbar.title = if (isEditMode) "编辑线" else "新增线"
+//        binding.toolbar.setNavigationOnClickListener {
+//            findNavController().navigateUp()
+//        }
+//
+//        if (isEditMode) {
+//            binding.toolbar.inflateMenu(R.menu.menu_line_edit)
+//            binding.toolbar.setOnMenuItemClickListener { menuItem ->
+//                when (menuItem.itemId) {
+//                    R.id.action_delete -> {
+//                        showDeleteConfirmDialog()
+//                        true
+//                    }
+//                    else -> false
+//                }
+//            }
+//        }
     }
 
     private fun setupViews() {

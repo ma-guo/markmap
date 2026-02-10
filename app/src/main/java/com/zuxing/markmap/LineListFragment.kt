@@ -43,9 +43,14 @@ class LineListFragment : Fragment() {
     }
 
     private fun setupRecyclerView() {
-        adapter = LineAdapter { line ->
-            navigateToPointList(line.id)
-        }
+        adapter = LineAdapter(
+            onItemClick = { line ->
+                navigateToPointList(line.id)
+            },
+            onItemLongClick = { line ->
+                navigateToEdit(line.id)
+            }
+        )
         binding.recyclerView.layoutManager = LinearLayoutManager(requireContext())
         binding.recyclerView.adapter = adapter
 
@@ -53,7 +58,9 @@ class LineListFragment : Fragment() {
             navigateToEdit(null)
         }
 
-        
+        binding.fabMap.setOnClickListener {
+            navigateToLineMap()
+        }
     }
 
     private fun loadLines() {
@@ -86,7 +93,13 @@ class LineListFragment : Fragment() {
         findNavController().navigate(action)
     }
 
-    
+    private fun navigateToLineMap() {
+        val action = LineListFragmentDirections.actionLineListFragmentToLineMapFragment(
+            lineId = -1L,
+            groupId = args.groupId
+        )
+        findNavController().navigate(action)
+    }
 
     fun navigateToAdd() {
         navigateToEdit(null)

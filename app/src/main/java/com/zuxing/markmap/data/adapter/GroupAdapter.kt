@@ -12,7 +12,8 @@ import java.util.Date
 import java.util.Locale
 
 class GroupAdapter(
-    private val onItemClick: (GroupEntity) -> Unit
+    private val onItemClick: (GroupEntity) -> Unit,
+    private val onItemLongClick: (GroupEntity) -> Unit = {}
 ) : ListAdapter<GroupEntity, GroupAdapter.ViewHolder>(DiffCallback()) {
 
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault())
@@ -40,6 +41,13 @@ class GroupAdapter(
                 if (position != RecyclerView.NO_POSITION) {
                     onItemClick(getItem(position))
                 }
+            }
+            binding.root.setOnLongClickListener {
+                val position = adapterPosition
+                if (position != RecyclerView.NO_POSITION) {
+                    onItemLongClick(getItem(position))
+                }
+                true
             }
         }
 

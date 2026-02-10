@@ -41,9 +41,14 @@ class GroupListFragment : Fragment() {
     }
 
     private fun setupRecyclerView() {
-        adapter = GroupAdapter { group ->
-            navigateToLineList(group.id)
-        }
+        adapter = GroupAdapter(
+            onItemClick = { group ->
+                navigateToLineList(group.id)
+            },
+            onItemLongClick = { group ->
+                navigateToEdit(group.id)
+            }
+        )
         binding.recyclerView.layoutManager = LinearLayoutManager(requireContext())
         binding.recyclerView.adapter = adapter
 

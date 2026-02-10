@@ -162,20 +162,17 @@ class PickLocationActivity : AppCompatActivity() {
 
     private fun fetchAddress(latitude: Double, longitude: Double) {
         val retrofit = Retrofit.Builder()
-            .baseUrl("https://api.map.baidu.com/")
+            .baseUrl(BaiduConfig.baseUrl)
             .addConverterFactory(retrofit2.converter.gson.GsonConverterFactory.create())
             .build()
 
         val service = retrofit.create(BaiduPlaceService::class.java)
 
-        service.searchNearby(
-            query = "周边",
-            location = "$latitude,$longitude",
-            radius = 100,
-            output = "json",
-            ak = BaiduConfig.API_KEY
-        ).enqueue(object : Callback<PlaceSearchResponse> {
-            override fun onResponse(call: retrofit2.Call<PlaceSearchResponse>, response: Response<PlaceSearchResponse>) {
+        service.reverseGeocoding(
+            latitude = latitude.toString(),
+            longitude = longitude.toString(),
+        ).enqueue(object : Callback<ReverseGeocodingResponse> {
+            override fun onResponse(call: retrofit2.Call<ReverseGeocodingResponse>, response: Response<ReverseGeocodingResponse>) {
                 val progressBar = findViewById<android.widget.ProgressBar>(R.id.progressBar)
                 val tvSelectedLocation = findViewById<android.widget.TextView>(R.id.tvSelectedLocation)
 
@@ -183,10 +180,10 @@ class PickLocationActivity : AppCompatActivity() {
 
                 if (response.isSuccessful) {
                     val result = response.body()
-                    if (result != null && result.status == "SUCCESS" && result.results.isNotEmpty()) {
-                        val firstPlace = result.results.first()
-                        selectedAddress = firstPlace.address
-                        selectedDescription = firstPlace.name
+                    if (result != null && result.result == 0) {
+                        val data = result.data
+                        selectedAddress = data?.address ?: ""
+                        selectedDescription = data?.description ?: ""
 
                         val prefix = if (hasOriginalMarker && (latitude != originalLatitude || longitude != originalLongitude)) {
                             "新位置\n"
@@ -195,8 +192,8 @@ class PickLocationActivity : AppCompatActivity() {
                         }
                         tvSelectedLocation.text = buildString {
                             append(prefix)
-                            append("位置: ${firstPlace.name}\n")
-                            append("地址: ${firstPlace.address}\n")
+                            append("位置: ${selectedAddress}\n")
+                            append("地址: ${selectedDescription}\n")
                             append("坐标: ${String.format("%.6f", latitude)}, ${String.format("%.6f", longitude)}")
                         }
                     } else {
@@ -229,7 +226,7 @@ class PickLocationActivity : AppCompatActivity() {
                 }
             }
 
-            override fun onFailure(call: retrofit2.Call<PlaceSearchResponse>, t: Throwable) {
+            override fun onFailure(call: retrofit2.Call<ReverseGeocodingResponse>, t: Throwable) {
                 val progressBar = findViewById<android.widget.ProgressBar>(R.id.progressBar)
                 val tvSelectedLocation = findViewById<android.widget.TextView>(R.id.tvSelectedLocation)
 

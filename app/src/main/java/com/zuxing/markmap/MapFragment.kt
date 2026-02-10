@@ -267,36 +267,34 @@ class MapFragment : Fragment() {
 
     private fun fetchAddressAndSave(latitude: Double, longitude: Double) {
         val retrofit = Retrofit.Builder()
-            .baseUrl("https://api.map.baidu.com/")
+            .baseUrl(BaiduConfig.baseUrl)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
 
         val service = retrofit.create(BaiduPlaceService::class.java)
 
-        service.searchNearby(
-            query = "周边",
-            location = "$latitude,$longitude",
-            radius = 500,
-            output = "json",
-            ak = BaiduConfig.API_KEY
-        ).enqueue(object : Callback<PlaceSearchResponse> {
-            override fun onResponse(call: Call<PlaceSearchResponse>, response: Response<PlaceSearchResponse>) {
+        service.reverseGeocoding(
+            latitude = latitude.toString(),
+            longitude = longitude.toString(),
+        ).enqueue(object : Callback<ReverseGeocodingResponse> {
+            override fun onResponse(call: Call<ReverseGeocodingResponse>, response: Response<ReverseGeocodingResponse>) {
                 var address = ""
                 var description = ""
 
                 if (response.isSuccessful) {
                     val result = response.body()
-                    if (result != null && result.status == "SUCCESS" && result.results.isNotEmpty()) {
-                        val firstPlace = result.results.first()
-                        address = firstPlace.address
-                        description = firstPlace.name
+                    if (result != null && result.result == 0 ) {
+                        address = result.data?.address?:""
+                        description = result.data?.description?:""
+                    } else {
+                        Toast.makeText(requireContext(), result?.message?:"未知错误", Toast.LENGTH_SHORT).show()
                     }
                 }
 
                 savePointToDatabase(latitude, longitude, address, description)
             }
 
-            override fun onFailure(call: Call<PlaceSearchResponse>, t: Throwable) {
+            override fun onFailure(call: Call<ReverseGeocodingResponse>, t: Throwable) {
                 Logger.e("获取地址失败: ${t.message}")
                 savePointToDatabase(latitude, longitude, "", "")
             }
@@ -442,28 +440,24 @@ class MapFragment : Fragment() {
 
     private fun fetchNearbyPlaces(latitude: Double, longitude: Double) {
         val retrofit = Retrofit.Builder()
-            .baseUrl("https://api.map.baidu.com/")
+            .baseUrl(BaiduConfig.baseUrl)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
 
         val service = retrofit.create(BaiduPlaceService::class.java)
 
-        service.searchNearby(
-            query = "周边",
-            location = "$latitude,$longitude",
-            radius = 1000,
-            output = "json",
-            ak = BaiduConfig.API_KEY
-        ).enqueue(object : Callback<PlaceSearchResponse> {
-            override fun onResponse(call: Call<PlaceSearchResponse>, response: Response<PlaceSearchResponse>) {
+        service.reverseGeocoding(
+            longitude = longitude.toString(),
+            latitude = latitude.toString(),
+        ).enqueue(object : Callback<ReverseGeocodingResponse> {
+            override fun onResponse(call: Call<ReverseGeocodingResponse>, response: Response<ReverseGeocodingResponse>) {
                 if (!isAdded || _binding == null) return
                 if (response.isSuccessful) {
                     val result = response.body()
-                    if (result != null && result.status == "SUCCESS") {
+                    if (result != null && result.result == 0) {
                         val sb = StringBuilder("附近位置:\n")
-                        result.results.take(5).forEachIndexed { index, place ->
-                            sb.append("${index + 1}. ${place.name} (${place.address})\n")
-                        }
+                        val data = result.data
+                        sb.append("${data?.description ?: ""} (${data?.address ?: ""})\n")
                         binding.tvNearbyPlaces.text = sb.toString()
                     } else {
                         binding.tvNearbyPlaces.text = "未找到附近位置"
@@ -473,7 +467,7 @@ class MapFragment : Fragment() {
                 }
             }
 
-            override fun onFailure(call: Call<PlaceSearchResponse>, t: Throwable) {
+            override fun onFailure(call: Call<ReverseGeocodingResponse>, t: Throwable) {
                 if (!isAdded || _binding == null) return
                 binding.tvNearbyPlaces.text = "网络错误: ${t.message}"
             }
@@ -498,32 +492,3 @@ class MapFragment : Fragment() {
         _binding = null
     }
 }
-
-interface BaiduPlaceService {
-    @GET("place/v2/search")
-    fun searchNearby(
-        @Query("query") query: String,
-        @Query("location") location: String,
-        @Query("radius") radius: Int,
-        @Query("output") output: String,
-        @Query("ak") ak: String
-    ): Call<PlaceSearchResponse>
-}
-
-data class PlaceSearchResponse(
-    val status: String,
-    val message: String?,
-    val results: List<PlaceResult>
-)
-
-data class PlaceResult(
-    val name: String,
-    val address: String,
-    val location: Location,
-    val uid: String?
-)
-
-data class Location(
-    val lat: Double,
-    val lng: Double
-)

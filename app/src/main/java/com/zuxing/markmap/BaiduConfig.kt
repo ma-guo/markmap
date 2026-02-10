@@ -10,4 +10,5 @@ object BaiduConfig {
     fun setAk(ak: String) {
         API_KEY = ak;
     }
+    val baseUrl = "https://notify.gyzuxing.com/"
 }

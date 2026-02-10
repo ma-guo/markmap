@@ -11,8 +11,10 @@ import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.zuxing.markmap.data.adapter.PointAdapter
 import com.zuxing.markmap.databinding.FragmentPointListBinding
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class PointListFragment : Fragment() {
 
@@ -90,10 +92,17 @@ class PointListFragment : Fragment() {
     }
 
     private fun navigateToLineMap() {
-        val action = PointListFragmentDirections.actionPointListFragmentToLineMapFragment(
-            lineId = args.lineId
-        )
-        findNavController().navigate(action)
+        viewLifecycleOwner.lifecycleScope.launch {
+            val line = withContext(Dispatchers.IO) {
+                app.repository.getLineById(args.lineId)
+            }
+            val groupId = line?.groupId ?: -1L
+            val action = PointListFragmentDirections.actionPointListFragmentToLineMapFragment(
+                lineId = args.lineId,
+                groupId = groupId
+            )
+            findNavController().navigate(action)
+        }
     }
 
     override fun onDestroyView() {

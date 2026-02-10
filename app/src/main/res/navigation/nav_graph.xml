@@ -103,6 +103,13 @@
             app:exitAnim="@anim/slide_out_left"
             app:popEnterAnim="@anim/slide_in_left"
             app:popExitAnim="@anim/slide_out_right" />
+        <action
+            android:id="@+id/action_LineListFragment_to_LineMapFragment"
+            app:destination="@id/LineMapFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right" />
     </fragment>
 
     <fragment
@@ -177,7 +184,12 @@
         tools:layout="@layout/fragment_line_map">
         <argument
             android:name="lineId"
-            app:argType="long" />
+            app:argType="long"
+            android:defaultValue="-1L" />
+        <argument
+            android:name="groupId"
+            app:argType="long"
+            android:defaultValue="-1L" />
     </fragment>
 
 </navigation>

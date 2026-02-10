@@ -10,6 +10,10 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.ListAdapter
+import androidx.recyclerview.widget.RecyclerView
 import com.baidu.mapapi.map.BaiduMap
 import com.baidu.mapapi.map.BitmapDescriptorFactory
 import com.baidu.mapapi.map.MapStatusUpdateFactory
@@ -21,6 +25,7 @@ import com.baidu.mapapi.model.LatLng
 import com.baidu.mapapi.model.LatLngBounds
 import com.zuxing.markmap.data.entity.PointEntity
 import com.zuxing.markmap.databinding.FragmentLineMapBinding
+import com.zuxing.markmap.databinding.ItemPointSimpleBinding
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -37,9 +42,11 @@ class LineMapFragment : Fragment() {
     private var markerList: List<Overlay> = emptyList()
     private var polylineOverlay: Overlay? = null
     private var isPanelExpanded = false
+    private var isListExpanded = false
     private var showMarkers = true
     private var showInfo = true
     private var currentLineColor = Color.BLUE
+    private var selectedPointId: Long? = null
 
     data class ColorData(val name: String, val color: Int)
     private val lineColors = listOf(
@@ -50,6 +57,63 @@ class LineMapFragment : Fragment() {
         ColorData("橙色", -26624),
         ColorData("青色", -10580465)
     )
+
+    private class PointAdapter(
+        private val onPointClick: (PointEntity) -> Unit
+    ) : ListAdapter<PointEntity, PointAdapter.PointViewHolder>(PointDiffCallback()) {
+
+        private var selectedPointId: Long? = null
+
+        fun setSelectedPoint(pointId: Long?) {
+            val oldId = selectedPointId
+            selectedPointId = pointId
+            currentList.forEachIndexed { index, point ->
+                if (point.id == oldId || point.id == pointId) {
+                    notifyItemChanged(index)
+                }
+            }
+        }
+
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PointViewHolder {
+            val binding = ItemPointSimpleBinding.inflate(
+                LayoutInflater.from(parent.context), parent, false
+            )
+            return PointViewHolder(binding)
+        }
+
+        override fun onBindViewHolder(holder: PointViewHolder, position: Int) {
+            holder.bind(getItem(position))
+        }
+
+        inner class PointViewHolder(
+            private val binding: ItemPointSimpleBinding
+        ) : RecyclerView.ViewHolder(binding.root) {
+
+            fun bind(point: PointEntity) {
+                binding.tvPointDescription.text = when {
+                    !point.description.isNullOrBlank() -> point.description
+                    !point.address.isNullOrBlank() -> point.address
+                    else -> "${point.latitude}, ${point.longitude}"
+                }
+                binding.root.isSelected = point.id == selectedPointId
+                binding.root.setOnClickListener {
+                    selectedPointId = point.id
+                    notifyDataSetChanged()
+                    onPointClick(point)
+                }
+            }
+        }
+
+        private class PointDiffCallback : DiffUtil.ItemCallback<PointEntity>() {
+            override fun areItemsTheSame(oldItem: PointEntity, newItem: PointEntity): Boolean {
+                return oldItem.id == newItem.id
+            }
+
+            override fun areContentsTheSame(oldItem: PointEntity, newItem: PointEntity): Boolean {
+                return oldItem == newItem
+            }
+        }
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -65,8 +129,61 @@ class LineMapFragment : Fragment() {
         app = requireActivity().application as MarkMapApplication
 
         setupMap()
+        setupPointList()
+        setupToggleList()
         setupControlPanel()
         loadPoints()
+    }
+
+    private fun setupToggleList() {
+        binding.cardToggleList.setOnClickListener {
+            toggleList()
+        }
+    }
+
+    private fun toggleList() {
+        if (isListExpanded) {
+            collapseList()
+        } else {
+            expandList()
+        }
+    }
+
+    private fun expandList() {
+        isListExpanded = true
+        binding.cardPointList.visibility = View.VISIBLE
+        binding.cardPointList.translationY = binding.cardPointList.height.toFloat()
+        binding.cardPointList.animate()
+            .translationY(0f)
+            .setDuration(200)
+            .start()
+        binding.ivToggleIcon.setImageResource(android.R.drawable.arrow_down_float)
+    }
+
+    private fun collapseList() {
+        isListExpanded = false
+        binding.cardPointList.animate()
+            .translationY(binding.cardPointList.height.toFloat())
+            .setDuration(200)
+            .withEndAction {
+                binding.cardPointList.visibility = View.GONE
+            }
+            .start()
+        binding.ivToggleIcon.setImageResource(android.R.drawable.arrow_up_float)
+    }
+
+    private fun setupPointList() {
+        binding.rvPoints.layoutManager = LinearLayoutManager(requireContext())
+        binding.rvPoints.adapter = PointAdapter { point ->
+            (binding.rvPoints.adapter as? PointAdapter)?.setSelectedPoint(point.id)
+            centerOnPoint(point)
+        }
+    }
+
+    private fun centerOnPoint(point: PointEntity) {
+        val latLng = LatLng(point.latitude, point.longitude)
+        val update = MapStatusUpdateFactory.newLatLng(latLng)
+        mapView.map.animateMapStatus(update)
     }
 
 
@@ -139,15 +256,30 @@ class LineMapFragment : Fragment() {
 
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                pointList = app.repository.getPointsByLineId(args.lineId).first()
+                pointList = when {
+                    args.lineId != -1L -> {
+                        app.repository.getPointsByLineId(args.lineId).first()
+                    }
+                    args.groupId != -1L -> {
+                        val lines = app.repository.getLinesByGroupId(args.groupId).first()
+                        lines.flatMap { line ->
+                            app.repository.getPointsByLineId(line.id).first()
+                        }
+                    }
+                    else -> emptyList()
+                }
 
                 if (pointList.isEmpty()) {
+                    binding.tvPointCountList.text = "点数量: 0"
                     binding.tvPointCount.text = "点数量: 0"
                     binding.progressBar.visibility = View.GONE
                     return@launch
                 }
 
+                binding.tvPointCountList.text = "点数量: ${pointList.size}"
                 binding.tvPointCount.text = "点数量: ${pointList.size}"
+                val sortedPoints = pointList.sortedBy { it.sortOrder }
+                (binding.rvPoints.adapter as? PointAdapter)?.submitList(sortedPoints)
                 displayPointsOnMap()
 
                 binding.progressBar.visibility = View.GONE

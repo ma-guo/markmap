@@ -19,6 +19,11 @@ import com.zuxing.markmap.databinding.FragmentPointEditBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
 
 class PointEditFragment : Fragment() {
 
@@ -79,31 +84,10 @@ class PointEditFragment : Fragment() {
         app = requireActivity().application as MarkMapApplication
 
         isEditMode = args.pointId != -1L
-        setupToolbar()
         setupViews()
 
         if (isEditMode) {
             loadPoint()
-        }
-    }
-
-    private fun setupToolbar() {
-        binding.toolbar.title = if (isEditMode) "编辑点" else "新增点"
-        binding.toolbar.setNavigationOnClickListener {
-            findNavController().navigateUp()
-        }
-
-        if (isEditMode) {
-            binding.toolbar.inflateMenu(R.menu.menu_point_edit)
-            binding.toolbar.setOnMenuItemClickListener { menuItem ->
-                when (menuItem.itemId) {
-                    R.id.action_delete -> {
-                        showDeleteConfirmDialog()
-                        true
-                    }
-                    else -> false
-                }
-            }
         }
     }
 
@@ -113,6 +97,10 @@ class PointEditFragment : Fragment() {
 
         binding.btnSelectOnMap.setOnClickListener {
             navigateToPickLocation()
+        }
+
+        binding.btnFetchFromBaidu.setOnClickListener {
+            fetchFromBaidu()
         }
 
         binding.btnSave.setOnClickListener {
@@ -237,5 +225,58 @@ class PointEditFragment : Fragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+    }
+
+    private fun fetchFromBaidu() {
+        val latitude = binding.etLatitude.text.toString()
+        val longitude = binding.etLongitude.text.toString()
+
+        if (latitude.isBlank() || longitude.isBlank()) {
+            Toast.makeText(requireContext(), "请先填写经纬度", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        binding.btnFetchFromBaidu.isEnabled = false
+        binding.btnFetchFromBaidu.text = "获取中..."
+
+        val retrofit = Retrofit.Builder()
+            .baseUrl(BaiduConfig.baseUrl)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+
+        val service = retrofit.create(BaiduPlaceService::class.java)
+
+        service.reverseGeocoding(
+            latitude = latitude,
+            longitude = longitude,
+        ).enqueue(object : Callback<ReverseGeocodingResponse> {
+            override fun onResponse(call: Call<ReverseGeocodingResponse>, response: Response<ReverseGeocodingResponse>) {
+                binding.btnFetchFromBaidu.isEnabled = true
+                binding.btnFetchFromBaidu.text = "从百度获取"
+
+                if (response.isSuccessful) {
+                    val result = response.body()
+                    if (result != null && result.result == 0) {
+                        result.data?.let { geocodingResult ->
+                            binding.etAddress.setText(geocodingResult.address ?: "")
+                            binding.etDescription.setText(geocodingResult.description ?: "")
+
+                            Toast.makeText(requireContext(), "获取成功", Toast.LENGTH_SHORT).show()
+                        }
+                    } else {
+                        Toast.makeText(requireContext(), "获取失败: ${result?.message}", Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    Toast.makeText(requireContext(), "获取失败", Toast.LENGTH_SHORT).show()
+                }
+            }
+
+            override fun onFailure(call: Call<ReverseGeocodingResponse>, t: Throwable) {
+                binding.btnFetchFromBaidu.isEnabled = true
+                binding.btnFetchFromBaidu.text = "从百度获取"
+                Logger.e("从百度获取失败: ${t.message}")
+                Toast.makeText(requireContext(), "获取失败: ${t.message}", Toast.LENGTH_SHORT).show()
+            }
+        })
     }
 }
