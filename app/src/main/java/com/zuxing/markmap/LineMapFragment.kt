@@ -8,13 +8,11 @@ import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.baidu.mapapi.map.BaiduMap
 import com.baidu.mapapi.map.BitmapDescriptorFactory
 import com.baidu.mapapi.map.MapStatusUpdateFactory
 import com.baidu.mapapi.map.MapView
@@ -38,7 +36,7 @@ class LineMapFragment : Fragment() {
 
     private lateinit var mapView: MapView
     private lateinit var app: MarkMapApplication
-    private var pointList: List<PointEntity> = emptyList()
+    private var mapPointList: List<MapPointEntity> = emptyList()
     private var markerList: List<Overlay> = emptyList()
     private var polylineOverlay: Overlay? = null
     private var isPanelExpanded = false
@@ -47,6 +45,12 @@ class LineMapFragment : Fragment() {
     private var showInfo = true
     private var currentLineColor = Color.BLUE
     private var selectedPointId: Long? = null
+
+    data class MapPointEntity(
+        val lineSort: Int,
+        val point: PointEntity,
+        val pointSort: Int
+    )
 
     data class ColorData(val name: String, val color: Int)
     private val lineColors = listOf(
@@ -60,15 +64,15 @@ class LineMapFragment : Fragment() {
 
     private class PointAdapter(
         private val onPointClick: (PointEntity) -> Unit
-    ) : ListAdapter<PointEntity, PointAdapter.PointViewHolder>(PointDiffCallback()) {
+    ) : ListAdapter<MapPointEntity, PointAdapter.PointViewHolder>(PointDiffCallback()) {
 
         private var selectedPointId: Long? = null
 
         fun setSelectedPoint(pointId: Long?) {
             val oldId = selectedPointId
             selectedPointId = pointId
-            currentList.forEachIndexed { index, point ->
-                if (point.id == oldId || point.id == pointId) {
+            currentList.forEachIndexed { index, mapPoint ->
+                if (mapPoint.point.id == oldId || mapPoint.point.id == pointId) {
                     notifyItemChanged(index)
                 }
             }
@@ -89,7 +93,8 @@ class LineMapFragment : Fragment() {
             private val binding: ItemPointSimpleBinding
         ) : RecyclerView.ViewHolder(binding.root) {
 
-            fun bind(point: PointEntity) {
+            fun bind(mapPoint: MapPointEntity) {
+                val point = mapPoint.point
                 binding.tvPointDescription.text = when {
                     !point.description.isNullOrBlank() -> point.description
                     !point.address.isNullOrBlank() -> point.address
@@ -104,12 +109,12 @@ class LineMapFragment : Fragment() {
             }
         }
 
-        private class PointDiffCallback : DiffUtil.ItemCallback<PointEntity>() {
-            override fun areItemsTheSame(oldItem: PointEntity, newItem: PointEntity): Boolean {
-                return oldItem.id == newItem.id
+        private class PointDiffCallback : DiffUtil.ItemCallback<MapPointEntity>() {
+            override fun areItemsTheSame(oldItem: MapPointEntity, newItem: MapPointEntity): Boolean {
+                return oldItem.point.id == newItem.point.id
             }
 
-            override fun areContentsTheSame(oldItem: PointEntity, newItem: PointEntity): Boolean {
+            override fun areContentsTheSame(oldItem: MapPointEntity, newItem: MapPointEntity): Boolean {
                 return oldItem == newItem
             }
         }
@@ -256,30 +261,37 @@ class LineMapFragment : Fragment() {
 
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                pointList = when {
+                val rawPointList = when {
                     args.lineId != -1L -> {
-                        app.repository.getPointsByLineId(args.lineId).first()
+                        val points = app.repository.getPointsByLineId(args.lineId).first()
+                        points.map { point ->
+                            MapPointEntity(lineSort = 0, point = point, pointSort = point.sortOrder)
+                        }
                     }
                     args.groupId != -1L -> {
                         val lines = app.repository.getLinesByGroupId(args.groupId).first()
                         lines.flatMap { line ->
-                            app.repository.getPointsByLineId(line.id).first()
+                            val points = app.repository.getPointsByLineId(line.id).first()
+                            points.map { point ->
+                                MapPointEntity(lineSort = line.sortOrder, point = point, pointSort = point.sortOrder)
+                            }
                         }
                     }
                     else -> emptyList()
                 }
 
-                if (pointList.isEmpty()) {
+                mapPointList = rawPointList.sortedWith(compareBy({ it.lineSort }, { it.pointSort }))
+
+                if (mapPointList.isEmpty()) {
                     binding.tvPointCountList.text = "点数量: 0"
                     binding.tvPointCount.text = "点数量: 0"
                     binding.progressBar.visibility = View.GONE
                     return@launch
                 }
 
-                binding.tvPointCountList.text = "点数量: ${pointList.size}"
-                binding.tvPointCount.text = "点数量: ${pointList.size}"
-                val sortedPoints = pointList.sortedBy { it.sortOrder }
-                (binding.rvPoints.adapter as? PointAdapter)?.submitList(sortedPoints)
+                binding.tvPointCountList.text = "点数量: ${mapPointList.size}"
+                binding.tvPointCount.text = "点数量: ${mapPointList.size}"
+                (binding.rvPoints.adapter as? PointAdapter)?.submitList(mapPointList)
                 displayPointsOnMap()
 
                 binding.progressBar.visibility = View.GONE
@@ -291,20 +303,21 @@ class LineMapFragment : Fragment() {
     }
 
     private fun displayPointsOnMap() {
-        if (pointList.isEmpty()) return
+        if (mapPointList.isEmpty()) return
 
         clearMapOverlays()
 
-        val sortedPoints = pointList.sortedBy { it.sortOrder }
+        val sortedPoints = mapPointList.sortedWith(compareBy({ it.lineSort }, { it.pointSort }))
         val latLngList = mutableListOf<LatLng>()
 
-        sortedPoints.forEach { point ->
-            latLngList.add(LatLng(point.latitude, point.longitude))
+        sortedPoints.forEach { mapPoint ->
+            latLngList.add(LatLng(mapPoint.point.latitude, mapPoint.point.longitude))
         }
 
         if (showMarkers) {
             val markers = mutableListOf<Overlay>()
-            sortedPoints.forEachIndexed { _, point ->
+            sortedPoints.forEachIndexed { _, mapPoint ->
+                val point = mapPoint.point
                 val latLng = LatLng(point.latitude, point.longitude)
 
                 val title = if (showInfo) {
@@ -344,20 +357,21 @@ class LineMapFragment : Fragment() {
     }
 
     private fun updateMapDisplay() {
-        if (pointList.isEmpty()) return
+        if (mapPointList.isEmpty()) return
 
-        val sortedPoints = pointList.sortedBy { it.sortOrder }
+        val sortedPoints = mapPointList.sortedWith(compareBy({ it.lineSort }, { it.pointSort }))
         val latLngList = mutableListOf<LatLng>()
 
-        sortedPoints.forEach { point ->
-            latLngList.add(LatLng(point.latitude, point.longitude))
+        sortedPoints.forEach { mapPoint ->
+            latLngList.add(LatLng(mapPoint.point.latitude, mapPoint.point.longitude))
         }
 
         clearMapOverlays()
 
         if (showMarkers) {
             val markers = mutableListOf<Overlay>()
-            sortedPoints.forEachIndexed { _, point ->
+            sortedPoints.forEachIndexed { _, mapPoint ->
+                val point = mapPoint.point
                 val latLng = LatLng(point.latitude, point.longitude)
 
                 val title = if (showInfo) {
@@ -401,9 +415,9 @@ class LineMapFragment : Fragment() {
             overlay.remove()
         }
 
-        if (pointList.size >= 2) {
-            val sortedPoints = pointList.sortedBy { it.sortOrder }
-            val latLngList = sortedPoints.map { LatLng(it.latitude, it.longitude) }
+        if (mapPointList.size >= 2) {
+            val sortedPoints = mapPointList.sortedWith(compareBy({ it.lineSort }, { it.pointSort }))
+            val latLngList = sortedPoints.map { LatLng(it.point.latitude, it.point.longitude) }
 
             val polylineOptions = PolylineOptions()
                 .points(latLngList)
@@ -415,16 +429,17 @@ class LineMapFragment : Fragment() {
     }
 
     private fun updateMarkers() {
-        if (pointList.isEmpty()) return
+        if (mapPointList.isEmpty()) return
 
-        val sortedPoints = pointList.sortedBy { it.sortOrder }
+        val sortedPoints = mapPointList.sortedWith(compareBy({ it.lineSort }, { it.pointSort }))
 
         markerList.forEach { it.remove() }
         markerList = emptyList()
 
         if (showMarkers) {
             val markers = mutableListOf<Overlay>()
-            sortedPoints.forEachIndexed { _, point ->
+            sortedPoints.forEachIndexed { _, mapPoint ->
+                val point = mapPoint.point
                 val latLng = LatLng(point.latitude, point.longitude)
 
                 val title = if (showInfo) {
