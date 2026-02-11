@@ -11,8 +11,11 @@ import kotlinx.coroutines.flow.Flow
  */
 @Dao
 interface GroupDao {
-    @Query("SELECT * FROM groups WHERE isDeleted = 0 ORDER BY sortOrder ASC, modifyTime DESC")
+    @Query("SELECT * FROM groups WHERE isDeleted = 0 ORDER BY sortOrder DESC, modifyTime DESC")
     fun getAllGroups(): Flow<List<GroupEntity>>
+
+    @Query("SELECT MAX(sortOrder) FROM groups WHERE isDeleted = 0")
+    suspend fun getMaxSortOrder(): Int?
 
     @Query("SELECT * FROM groups WHERE isDeleted = 1 ORDER BY deleteTime DESC")
     fun getDeletedGroups(): Flow<List<GroupEntity>>

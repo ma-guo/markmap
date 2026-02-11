@@ -3,8 +3,11 @@ package com.zuxing.markmap
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import android.view.Menu
+import android.view.MenuItem
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.addTextChangedListener
 import androidx.lifecycle.lifecycleScope
@@ -79,6 +82,54 @@ class PointEditActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         binding.toolbar.setNavigationOnClickListener {
             finish()
+        }
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.menu_point_edit, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.action_delete -> {
+                showDeleteConfirmationDialog()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
+
+    private fun showDeleteConfirmationDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("删除确认")
+            .setMessage("确定要删除这个点吗？此操作不可恢复。")
+            .setPositiveButton("删除") { _, _ ->
+                deletePoint()
+            }
+            .setNegativeButton("取消", null)
+            .show()
+    }
+
+    private fun deletePoint() {
+        if (!isEditMode || currentPoint == null) {
+            Toast.makeText(this, "无法删除", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                app.repository.deletePoint(currentPoint!!)
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@PointEditActivity, "删除成功", Toast.LENGTH_SHORT).show()
+                    finish()
+                }
+            } catch (e: Exception) {
+                Logger.e("删除点失败: ${e.message}")
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@PointEditActivity, "删除失败", Toast.LENGTH_SHORT).show()
+                }
+            }
         }
     }
 

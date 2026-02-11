@@ -73,7 +73,7 @@
                 android:layout_marginTop="4dp"
                 android:text="保存"
                 android:textSize="12sp"
-                app:icon="@android:drawable/ic_menu_save"
+                app:icon="@drawable/save_24px"
                 app:iconSize="16dp" />
 
         </LinearLayout>
@@ -132,7 +132,7 @@
         android:layout_marginEnd="16dp"
         android:layout_marginBottom="80dp"
         android:contentDescription="后台定位"
-        android:src="@android:drawable/ic_lock_lock"
+        android:src="@drawable/lock_24px"
         app:backgroundTint="@color/purple_500"
         app:layout_constraintBottom_toTopOf="@id/infoPanel"
         app:layout_constraintEnd_toEndOf="parent"
@@ -145,7 +145,7 @@
         android:layout_marginEnd="16dp"
         android:layout_marginBottom="16dp"
         android:contentDescription="定位"
-        android:src="@android:drawable/ic_menu_mylocation"
+        android:src="@drawable/my_location_24px"
         app:backgroundTint="@color/teal_200"
         app:layout_constraintBottom_toTopOf="@id/infoPanel"
         app:layout_constraintEnd_toEndOf="parent"

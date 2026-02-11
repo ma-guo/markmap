@@ -167,7 +167,7 @@
                 android:layout_height="20dp"
                 android:layout_marginStart="4dp"
                 android:contentDescription="切换列表"
-                android:src="@android:drawable/arrow_up_float" />
+                android:src="@drawable/arrow_drop_up_24px" />
 
         </LinearLayout>
 

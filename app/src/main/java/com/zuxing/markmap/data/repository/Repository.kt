@@ -38,6 +38,8 @@ class Repository(
 
     suspend fun getGroupCount(): Int = groupDao.getGroupCount()
 
+    suspend fun getMaxGroupSortOrder(): Int = groupDao.getMaxSortOrder() ?: 0
+
     // ===== 线操作 =====
 
     fun getLinesByGroupId(groupId: Long): Flow<List<LineEntity>> =

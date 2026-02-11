@@ -16,8 +16,10 @@ import com.baidu.mapapi.map.BitmapDescriptorFactory
 import com.baidu.mapapi.map.MapStatusUpdateFactory
 import com.baidu.mapapi.map.MapView
 import com.baidu.mapapi.map.Marker
+import com.baidu.mapapi.map.MarkerOptions
 import com.baidu.mapapi.map.Overlay
 import com.baidu.mapapi.map.PolylineOptions
+import com.baidu.mapapi.map.TitleOptions
 import com.baidu.mapapi.model.LatLng
 import com.baidu.mapapi.model.LatLngBounds
 import com.zuxing.markmap.data.entity.PointEntity
@@ -55,6 +57,7 @@ class LineMapActivity : AppCompatActivity() {
     )
 
     data class ColorData(val name: String, val color: Int)
+
     private val lineColors = listOf(
         ColorData("蓝色", Color.BLUE),
         ColorData("红色", Color.RED),
@@ -76,6 +79,7 @@ class LineMapActivity : AppCompatActivity() {
             currentList.forEachIndexed { index, mapPoint ->
                 if (mapPoint.point.id == oldId || mapPoint.point.id == pointId) {
                     notifyItemChanged(index)
+
                 }
             }
         }
@@ -171,7 +175,9 @@ class LineMapActivity : AppCompatActivity() {
     private fun centerOnPoint(point: PointEntity) {
         val latLng = LatLng(point.latitude, point.longitude)
         val update = MapStatusUpdateFactory.newLatLng(latLng)
+        selectedPointId = point.id
         mapView.map.animateMapStatus(update)
+        updateMarkers()
     }
 
     private fun setupToggleList() {
@@ -196,7 +202,7 @@ class LineMapActivity : AppCompatActivity() {
             .translationY(0f)
             .setDuration(200)
             .start()
-        binding.ivToggleIcon.setImageResource(android.R.drawable.arrow_down_float)
+        binding.ivToggleIcon.setImageResource(R.drawable.keyboard_arrow_down_24px)
     }
 
     private fun collapseList() {
@@ -208,8 +214,9 @@ class LineMapActivity : AppCompatActivity() {
                 binding.cardPointList.visibility = View.GONE
             }
             .start()
-        binding.ivToggleIcon.setImageResource(android.R.drawable.arrow_up_float)
+        binding.ivToggleIcon.setImageResource(R.drawable.arrow_drop_up_24px)
     }
+
 
     private fun setupControlPanel() {
         binding.expandCard.setOnClickListener {
@@ -283,6 +290,7 @@ class LineMapActivity : AppCompatActivity() {
                             MapPointEntity(lineSort = 0, point = point, pointSort = point.sortOrder)
                         }
                     }
+
                     groupId != -1L -> {
                         val lines = app.repository.getLinesByGroupId(groupId).first()
                         lines.flatMap { line ->
@@ -292,6 +300,7 @@ class LineMapActivity : AppCompatActivity() {
                             }
                         }
                     }
+
                     else -> emptyList()
                 }
 
@@ -362,6 +371,14 @@ class LineMapActivity : AppCompatActivity() {
         }
     }
 
+    private fun shouldShowMarker(mapPoint: MapPointEntity, sortedPoints: List<MapPointEntity>): Boolean {
+        val pointId = mapPoint.point.id
+        val isStartPoint = pointId == sortedPoints.firstOrNull()?.point?.id
+        val isEndPoint = pointId == sortedPoints.lastOrNull()?.point?.id
+        val isSelectedPoint = pointId == selectedPointId
+        return isStartPoint || isEndPoint || isSelectedPoint
+    }
+
     private fun displayPointsOnMap() {
         if (mapPointList.isEmpty()) return
 
@@ -376,23 +393,36 @@ class LineMapActivity : AppCompatActivity() {
 
         if (showMarkers) {
             val markers = mutableListOf<Overlay>()
-            sortedPoints.forEachIndexed { _, mapPoint ->
-                val point = mapPoint.point
-                val latLng = LatLng(point.latitude, point.longitude)
+            sortedPoints.forEachIndexed { index, mapPoint ->
+                if (shouldShowMarker(mapPoint, sortedPoints)) {
+                    val point = mapPoint.point
+                    val latLng = LatLng(point.latitude, point.longitude)
 
-                val title = if (showInfo) {
-                    point.description ?: ""
-                } else {
-                    ""
+                    val title = if (showInfo) {
+                        point.description ?: ""
+                    } else {
+                        ""
+                    }
+
+                    val iconRes = when {
+                        point.id == sortedPoints.firstOrNull()?.point?.id -> R.drawable.location_on_48dp_start
+                        point.id == sortedPoints.lastOrNull()?.point?.id -> R.drawable.location_on_48dp_end
+                        point.id == selectedPointId -> R.drawable.flag_48dp_opsz48
+                        else -> R.drawable.location_on_48dp_opsz48
+                    }
+                    val titleOption = TitleOptions()
+                        .text(title)
+                        .titleFontSize(14)
+
+                    val markerOptions = MarkerOptions()
+                        .position(latLng)
+                        .icon(BitmapDescriptorFactory.fromResource(iconRes))
+                        .title(title)
+                        .titleOptions(titleOption)
+
+                    val marker = mapView.map.addOverlay(markerOptions) as Marker
+                    markers.add(marker)
                 }
-
-                val markerOptions = com.baidu.mapapi.map.MarkerOptions()
-                    .position(latLng)
-                    .icon(BitmapDescriptorFactory.fromResource(android.R.drawable.ic_menu_compass))
-                    .title(title)
-
-                val marker = mapView.map.addOverlay(markerOptions) as Marker
-                markers.add(marker)
             }
             markerList = markers
         }
@@ -431,22 +461,31 @@ class LineMapActivity : AppCompatActivity() {
         if (showMarkers) {
             val markers = mutableListOf<Overlay>()
             sortedPoints.forEachIndexed { _, mapPoint ->
-                val point = mapPoint.point
-                val latLng = LatLng(point.latitude, point.longitude)
+                if (shouldShowMarker(mapPoint, sortedPoints)) {
+                    val point = mapPoint.point
+                    val latLng = LatLng(point.latitude, point.longitude)
 
-                val title = if (showInfo) {
-                    point.description ?: ""
-                } else {
-                    ""
+                    val title = if (showInfo) {
+                        point.description ?: ""
+                    } else {
+                        ""
+                    }
+
+                    val iconRes = when {
+                        point.id == sortedPoints.firstOrNull()?.point?.id -> R.drawable.location_on_48dp_start
+                        point.id == sortedPoints.lastOrNull()?.point?.id -> R.drawable.location_on_48dp_end
+                        point.id == selectedPointId -> R.drawable.flag_48dp_opsz48
+                        else -> R.drawable.location_on_48dp_opsz48
+                    }
+
+                    val markerOptions = MarkerOptions()
+                        .position(latLng)
+                        .icon(BitmapDescriptorFactory.fromResource(iconRes))
+                        .title(title)
+
+                    val marker = mapView.map.addOverlay(markerOptions) as Marker
+                    markers.add(marker)
                 }
-
-                val markerOptions = com.baidu.mapapi.map.MarkerOptions()
-                    .position(latLng)
-                    .icon(BitmapDescriptorFactory.fromResource(android.R.drawable.ic_menu_compass))
-                    .title(title)
-
-                val marker = mapView.map.addOverlay(markerOptions) as Marker
-                markers.add(marker)
             }
             markerList = markers
         }
@@ -499,22 +538,31 @@ class LineMapActivity : AppCompatActivity() {
         if (showMarkers) {
             val markers = mutableListOf<Overlay>()
             sortedPoints.forEachIndexed { _, mapPoint ->
-                val point = mapPoint.point
-                val latLng = LatLng(point.latitude, point.longitude)
+                if (shouldShowMarker(mapPoint, sortedPoints)) {
+                    val point = mapPoint.point
+                    val latLng = LatLng(point.latitude, point.longitude)
 
-                val title = if (showInfo) {
-                    point.description ?: ""
-                } else {
-                    ""
+                    val title = if (showInfo) {
+                        point.description ?: ""
+                    } else {
+                        ""
+                    }
+
+                    val iconRes = when {
+                        point.id == sortedPoints.firstOrNull()?.point?.id -> R.drawable.location_on_48dp_start
+                        point.id == sortedPoints.lastOrNull()?.point?.id -> R.drawable.location_on_48dp_end
+                        point.id == selectedPointId -> R.drawable.flag_48dp_opsz48
+                        else -> R.drawable.location_on_48dp_opsz48
+                    }
+
+                    val markerOptions = MarkerOptions()
+                        .position(latLng)
+                        .icon(BitmapDescriptorFactory.fromResource(iconRes))
+                        .title(title)
+
+                    val marker = mapView.map.addOverlay(markerOptions) as Marker
+                    markers.add(marker)
                 }
-
-                val markerOptions = com.baidu.mapapi.map.MarkerOptions()
-                    .position(latLng)
-                    .icon(BitmapDescriptorFactory.fromResource(android.R.drawable.ic_menu_compass))
-                    .title(title)
-
-                val marker = mapView.map.addOverlay(markerOptions) as Marker
-                markers.add(marker)
             }
             markerList = markers
         }

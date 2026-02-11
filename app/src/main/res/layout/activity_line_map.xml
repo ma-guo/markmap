@@ -52,7 +52,7 @@
                 android:layout_height="match_parent"
                 android:contentDescription="展开面板"
                 android:padding="12dp"
-                android:src="@android:drawable/ic_menu_manage" />
+                android:src="@drawable/explore_24px" />
 
         </androidx.cardview.widget.CardView>
 
@@ -167,7 +167,7 @@
                 android:layout_height="20dp"
                 android:layout_marginStart="4dp"
                 android:contentDescription="切换列表"
-                android:src="@android:drawable/arrow_up_float" />
+                android:src="@drawable/arrow_drop_up_24px" />
 
         </LinearLayout>
 

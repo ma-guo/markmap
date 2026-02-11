@@ -97,7 +97,8 @@ class LocationService : Service() {
             locationMode = LocationClientOption.LocationMode.Battery_Saving
             setCoorType("bd09ll")
             setScanSpan(60000) // 1分钟
-            setOpenGps(true)
+            isOpenGps = true
+            isOpenGnss = true
             setIsNeedAddress(true)
         }
         locationClient.locOption = option

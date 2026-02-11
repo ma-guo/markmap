@@ -85,9 +85,11 @@ class GroupEditActivity : AppCompatActivity() {
                 val group = currentGroup!!.copy(name = name)
                 app.repository.updateGroup(group)
             } else {
+                val maxSortOrder = app.repository.getMaxGroupSortOrder()
                 val group = GroupEntity(
                     id = if (isEditMode) groupId else 0,
                     name = name,
+                    sortOrder = maxSortOrder + 1,
                     createTime = currentGroup?.createTime ?: System.currentTimeMillis()
                 )
                 if (isEditMode) {
