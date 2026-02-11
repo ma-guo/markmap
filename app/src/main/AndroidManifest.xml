@@ -71,6 +71,36 @@
             android:name=".LineMapActivity"
             android:exported="false"
             android:theme="@style/Theme.MarkMap" />
+
+        <activity
+            android:name=".LineEditActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MarkMap" />
+
+        <activity
+            android:name=".LineListActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MarkMap" />
+
+        <activity
+            android:name=".PointListActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MarkMap" />
+
+        <activity
+            android:name=".GroupEditActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MarkMap" />
+
+        <activity
+            android:name=".MapActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MarkMap" />
+
+        <activity
+            android:name=".GroupListActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MarkMap" />
     </application>
 
 </manifest>

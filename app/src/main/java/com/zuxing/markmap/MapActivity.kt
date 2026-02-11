@@ -3,16 +3,12 @@ package com.zuxing.markmap
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
-import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
-import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.Lifecycle
-import androidx.navigation.fragment.navArgs
 import com.baidu.location.BDAbstractLocationListener
 import com.baidu.location.BDLocation
 import com.baidu.location.LocationClient
@@ -36,12 +32,11 @@ import java.util.Locale
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
-class MapFragment : Fragment() {
+class MapActivity : AppCompatActivity() {
 
-    private var _binding: FragmentMapBinding? = null
-    private val binding get() = _binding!!
+    private lateinit var binding: FragmentMapBinding
 
-    private val args: MapFragmentArgs by navArgs()
+    private var lineId: Long = -1L
 
     private lateinit var mapView: MapView
     private lateinit var locationClient: LocationClient
@@ -64,24 +59,21 @@ class MapFragment : Fragment() {
         if (fineLocationGranted || coarseLocationGranted) {
             startLocation()
         } else {
-            Toast.makeText(requireContext(), "需要定位权限", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "需要定位权限", Toast.LENGTH_LONG).show()
         }
     }
 
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-        _binding = FragmentMapBinding.inflate(inflater, container, false)
-        return binding.root
-    }
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        binding = FragmentMapBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        app = requireActivity().application as MarkMapApplication
+        lineId = intent.getLongExtra("lineId", -1L)
+
+        app = application as MarkMapApplication
         mapView = binding.bmapView
 
+        setupToolbar()
         mapView.map.isMyLocationEnabled = true
 
         mapView.map.setOnMapStatusChangeListener(object : com.baidu.mapapi.map.BaiduMap.OnMapStatusChangeListener {
@@ -96,7 +88,7 @@ class MapFragment : Fragment() {
         setupLocationClient()
         setupClickListeners()
 
-        if (args.lineId != -1L) {
+        if (lineId != -1L) {
             binding.fabMark.visibility = View.VISIBLE
         } else {
             binding.fabMark.visibility = View.GONE
@@ -111,8 +103,15 @@ class MapFragment : Fragment() {
         updateCenterLocation()
     }
 
+    private fun setupToolbar() {
+        setSupportActionBar(binding.toolbar)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        binding.toolbar.setNavigationOnClickListener {
+            finish()
+        }
+    }
+
     private fun updateCenterLocation() {
-        if (!isAdded || _binding == null) return
         val centerLatLng = mapView.map.mapStatus.target
         val sb = StringBuilder().apply {
             append("中心位置\n")
@@ -123,12 +122,12 @@ class MapFragment : Fragment() {
     }
 
     private fun setupLocationClient() {
-        locationClient = LocationClient(requireContext())
+        locationClient = LocationClient(this)
 
         locationClient.registerLocationListener(object : BDAbstractLocationListener() {
             override fun onReceiveLocation(location: BDLocation?) {
                 location?.let {
-                    activity?.runOnUiThread {
+                    runOnUiThread {
                         processLocation(it)
                     }
                 }
@@ -182,16 +181,16 @@ class MapFragment : Fragment() {
         }
 
         binding.fabMark.setOnClickListener {
-            if (args.lineId != -1L) {
+            if (lineId != -1L) {
                 markPoint()
             }
         }
 
         binding.btnSaveCenter.setOnClickListener {
-            if (args.lineId != -1L) {
+            if (lineId != -1L) {
                 saveCenterPoint()
             } else {
-                Toast.makeText(requireContext(), "请先选择路线", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "请先选择路线", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -199,47 +198,44 @@ class MapFragment : Fragment() {
     private fun markPoint() {
         val location = currentLocation
         if (location == null) {
-            Toast.makeText(requireContext(), "请先获取定位信息", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "请先获取定位信息", Toast.LENGTH_SHORT).show()
             return
         }
 
         if (location.locType != BDLocation.TypeGpsLocation &&
             location.locType != BDLocation.TypeNetWorkLocation &&
             location.locType != BDLocation.TypeOffLineLocation) {
-            Toast.makeText(requireContext(), "定位失败，无法标记", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "定位失败，无法标记", Toast.LENGTH_SHORT).show()
             return
         }
 
         lifecycleScope.launch {
-            if (lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
-                try {
-                    val maxSortOrder = getMaxSortOrder(args.lineId)
-                    val sortOrder = maxSortOrder + 1
+            try {
+                val maxSortOrder = getMaxSortOrder(lineId)
+                val sortOrder = maxSortOrder + 1
 
-                    val point = PointEntity(
-                        lineId = args.lineId,
-                        longitude = location.longitude,
-                        latitude = location.latitude,
-                        altitude = if (location.hasAltitude()) location.altitude else null,
-                        address = location.addrStr,
-                        description = location.locationDescribe,
-                        sortOrder = sortOrder,
-                        createTime = System.currentTimeMillis(),
-                        modifyTime = System.currentTimeMillis()
-                    )
+                val point = PointEntity(
+                    lineId = lineId,
+                    longitude = location.longitude,
+                    latitude = location.latitude,
+                    altitude = if (location.hasAltitude()) location.altitude else null,
+                    address = location.addrStr,
+                    description = location.locationDescribe,
+                    sortOrder = sortOrder,
+                    createTime = System.currentTimeMillis(),
+                    modifyTime = System.currentTimeMillis()
+                )
 
-                    app.repository.insertPoint(point)
-                    Toast.makeText(requireContext(), "已保存", Toast.LENGTH_SHORT).show()
-                } catch (e: Exception) {
-                    Logger.e("保存点失败: ${e.message}")
-                    Toast.makeText(requireContext(), "保存失败", Toast.LENGTH_SHORT).show()
-                }
+                app.repository.insertPoint(point)
+                Toast.makeText(this@MapActivity, "已保存", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                Logger.e("保存点失败: ${e.message}")
+                Toast.makeText(this@MapActivity, "保存失败", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
     private fun saveCenterPoint() {
-        if (!isAdded || _binding == null) return
         val centerLatLng = mapView.map.mapStatus.target
         val latitude = centerLatLng.latitude
         val longitude = centerLatLng.longitude
@@ -249,13 +245,11 @@ class MapFragment : Fragment() {
             .scaleY(0.8f)
             .setDuration(150)
             .withEndAction {
-                if (isAdded && _binding != null) {
-                    binding.btnSaveCenter.animate()
-                        .scaleX(1.0f)
-                        .scaleY(1.0f)
-                        .setDuration(150)
-                        .start()
-                }
+                binding.btnSaveCenter.animate()
+                    .scaleX(1.0f)
+                    .scaleY(1.0f)
+                    .setDuration(150)
+                    .start()
             }
             .start()
 
@@ -287,7 +281,7 @@ class MapFragment : Fragment() {
                         address = result.data?.address?:""
                         description = result.data?.description?:""
                     } else {
-                        Toast.makeText(requireContext(), result?.message?:"未知错误", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@MapActivity, result?.message?:"未知错误", Toast.LENGTH_SHORT).show()
                     }
                 }
 
@@ -304,11 +298,11 @@ class MapFragment : Fragment() {
     private fun savePointToDatabase(latitude: Double, longitude: Double, address: String, description: String) {
         lifecycleScope.launch {
             try {
-                val maxSortOrder = getMaxSortOrder(args.lineId)
+                val maxSortOrder = getMaxSortOrder(lineId)
                 val sortOrder = maxSortOrder + 1
 
                 val point = PointEntity(
-                    lineId = args.lineId,
+                    lineId = lineId,
                     longitude = longitude,
                     latitude = latitude,
                     altitude = null,
@@ -321,14 +315,12 @@ class MapFragment : Fragment() {
 
                 app.repository.insertPoint(point)
 
-                activity?.runOnUiThread {
-                    if (!isAdded || _binding == null) return@runOnUiThread
+                runOnUiThread {
                     binding.btnSaveCenter.animate()
                         .scaleX(1.2f)
                         .scaleY(1.2f)
                         .setDuration(200)
                         .withEndAction {
-                            if (!isAdded || _binding == null) return@withEndAction
                             binding.btnSaveCenter.animate()
                                 .scaleX(1.0f)
                                 .scaleY(1.0f)
@@ -338,21 +330,19 @@ class MapFragment : Fragment() {
                         .start()
 
                     binding.btnSaveCenter.text = "已保存"
-                    Toast.makeText(requireContext(), "位置已保存", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@MapActivity, "位置已保存", Toast.LENGTH_SHORT).show()
 
                     binding.btnSaveCenter.postDelayed({
-                        if (!isAdded || _binding == null) return@postDelayed
                         binding.btnSaveCenter.text = "保存"
                         binding.btnSaveCenter.isEnabled = true
                     }, 2000)
                 }
             } catch (e: Exception) {
                 Logger.e("保存点失败: ${e.message}")
-                activity?.runOnUiThread {
-                    if (!isAdded || _binding == null) return@runOnUiThread
+                runOnUiThread {
                     binding.btnSaveCenter.text = "保存"
                     binding.btnSaveCenter.isEnabled = true
-                    Toast.makeText(requireContext(), "保存失败", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@MapActivity, "保存失败", Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -371,17 +361,17 @@ class MapFragment : Fragment() {
     private fun toggleBackgroundLocation() {
         isBackgroundLocationEnabled = !isBackgroundLocationEnabled
         if (isBackgroundLocationEnabled) {
-            LocationService.start(requireContext())
-            Toast.makeText(requireContext(), "后台定位已开启", Toast.LENGTH_SHORT).show()
+            LocationService.start(this)
+            Toast.makeText(this, "后台定位已开启", Toast.LENGTH_SHORT).show()
         } else {
-            LocationService.stop(requireContext())
-            Toast.makeText(requireContext(), "后台定位已关闭", Toast.LENGTH_SHORT).show()
+            LocationService.stop(this)
+            Toast.makeText(this, "后台定位已关闭", Toast.LENGTH_SHORT).show()
         }
     }
 
     private fun checkPermissions(): Boolean {
         return requiredPermissions.all { permission ->
-            ContextCompat.checkSelfPermission(requireContext(), permission) == PackageManager.PERMISSION_GRANTED
+            ContextCompat.checkSelfPermission(this, permission) == PackageManager.PERMISSION_GRANTED
         }
     }
 
@@ -390,7 +380,6 @@ class MapFragment : Fragment() {
     }
 
     private fun startLocation() {
-        if (!isAdded || _binding == null) return
         binding.progressBar.visibility = View.VISIBLE
         Logger.d("开始定位, isStarted=${locationClient.isStarted}")
         if (!locationClient.isStarted) {
@@ -400,7 +389,6 @@ class MapFragment : Fragment() {
     }
 
     private fun processLocation(location: BDLocation) {
-        if (!isAdded || _binding == null) return
         binding.progressBar.visibility = View.GONE
         currentLocation = location
 
@@ -431,8 +419,6 @@ class MapFragment : Fragment() {
                 val update = MapStatusUpdateFactory.newLatLng(ll)
                 mapView.map.animateMapStatus(update)
             }
-
-//            fetchNearbyPlaces(location.latitude, location.longitude)
         } else {
             binding.tvLocationInfo.text = "定位失败，错误码: ${location.locType}"
         }
@@ -448,11 +434,10 @@ class MapFragment : Fragment() {
         mapView.onPause()
     }
 
-    override fun onDestroyView() {
-        super.onDestroyView()
+    override fun onDestroy() {
+        super.onDestroy()
         mapView.map.isMyLocationEnabled = false
         locationClient.stop()
         mapView.onDestroy()
-        _binding = null
     }
 }

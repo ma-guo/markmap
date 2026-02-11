@@ -1,14 +1,11 @@
 package com.zuxing.markmap
 
+import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
-import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
-import androidx.fragment.app.Fragment
+import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
-import androidx.navigation.fragment.findNavController
-import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.zuxing.markmap.data.adapter.PointAdapter
 import com.zuxing.markmap.databinding.FragmentPointListBinding
@@ -17,57 +14,52 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class PointListFragment : Fragment() {
+class PointListActivity : AppCompatActivity() {
 
-    private var _binding: FragmentPointListBinding? = null
-    private val binding get() = _binding!!
-
-    private val args: PointListFragmentArgs by navArgs()
-
+    private lateinit var binding: FragmentPointListBinding
     private lateinit var app: MarkMapApplication
     private lateinit var adapter: PointAdapter
     private lateinit var prefs: SharedPreferences
+    private var lineId: Long = -1L
 
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-        _binding = FragmentPointListBinding.inflate(inflater, container, false)
-        return binding.root
-    }
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        binding = FragmentPointListBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        app = requireActivity().application as MarkMapApplication
-        prefs = requireActivity().getSharedPreferences("scroll_positions", 0)
+        lineId = intent.getLongExtra("lineId", -1L)
+        app = application as MarkMapApplication
+        prefs = getSharedPreferences("scroll_positions", 0)
 
+        setupToolbar()
         setupRecyclerView()
         loadPoints()
     }
 
-    override fun onPause() {
-        super.onPause()
-        saveScrollPosition()
-    }
-
-    private fun saveScrollPosition() {
-        if (_binding != null) {
-            val position = (binding.recyclerView.layoutManager as? LinearLayoutManager)
-                ?.findFirstCompletelyVisibleItemPosition() ?: 0
-            prefs.edit().putInt("point_list_${args.lineId}", position).apply()
+    private fun setupToolbar() {
+        setSupportActionBar(binding.toolbar)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        binding.toolbar.setNavigationOnClickListener {
+            finish()
         }
     }
 
+    override fun onPause() {
+        super.onPause()
+        val position = (binding.recyclerView.layoutManager as? LinearLayoutManager)
+            ?.findFirstCompletelyVisibleItemPosition() ?: 0
+        prefs.edit().putInt("point_list_$lineId", position).apply()
+    }
+
     private fun getSavedScrollPosition(): Int {
-        return prefs.getInt("point_list_${args.lineId}", 0)
+        return prefs.getInt("point_list_$lineId", 0)
     }
 
     private fun setupRecyclerView() {
         adapter = PointAdapter { point ->
             navigateToEdit(point.id)
         }
-        binding.recyclerView.layoutManager = LinearLayoutManager(requireContext())
+        binding.recyclerView.layoutManager = LinearLayoutManager(this)
         binding.recyclerView.adapter = adapter
 
         binding.fabAdd.setOnClickListener {
@@ -81,8 +73,8 @@ class PointListFragment : Fragment() {
 
     private fun loadPoints() {
         binding.progressBar.visibility = View.VISIBLE
-        viewLifecycleOwner.lifecycleScope.launch {
-            app.repository.getPointsByLineId(args.lineId).collectLatest { points ->
+        lifecycleScope.launch {
+            app.repository.getPointsByLineId(lineId).collectLatest { points ->
                 binding.progressBar.visibility = View.GONE
                 if (points.isEmpty()) {
                     binding.tvEmpty.visibility = View.VISIBLE
@@ -103,36 +95,36 @@ class PointListFragment : Fragment() {
     }
 
     private fun navigateToEdit(pointId: Long) {
-        val intent = android.content.Intent(requireContext(), PointEditActivity::class.java).apply {
-            putExtra("lineId", args.lineId)
+        val intent = Intent(this, PointEditActivity::class.java).apply {
+            putExtra("lineId", lineId)
             putExtra("pointId", pointId)
         }
         startActivity(intent)
     }
 
     private fun navigateToMap() {
-        val action = PointListFragmentDirections.actionPointListFragmentToMapFragment(
-            lineId = args.lineId
-        )
-        findNavController().navigate(action)
+        val intent = Intent(this, MapActivity::class.java).apply {
+            putExtra("lineId", lineId)
+        }
+        startActivity(intent)
     }
 
     private fun navigateToLineMap() {
-        viewLifecycleOwner.lifecycleScope.launch {
+        lifecycleScope.launch {
             val line = withContext(Dispatchers.IO) {
-                app.repository.getLineById(args.lineId)
+                app.repository.getLineById(lineId)
             }
             val groupId = line?.groupId ?: -1L
-            val intent = android.content.Intent(requireContext(), LineMapActivity::class.java).apply {
-                putExtra("lineId", args.lineId)
+            val intent = Intent(this@PointListActivity, LineMapActivity::class.java).apply {
+                putExtra("lineId", lineId)
                 putExtra("groupId", groupId)
             }
             startActivity(intent)
         }
     }
 
-    override fun onDestroyView() {
-        super.onDestroyView()
-        _binding = null
+    override fun onResume() {
+        super.onResume()
+        loadPoints()
     }
 }
