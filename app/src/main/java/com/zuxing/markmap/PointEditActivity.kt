@@ -180,7 +180,7 @@ class PointEditActivity : AppCompatActivity() {
 
             withContext(Dispatchers.Main) {
                 Toast.makeText(this@PointEditActivity, "保存成功", Toast.LENGTH_SHORT).show()
-                finish()
+//                finish()
             }
         }
     }
@@ -198,16 +198,15 @@ class PointEditActivity : AppCompatActivity() {
         binding.btnFetchFromBaidu.text = "获取中..."
 
         val retrofit = retrofit2.Retrofit.Builder()
-            .baseUrl("https://api.map.baidu.com/")
+            .baseUrl(BaiduConfig.baseUrl)
             .addConverterFactory(retrofit2.converter.gson.GsonConverterFactory.create())
             .build()
 
         val service = retrofit.create(BaiduPlaceService::class.java)
 
         service.reverseGeocoding(
-            location = "$latitude,$longitude",
-            output = "json",
-            ak = BaiduConfig.API_KEY
+            latitude = latitude.toString(),
+            longitude = longitude.toString(),
         ).enqueue(object : retrofit2.Callback<ReverseGeocodingResponse> {
             override fun onResponse(call: retrofit2.Call<ReverseGeocodingResponse>, response: retrofit2.Response<ReverseGeocodingResponse>) {
                 binding.btnFetchFromBaidu.isEnabled = true
@@ -215,24 +214,11 @@ class PointEditActivity : AppCompatActivity() {
 
                 if (response.isSuccessful) {
                     val result = response.body()
-                    if (result != null && result.status == "0") {
-                        result.result?.let { geocodingResult ->
-                            binding.etAddress.setText(geocodingResult.formattedAddress ?: "")
+                    if (result != null && result.result == 0) {
+                        result.data?.let { geocodingResult ->
+                            binding.etAddress.setText(geocodingResult.address ?: "")
 
-                            geocodingResult.pois?.firstOrNull()?.let { poi ->
-                                binding.etDescription.setText(poi.name ?: "")
-                            } ?: geocodingResult.sematicDescription?.let { desc ->
-                                if (binding.etDescription.text.isNullOrBlank()) {
-                                    binding.etDescription.setText(desc)
-                                }
-                            }
-
-                            geocodingResult.location?.let { loc ->
-                                loc.altitude?.let { altitude ->
-                                    binding.etAltitude.setText(String.format("%.1f", altitude))
-                                }
-                            }
-
+                            binding.etDescription.setText(geocodingResult.description?:"")
                             Toast.makeText(this@PointEditActivity, "获取成功", Toast.LENGTH_SHORT).show()
                         }
                     } else {
@@ -256,37 +242,4 @@ class PointEditActivity : AppCompatActivity() {
         val sdf = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault())
         return sdf.format(java.util.Date(time))
     }
-
-    interface BaiduPlaceService {
-        @retrofit2.http.GET("geocoding/v3/")
-        fun reverseGeocoding(
-            @retrofit2.http.Query("location") location: String,
-            @retrofit2.http.Query("output") output: String,
-            @retrofit2.http.Query("ak") ak: String
-        ): retrofit2.Call<ReverseGeocodingResponse>
-    }
-
-    data class ReverseGeocodingResponse(
-        val status: String,
-        val message: String?,
-        val result: GeocodingResult?
-    )
-
-    data class GeocodingResult(
-        val formattedAddress: String?,
-        val location: LocationInfo?,
-        val pois: List<PoiInfo>?,
-        val sematicDescription: String?
-    )
-
-    data class LocationInfo(
-        val lat: Double?,
-        val lng: Double?,
-        val altitude: Double?
-    )
-
-    data class PoiInfo(
-        val name: String?,
-        val address: String?
-    )
 }
