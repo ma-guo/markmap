@@ -10,7 +10,6 @@
         android:id="@+id/toolbar"
         android:layout_width="0dp"
         android:layout_height="?attr/actionBarSize"
-        android:background="?attr/colorPrimary"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
@@ -32,24 +31,24 @@
         android:id="@+id/centerMarker"
         android:layout_width="32dp"
         android:layout_height="32dp"
-        android:src="@android:drawable/ic_menu_compass"
         android:contentDescription="中心标记"
+        android:src="@android:drawable/ic_menu_compass"
         app:layout_constraintBottom_toTopOf="@id/infoPanel"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"/>
+        app:layout_constraintTop_toTopOf="parent" />
 
     <androidx.cardview.widget.CardView
         android:id="@+id/centerLocationCard"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
         android:layout_marginTop="8dp"
         app:cardBackgroundColor="@color/white"
         app:cardCornerRadius="8dp"
         app:cardElevation="4dp"
-        android:layout_marginStart="8dp"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintTop_toBottomOf="@id/toolbar">
 
         <LinearLayout
             android:layout_width="wrap_content"
@@ -84,11 +83,11 @@
         android:id="@+id/infoPanel"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:layout_margin="8dp"
+        android:maxHeight="160dp"
         app:cardBackgroundColor="@color/white"
         app:cardCornerRadius="12dp"
         app:cardElevation="4dp"
-        android:layout_margin="8dp"
-        android:maxHeight="160dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
@@ -111,45 +110,34 @@
 
     </androidx.cardview.widget.CardView>
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
+    <com.zuxing.markmap.widget.FloatingButton
         android:id="@+id/fabMark"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginEnd="16dp"
         android:layout_marginBottom="144dp"
-        android:contentDescription="标记点"
-        android:src="@android:drawable/ic_menu_add"
-        app:backgroundTint="@color/teal_700"
         android:visibility="gone"
         app:layout_constraintBottom_toTopOf="@id/infoPanel"
         app:layout_constraintEnd_toEndOf="parent"
-        app:tint="@color/white" />
+        tools:visibility="visible" />
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
+    <com.zuxing.markmap.widget.FloatingButton
         android:id="@+id/fabBackgroundLocation"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginEnd="16dp"
         android:layout_marginBottom="80dp"
-        android:contentDescription="后台定位"
-        android:src="@drawable/lock_24px"
-        app:backgroundTint="@color/purple_500"
         app:layout_constraintBottom_toTopOf="@id/infoPanel"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:tint="@color/white" />
+        app:layout_constraintEnd_toEndOf="parent" />
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
+    <com.zuxing.markmap.widget.FloatingButton
         android:id="@+id/fabLocation"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginEnd="16dp"
         android:layout_marginBottom="16dp"
-        android:contentDescription="定位"
-        android:src="@drawable/my_location_24px"
-        app:backgroundTint="@color/teal_200"
         app:layout_constraintBottom_toTopOf="@id/infoPanel"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:tint="@color/white" />
+        app:layout_constraintEnd_toEndOf="parent" />
 
     <ProgressBar
         android:id="@+id/progressBar"

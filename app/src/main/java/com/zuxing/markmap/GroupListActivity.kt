@@ -60,6 +60,7 @@ class GroupListActivity : AppCompatActivity() {
         binding.recyclerView.layoutManager = LinearLayoutManager(this)
         binding.recyclerView.adapter = adapter
 
+        binding.fabAdd.setIcon(R.drawable.add_24px)
         binding.fabAdd.setOnClickListener {
             navigateToEdit(null)
         }

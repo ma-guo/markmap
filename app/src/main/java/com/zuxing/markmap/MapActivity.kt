@@ -86,6 +86,7 @@ class MapActivity : AppCompatActivity() {
         })
 
         setupLocationClient()
+        setupFloatingButtons()
         setupClickListeners()
 
         if (lineId != -1L) {
@@ -109,6 +110,12 @@ class MapActivity : AppCompatActivity() {
         binding.toolbar.setNavigationOnClickListener {
             finish()
         }
+    }
+
+    private fun setupFloatingButtons() {
+        binding.fabMark.setIcon(R.drawable.save_24px)
+        binding.fabBackgroundLocation.setIcon(R.drawable.lock_24px)
+        binding.fabLocation.setIcon(R.drawable.my_location_24px)
     }
 
     private fun updateCenterLocation() {

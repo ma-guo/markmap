@@ -3,6 +3,8 @@ package com.zuxing.markmap
 import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
@@ -44,6 +46,21 @@ class PointListActivity : AppCompatActivity() {
         }
     }
 
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.menu_point_list, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.action_map -> {
+                navigateToLineMap()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
+
     override fun onPause() {
         super.onPause()
         val position = (binding.recyclerView.layoutManager as? LinearLayoutManager)
@@ -62,12 +79,9 @@ class PointListActivity : AppCompatActivity() {
         binding.recyclerView.layoutManager = LinearLayoutManager(this)
         binding.recyclerView.adapter = adapter
 
+        binding.fabAdd.setIcon(R.drawable.add_24px)
         binding.fabAdd.setOnClickListener {
             navigateToMap()
-        }
-
-        binding.fabMap.setOnClickListener {
-            navigateToLineMap()
         }
     }
 

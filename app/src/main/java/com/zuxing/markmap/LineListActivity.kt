@@ -3,6 +3,8 @@ package com.zuxing.markmap
 import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
@@ -42,6 +44,21 @@ class LineListActivity : AppCompatActivity() {
         }
     }
 
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.menu_line_list, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.action_map -> {
+                navigateToLineMap()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
+
     override fun onPause() {
         super.onPause()
         saveScrollPosition()
@@ -69,12 +86,9 @@ class LineListActivity : AppCompatActivity() {
         binding.recyclerView.layoutManager = LinearLayoutManager(this)
         binding.recyclerView.adapter = adapter
 
+        binding.fabAdd.setIcon(R.drawable.add_24px)
         binding.fabAdd.setOnClickListener {
             navigateToEdit(null)
-        }
-
-        binding.fabMap.setOnClickListener {
-            navigateToLineMap()
         }
     }
 
