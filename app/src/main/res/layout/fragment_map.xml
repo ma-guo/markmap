@@ -115,9 +115,9 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginEnd="16dp"
-        android:layout_marginBottom="144dp"
+        android:layout_marginBottom="16dp"
         android:visibility="gone"
-        app:layout_constraintBottom_toTopOf="@id/infoPanel"
+        app:layout_constraintBottom_toTopOf="@id/fabBackgroundLocation"
         app:layout_constraintEnd_toEndOf="parent"
         tools:visibility="visible" />
 
@@ -126,8 +126,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginEnd="16dp"
-        android:layout_marginBottom="80dp"
-        app:layout_constraintBottom_toTopOf="@id/infoPanel"
+        android:layout_marginBottom="16dp"
+        app:layout_constraintBottom_toTopOf="@id/fabLocation"
         app:layout_constraintEnd_toEndOf="parent" />
 
     <com.zuxing.markmap.widget.FloatingButton
@@ -135,7 +135,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginEnd="16dp"
-        android:layout_marginBottom="16dp"
+        android:layout_marginBottom="86dp"
         app:layout_constraintBottom_toTopOf="@id/infoPanel"
         app:layout_constraintEnd_toEndOf="parent" />
 

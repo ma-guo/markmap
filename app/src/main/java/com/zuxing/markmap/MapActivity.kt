@@ -1,8 +1,13 @@
 package com.zuxing.markmap
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.os.Vibrator
+import android.os.VibratorManager
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -19,18 +24,16 @@ import com.baidu.mapapi.map.MyLocationData
 import com.baidu.mapapi.model.LatLng
 import com.zuxing.markmap.data.entity.PointEntity
 import com.zuxing.markmap.databinding.FragmentMapBinding
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import retrofit2.http.GET
-import retrofit2.http.Query
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.launch
 
 class MapActivity : AppCompatActivity() {
 
@@ -41,6 +44,8 @@ class MapActivity : AppCompatActivity() {
     private lateinit var mapView: MapView
     private lateinit var locationClient: LocationClient
     private lateinit var app: MarkMapApplication
+    private lateinit var vibrator: Vibrator
+    private lateinit var prefs: android.content.SharedPreferences
     private var isFirstLocation = true
     private var isBackgroundLocationEnabled = false
     private var currentLocation: BDLocation? = null
@@ -49,6 +54,16 @@ class MapActivity : AppCompatActivity() {
         Manifest.permission.ACCESS_FINE_LOCATION,
         Manifest.permission.ACCESS_COARSE_LOCATION
     )
+
+    private val vibratePermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            enableBackgroundLocation()
+        } else {
+            Toast.makeText(this, "需要震动权限", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     private val permissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -72,6 +87,15 @@ class MapActivity : AppCompatActivity() {
 
         app = application as MarkMapApplication
         mapView = binding.bmapView
+        prefs = getSharedPreferences("settings", 0)
+
+        vibrator = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            val vibratorManager = getSystemService(VIBRATOR_MANAGER_SERVICE) as VibratorManager
+            vibratorManager.defaultVibrator
+        } else {
+            @Suppress("DEPRECATION")
+            getSystemService(VIBRATOR_SERVICE) as Vibrator
+        }
 
         setupToolbar()
         mapView.map.isMyLocationEnabled = true
@@ -109,6 +133,21 @@ class MapActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         binding.toolbar.setNavigationOnClickListener {
             finish()
+        }
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.menu_map, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.action_settings -> {
+                startActivity(Intent(this, SettingsActivity::class.java))
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
         }
     }
 
@@ -152,10 +191,11 @@ class MapActivity : AppCompatActivity() {
             }
         })
 
+        val interval = prefs.getLong(SettingsActivity.KEY_INTERVAL, SettingsActivity.DEFAULT_INTERVAL)
         val option = LocationClientOption().apply {
             locationMode = LocationClientOption.LocationMode.Hight_Accuracy
             setCoorType("bd09ll")
-            setScanSpan(1000)
+            setScanSpan(interval.toInt())
             openGps = true
             isLocationNotify = true
             setIgnoreKillProcess(true)
@@ -366,14 +406,35 @@ class MapActivity : AppCompatActivity() {
     }
 
     private fun toggleBackgroundLocation() {
-        isBackgroundLocationEnabled = !isBackgroundLocationEnabled
         if (isBackgroundLocationEnabled) {
-            LocationService.start(this)
-            Toast.makeText(this, "后台定位已开启", Toast.LENGTH_SHORT).show()
+            disableBackgroundLocation()
         } else {
-            LocationService.stop(this)
-            Toast.makeText(this, "后台定位已关闭", Toast.LENGTH_SHORT).show()
+            checkVibratePermission()
         }
+    }
+
+    private fun checkVibratePermission() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.VIBRATE)
+            == PackageManager.PERMISSION_GRANTED) {
+            enableBackgroundLocation()
+        } else {
+            vibratePermissionLauncher.launch(Manifest.permission.VIBRATE)
+        }
+    }
+
+    private fun enableBackgroundLocation() {
+        isBackgroundLocationEnabled = true
+        isFirstLocation = true
+        binding.fabBackgroundLocation.setIcon(R.drawable.lock_open_48px)
+        LocationService.start(this)
+        Toast.makeText(this, "后台定位已开启", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun disableBackgroundLocation() {
+        isBackgroundLocationEnabled = false
+        binding.fabBackgroundLocation.setIcon(R.drawable.lock_24px)
+        LocationService.stop(this)
+        Toast.makeText(this, "后台定位已关闭", Toast.LENGTH_SHORT).show()
     }
 
     private fun checkPermissions(): Boolean {
@@ -398,6 +459,10 @@ class MapActivity : AppCompatActivity() {
     private fun processLocation(location: BDLocation) {
         binding.progressBar.visibility = View.GONE
         currentLocation = location
+
+        if (isBackgroundLocationEnabled) {
+            vibrate()
+        }
 
         if (location.locType == BDLocation.TypeGpsLocation ||
             location.locType == BDLocation.TypeNetWorkLocation ||
@@ -428,6 +493,14 @@ class MapActivity : AppCompatActivity() {
             }
         } else {
             binding.tvLocationInfo.text = "定位失败，错误码: ${location.locType}"
+        }
+    }
+
+    private fun vibrate() {
+        val vibrateEnabled = prefs.getBoolean(SettingsActivity.KEY_VIBRATE, SettingsActivity.DEFAULT_VIBRATE)
+        if (vibrateEnabled) {
+            @Suppress("DEPRECATION")
+            vibrator.vibrate(100)
         }
     }
 
