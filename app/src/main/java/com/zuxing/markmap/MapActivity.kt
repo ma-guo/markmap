@@ -426,7 +426,7 @@ class MapActivity : AppCompatActivity() {
         isBackgroundLocationEnabled = true
         isFirstLocation = true
         binding.fabBackgroundLocation.setIcon(R.drawable.lock_open_48px)
-        LocationService.start(this)
+        LocationService.start(this, lineId)
         Toast.makeText(this, "后台定位已开启", Toast.LENGTH_SHORT).show()
     }
 
