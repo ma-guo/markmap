@@ -22,6 +22,9 @@ import com.baidu.location.LocationClientOption
 import com.baidu.mapapi.map.MapStatusUpdateFactory
 import com.baidu.mapapi.map.MapView
 import com.baidu.mapapi.map.MyLocationData
+import com.baidu.mapapi.map.Overlay
+import com.baidu.mapapi.map.OverlayOptions
+import com.baidu.mapapi.map.PolylineOptions
 import com.baidu.mapapi.model.LatLng
 import com.zuxing.markmap.data.entity.PointEntity
 import com.zuxing.markmap.databinding.ActivityMapBinding
@@ -51,6 +54,8 @@ class MapActivity : AppCompatActivity() {
     private var isFirstLocation = true
     private var isBackgroundLocationEnabled = false
     private var currentLocation: BDLocation? = null
+    private var routePolyline: Overlay? = null
+    private var isRouteVisible = false
 
     private val requiredPermissions = arrayOf(
         Manifest.permission.ACCESS_FINE_LOCATION,
@@ -155,6 +160,7 @@ class MapActivity : AppCompatActivity() {
     }
 
     private fun setupFloatingButtons() {
+        binding.fabRoute.setIcon(R.drawable.routes_24px)
         binding.fabBackgroundLocation.setIcon(R.drawable.lock_24px)
         binding.fabLocation.setIcon(R.drawable.my_location_24px)
     }
@@ -239,6 +245,14 @@ class MapActivity : AppCompatActivity() {
         binding.btnSaveCenter.setOnClickListener {
             if (lineId != -1L) {
                 saveCenterPoint()
+            } else {
+                Toast.makeText(this, "请先选择路线", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        binding.fabRoute.setOnClickListener {
+            if (lineId != -1L) {
+                toggleRoute()
             } else {
                 Toast.makeText(this, "请先选择路线", Toast.LENGTH_SHORT).show()
             }
@@ -407,6 +421,67 @@ class MapActivity : AppCompatActivity() {
             Logger.e("获取排序失败: ${e.message}")
             0
         }
+    }
+
+    private fun toggleRoute() {
+        if (isRouteVisible) {
+            hideRoute()
+        } else {
+            showRoute()
+        }
+    }
+
+    private fun showRoute() {
+        if (lineId == -1L) return
+
+        lifecycleScope.launch {
+            try {
+                val points = app.repository.getPointsByLineId(lineId).first()
+                if (points.isEmpty()) {
+                    runOnUiThread {
+                        Toast.makeText(this@MapActivity, "该路线暂无点", Toast.LENGTH_SHORT).show()
+                    }
+                    return@launch
+                }
+
+                val latLngs = points.sortedBy { it.sortOrder }.map { point ->
+                    LatLng(point.latitude, point.longitude)
+                }
+
+                if (latLngs.size >= 2) {
+                    val polylineOptions = PolylineOptions()
+                        .points(latLngs)
+                        .width(8)
+                        .color(Color.parseColor("#4CAF50"))
+
+                    routePolyline = mapView.map.addOverlay(polylineOptions)
+                    isRouteVisible = true
+                    runOnUiThread {
+                        binding.fabRoute.setIconTint(ContextCompat.getColor(this@MapActivity, android.R.color.darker_gray))
+                        Toast.makeText(this@MapActivity, "路线已显示", Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    runOnUiThread {
+                        Toast.makeText(this@MapActivity, "至少需要2个点才能显示路线", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            } catch (e: Exception) {
+                Logger.e("显示路线失败: ${e.message}")
+                runOnUiThread {
+                    Toast.makeText(this@MapActivity, "显示路线失败", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    private fun hideRoute() {
+        routePolyline?.let {
+            it.remove()
+            routePolyline = null
+        }
+        isRouteVisible = false
+        binding.fabRoute.setIconTint(ContextCompat.getColor(this, android.R.color.white))
+        Toast.makeText(this, "路线已隐藏", Toast.LENGTH_SHORT).show()
     }
 
     private fun toggleBackgroundLocation() {
