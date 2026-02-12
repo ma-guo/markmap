@@ -2,7 +2,10 @@ package com.zuxing.markmap
 
 import android.content.SharedPreferences
 import android.os.Bundle
+import android.view.Menu
+import android.view.MenuItem
 import android.widget.ArrayAdapter
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.zuxing.markmap.databinding.ActivitySettingsBinding
 
@@ -10,6 +13,10 @@ class SettingsActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivitySettingsBinding
     private val prefs by lazy { getSharedPreferences("settings", 0) }
+
+    private var pendingVibrate: Boolean = true
+    private var pendingInterval: Long = DEFAULT_INTERVAL
+    private var pendingDistance: Double = DEFAULT_DISTANCE
 
     companion object {
         const val KEY_VIBRATE = "vibrate_enabled"
@@ -64,6 +71,21 @@ class SettingsActivity : AppCompatActivity() {
         }
     }
 
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.menu_settings, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.action_save -> {
+                saveSettings()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
+
     private fun setupIntervalDropdown() {
         val adapter = ArrayAdapter(
             this,
@@ -87,6 +109,10 @@ class SettingsActivity : AppCompatActivity() {
         val interval = prefs.getLong(KEY_INTERVAL, DEFAULT_INTERVAL)
         val distance = prefs.getDouble(KEY_DISTANCE, DEFAULT_DISTANCE)
 
+        pendingVibrate = vibrateEnabled
+        pendingInterval = interval
+        pendingDistance = distance
+
         binding.switchVibrate.isChecked = vibrateEnabled
 
         val intervalOption = INTERVAL_OPTIONS.find { it.value == interval } ?: INTERVAL_OPTIONS[1]
@@ -98,18 +124,25 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun setupListeners() {
         binding.switchVibrate.setOnCheckedChangeListener { _, isChecked ->
-            prefs.edit().putBoolean(KEY_VIBRATE, isChecked).apply()
+            pendingVibrate = isChecked
         }
 
         binding.actvInterval.setOnItemClickListener { _, _, position, _ ->
-            val interval = INTERVAL_OPTIONS[position].value
-            prefs.edit().putLong(KEY_INTERVAL, interval).apply()
+            pendingInterval = INTERVAL_OPTIONS[position].value
         }
 
         binding.actvDistance.setOnItemClickListener { _, _, position, _ ->
-            val distance = DISTANCE_OPTIONS[position].value
-            prefs.edit().putDouble(KEY_DISTANCE, distance).apply()
+            pendingDistance = DISTANCE_OPTIONS[position].value
         }
+    }
+
+    private fun saveSettings() {
+        prefs.edit().apply {
+            putBoolean(KEY_VIBRATE, pendingVibrate)
+            putLong(KEY_INTERVAL, pendingInterval)
+            putDouble(KEY_DISTANCE, pendingDistance)
+        }.apply()
+        Toast.makeText(this, "设置已保存", Toast.LENGTH_SHORT).show()
     }
 
     private fun SharedPreferences.Editor.putDouble(key: String, value: Double): SharedPreferences.Editor {

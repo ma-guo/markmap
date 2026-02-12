@@ -23,10 +23,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlin.math.atan2
-import kotlin.math.cos
-import kotlin.math.sin
-import kotlin.math.sqrt
 
 class LocationService : Service() {
 
@@ -84,9 +80,27 @@ class LocationService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         lineId = intent?.getLongExtra(EXTRA_LINE_ID, -1L) ?: -1L
+        initLastLocation()
         startForeground(1, createNotification())
         handler.post(runnable)
         return START_STICKY
+    }
+
+    private fun initLastLocation() {
+        if (lineId == -1L) return
+        serviceScope.launch {
+            try {
+                val points = app.repository.getPointsByLineId(lineId).first()
+                val lastPoint = points.maxByOrNull { it.sortOrder }
+                lastPoint?.let {
+                    lastLatitude = it.latitude
+                    lastLongitude = it.longitude
+                    Logger.d("初始化最后位置: lat=$lastLatitude, lng=$lastLongitude")
+                }
+            } catch (e: Exception) {
+                Logger.e("获取最后位置失败: ${e.message}")
+            }
+        }
     }
 
     private fun getIntervalMillis(): Long {
@@ -134,7 +148,7 @@ class LocationService : Service() {
             locationMode = LocationClientOption.LocationMode.Battery_Saving
             setCoorType("bd09ll")
             setScanSpan(0)
-            isOpenGps = true
+            openGps = true
             isOpenGnss = true
             setIsNeedAddress(true)
         }
@@ -157,7 +171,7 @@ class LocationService : Service() {
 
         val distance = lastLatitude?.let { lastLat ->
             lastLongitude?.let { lastLng ->
-                calculateDistance(lastLat, lastLng, lat, lng)
+                Utils.calculateDistance(lastLat, lastLng, lat, lng)
             }
         } ?: Double.MAX_VALUE
 
@@ -198,17 +212,6 @@ class LocationService : Service() {
             Logger.e("获取排序失败: ${e.message}")
             0
         }
-    }
-
-    private fun calculateDistance(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
-        val earthRadius = 6371000.0
-        val dLat = Math.toRadians(lat2 - lat1)
-        val dLon = Math.toRadians(lon2 - lon1)
-        val a = sin(dLat / 2) * sin(dLat / 2) +
-                cos(Math.toRadians(lat1)) * cos(Math.toRadians(lat2)) *
-                sin(dLon / 2) * sin(dLon / 2)
-        val c = 2 * atan2(sqrt(a), sqrt(1 - a))
-        return earthRadius * c
     }
 
     private fun vibrateIfEnabled() {

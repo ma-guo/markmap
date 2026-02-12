@@ -3,6 +3,7 @@ package com.zuxing.markmap
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Color
 import android.os.Bundle
 import android.os.Vibrator
 import android.os.VibratorManager
@@ -34,6 +35,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+
 
 class MapActivity : AppCompatActivity() {
 
@@ -147,12 +149,12 @@ class MapActivity : AppCompatActivity() {
                 startActivity(Intent(this, SettingsActivity::class.java))
                 true
             }
+
             else -> super.onOptionsItemSelected(item)
         }
     }
 
     private fun setupFloatingButtons() {
-        binding.fabMark.setIcon(R.drawable.save_24px)
         binding.fabBackgroundLocation.setIcon(R.drawable.lock_24px)
         binding.fabLocation.setIcon(R.drawable.my_location_24px)
     }
@@ -197,6 +199,7 @@ class MapActivity : AppCompatActivity() {
             setCoorType("bd09ll")
             setScanSpan(interval.toInt())
             openGps = true
+            isOpenGnss = true
             isLocationNotify = true
             setIgnoreKillProcess(true)
             SetIgnoreCacheException(false)
@@ -251,7 +254,8 @@ class MapActivity : AppCompatActivity() {
 
         if (location.locType != BDLocation.TypeGpsLocation &&
             location.locType != BDLocation.TypeNetWorkLocation &&
-            location.locType != BDLocation.TypeOffLineLocation) {
+            location.locType != BDLocation.TypeOffLineLocation
+        ) {
             Toast.makeText(this, "定位失败，无法标记", Toast.LENGTH_SHORT).show()
             return
         }
@@ -324,11 +328,11 @@ class MapActivity : AppCompatActivity() {
 
                 if (response.isSuccessful) {
                     val result = response.body()
-                    if (result != null && result.result == 0 ) {
-                        address = result.data?.address?:""
-                        description = result.data?.description?:""
+                    if (result != null && result.result == 0) {
+                        address = result.data?.address ?: ""
+                        description = result.data?.description ?: ""
                     } else {
-                        Toast.makeText(this@MapActivity, result?.message?:"未知错误", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@MapActivity, result?.message ?: "未知错误", Toast.LENGTH_SHORT).show()
                     }
                 }
 
@@ -415,7 +419,8 @@ class MapActivity : AppCompatActivity() {
 
     private fun checkVibratePermission() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.VIBRATE)
-            == PackageManager.PERMISSION_GRANTED) {
+            == PackageManager.PERMISSION_GRANTED
+        ) {
             enableBackgroundLocation()
         } else {
             vibratePermissionLauncher.launch(Manifest.permission.VIBRATE)
@@ -425,14 +430,16 @@ class MapActivity : AppCompatActivity() {
     private fun enableBackgroundLocation() {
         isBackgroundLocationEnabled = true
         isFirstLocation = true
-        binding.fabBackgroundLocation.setIcon(R.drawable.lock_open_48px)
+//        binding.fabBackgroundLocation.setIcon(R.drawable.lock_open_48px)
         LocationService.start(this, lineId)
+        binding.fabBackgroundLocation.setIconTintAnim()
         Toast.makeText(this, "后台定位已开启", Toast.LENGTH_SHORT).show()
     }
 
     private fun disableBackgroundLocation() {
         isBackgroundLocationEnabled = false
         binding.fabBackgroundLocation.setIcon(R.drawable.lock_24px)
+        binding.fabBackgroundLocation.setIconTint(Color.WHITE)
         LocationService.stop(this)
         Toast.makeText(this, "后台定位已关闭", Toast.LENGTH_SHORT).show()
     }
@@ -466,17 +473,21 @@ class MapActivity : AppCompatActivity() {
 
         if (location.locType == BDLocation.TypeGpsLocation ||
             location.locType == BDLocation.TypeNetWorkLocation ||
-            location.locType == BDLocation.TypeOffLineLocation) {
+            location.locType == BDLocation.TypeOffLineLocation
+        ) {
 
-            val sb = StringBuilder().apply {
+            binding.tvLocationInfo.text = StringBuilder().apply {
                 append("定位时间: ").append(SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())).append("\n")
                 append("纬度: ").append(location.latitude).append("\n")
                 append("经度: ").append(location.longitude).append("\n")
                 append("海拔: ").append(if (location.hasAltitude()) "${location.altitude}m" else "未知").append("\n")
+            }.toString()
+            binding.tvLocationAddress.text = StringBuilder().apply {
                 append("地址: ").append(location.addrStr).append("\n")
-                append("位置描述: ").append(location.locationDescribe).append("\n")
-            }
-            binding.tvLocationInfo.text = sb.toString()
+                location.locationDescribe?.let {
+                    append("位置描述: ").append(it)
+                }
+            }.toString()
 
             val locData = MyLocationData.Builder()
                 .accuracy(location.radius)
@@ -491,8 +502,10 @@ class MapActivity : AppCompatActivity() {
                 val update = MapStatusUpdateFactory.newLatLng(ll)
                 mapView.map.animateMapStatus(update)
             }
+            binding.fabMark.visibility = View.VISIBLE
         } else {
             binding.tvLocationInfo.text = "定位失败，错误码: ${location.locType}"
+            binding.fabMark.visibility = View.GONE
         }
     }
 

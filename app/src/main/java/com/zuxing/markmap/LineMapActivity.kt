@@ -358,7 +358,7 @@ class LineMapActivity : AppCompatActivity() {
         var cumulativeDistance = 0.0
 
         for (i in 1 until points.size) {
-            val distance = calculateDistance(
+            val distance = Utils.calculateDistance(
                 points[i - 1].latitude, points[i - 1].longitude,
                 points[i].latitude, points[i].longitude
             )
@@ -367,17 +367,6 @@ class LineMapActivity : AppCompatActivity() {
         }
 
         return distances
-    }
-
-    private fun calculateDistance(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
-        val earthRadius = 6371000.0
-        val dLat = Math.toRadians(lat2 - lat1)
-        val dLon = Math.toRadians(lon2 - lon1)
-        val a = sin(dLat / 2) * sin(dLat / 2) +
-                cos(Math.toRadians(lat1)) * cos(Math.toRadians(lat2)) *
-                sin(dLon / 2) * sin(dLon / 2)
-        val c = 2 * atan2(sqrt(a), sqrt(1 - a))
-        return earthRadius * c
     }
 
     private fun formatDistance(distanceMeters: Double): String {
