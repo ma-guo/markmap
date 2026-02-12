@@ -15,7 +15,7 @@ class PointAdapter(
     private val onItemClick: (PointEntity) -> Unit
 ) : ListAdapter<PointEntity, PointAdapter.ViewHolder>(DiffCallback()) {
 
-    private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+    private val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val binding = ItemPointBinding.inflate(
