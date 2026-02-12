@@ -12,14 +12,14 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.addTextChangedListener
 import androidx.lifecycle.lifecycleScope
 import com.zuxing.markmap.data.entity.PointEntity
-import com.zuxing.markmap.databinding.FragmentPointEditBinding
+import com.zuxing.markmap.databinding.ActivityPointEditBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class PointEditActivity : AppCompatActivity() {
 
-    private lateinit var binding: FragmentPointEditBinding
+    private lateinit var binding: ActivityPointEditBinding
     private lateinit var app: MarkMapApplication
     private var currentPoint: PointEntity? = null
     private var isEditMode: Boolean = false
@@ -60,7 +60,7 @@ class PointEditActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = FragmentPointEditBinding.inflate(layoutInflater)
+        binding = ActivityPointEditBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         app = application as MarkMapApplication

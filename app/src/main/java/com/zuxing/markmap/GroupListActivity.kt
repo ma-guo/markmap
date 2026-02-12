@@ -9,20 +9,20 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.zuxing.markmap.data.adapter.GroupAdapter
-import com.zuxing.markmap.databinding.FragmentGroupListBinding
+import com.zuxing.markmap.databinding.ActivityGroupListBinding
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 class GroupListActivity : AppCompatActivity() {
 
-    private lateinit var binding: FragmentGroupListBinding
+    private lateinit var binding: ActivityGroupListBinding
     private lateinit var app: MarkMapApplication
     private lateinit var adapter: GroupAdapter
     private lateinit var prefs: SharedPreferences
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = FragmentGroupListBinding.inflate(layoutInflater)
+        binding = ActivityGroupListBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         app = application as MarkMapApplication

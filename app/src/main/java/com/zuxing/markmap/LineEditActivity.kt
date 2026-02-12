@@ -8,13 +8,13 @@ import androidx.core.widget.addTextChangedListener
 import androidx.lifecycle.lifecycleScope
 import com.zuxing.markmap.data.entity.GroupEntity
 import com.zuxing.markmap.data.entity.LineEntity
-import com.zuxing.markmap.databinding.FragmentLineEditBinding
+import com.zuxing.markmap.databinding.ActivityLineEditBinding
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class LineEditActivity : AppCompatActivity() {
 
-    private lateinit var binding: FragmentLineEditBinding
+    private lateinit var binding: ActivityLineEditBinding
     private lateinit var app: MarkMapApplication
     private var currentLine: LineEntity? = null
     private var isEditMode: Boolean = false
@@ -29,7 +29,7 @@ class LineEditActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = FragmentLineEditBinding.inflate(layoutInflater)
+        binding = ActivityLineEditBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         app = application as MarkMapApplication

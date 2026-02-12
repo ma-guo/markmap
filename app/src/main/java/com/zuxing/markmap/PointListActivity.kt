@@ -10,7 +10,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.zuxing.markmap.data.adapter.PointAdapter
-import com.zuxing.markmap.databinding.FragmentPointListBinding
+import com.zuxing.markmap.databinding.ActivityPointListBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -18,7 +18,7 @@ import kotlinx.coroutines.withContext
 
 class PointListActivity : AppCompatActivity() {
 
-    private lateinit var binding: FragmentPointListBinding
+    private lateinit var binding: ActivityPointListBinding
     private lateinit var app: MarkMapApplication
     private lateinit var adapter: PointAdapter
     private lateinit var prefs: SharedPreferences
@@ -26,7 +26,7 @@ class PointListActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = FragmentPointListBinding.inflate(layoutInflater)
+        binding = ActivityPointListBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         lineId = intent.getLongExtra("lineId", -1L)

@@ -6,12 +6,12 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.addTextChangedListener
 import androidx.lifecycle.lifecycleScope
 import com.zuxing.markmap.data.entity.GroupEntity
-import com.zuxing.markmap.databinding.FragmentGroupEditBinding
+import com.zuxing.markmap.databinding.ActivityGroupEditBinding
 import kotlinx.coroutines.launch
 
 class GroupEditActivity : AppCompatActivity() {
 
-    private lateinit var binding: FragmentGroupEditBinding
+    private lateinit var binding: ActivityGroupEditBinding
     private lateinit var app: MarkMapApplication
     private var currentGroup: GroupEntity? = null
     private var isEditMode: Boolean = false
@@ -19,7 +19,7 @@ class GroupEditActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = FragmentGroupEditBinding.inflate(layoutInflater)
+        binding = ActivityGroupEditBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         app = application as MarkMapApplication

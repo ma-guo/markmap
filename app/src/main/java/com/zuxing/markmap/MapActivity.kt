@@ -24,7 +24,7 @@ import com.baidu.mapapi.map.MapView
 import com.baidu.mapapi.map.MyLocationData
 import com.baidu.mapapi.model.LatLng
 import com.zuxing.markmap.data.entity.PointEntity
-import com.zuxing.markmap.databinding.FragmentMapBinding
+import com.zuxing.markmap.databinding.ActivityMapBinding
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import retrofit2.Call
@@ -39,7 +39,7 @@ import java.util.Locale
 
 class MapActivity : AppCompatActivity() {
 
-    private lateinit var binding: FragmentMapBinding
+    private lateinit var binding: ActivityMapBinding
 
     private var lineId: Long = -1L
 
@@ -82,7 +82,7 @@ class MapActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = FragmentMapBinding.inflate(layoutInflater)
+        binding = ActivityMapBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         lineId = intent.getLongExtra("lineId", -1L)
