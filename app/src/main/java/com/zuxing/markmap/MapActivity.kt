@@ -31,8 +31,10 @@ import com.baidu.mapapi.model.LatLng
 import com.zuxing.markmap.data.entity.LineEntity
 import com.zuxing.markmap.data.entity.PointEntity
 import com.zuxing.markmap.databinding.ActivityMapBinding
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -163,44 +165,12 @@ class MapActivity : AppCompatActivity() {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
-            R.id.action_select_line -> {
-                showLineSelectionDialog()
-                true
-            }
-
             R.id.action_settings -> {
                 startActivity(Intent(this, SettingsActivity::class.java))
                 true
             }
 
             else -> super.onOptionsItemSelected(item)
-        }
-    }
-
-    private fun showLineSelectionDialog() {
-        lifecycleScope.launch {
-            try {
-                val lines = app.repository.getAllLines().first()
-                if (lines.isEmpty()) {
-                    Toast.makeText(this@MapActivity, "暂无路线，请先创建路线", Toast.LENGTH_SHORT).show()
-                    return@launch
-                }
-
-                val lineNames = lines.map { it.name }.toTypedArray()
-                AlertDialog.Builder(this@MapActivity)
-                    .setTitle("选择路线")
-                    .setItems(lineNames) { _, which ->
-                        selectLine(lines[which])
-                    }
-                    .setNegativeButton("取消", null)
-                    .setNeutralButton("清除选择") { _, _ ->
-                        clearLineSelection()
-                    }
-                    .show()
-            } catch (e: Exception) {
-                Logger.e("获取路线列表失败: ${e.message}")
-                Toast.makeText(this@MapActivity, "获取路线失败", Toast.LENGTH_SHORT).show()
-            }
         }
     }
 
@@ -751,8 +721,11 @@ class MapActivity : AppCompatActivity() {
                     lastAutoSaveLng = lng
                     lastPointLat = lat
                     lastPointLng = lng
-                    vibrate()
-                    loadLinePoints()
+                    withContext(Dispatchers.Main) {
+                        vibrate()
+                        loadLinePoints()
+                    }
+
                 } catch (e: Exception) {
                     Logger.e("自动保存点失败: ${e.message}")
                 }
