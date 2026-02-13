@@ -721,11 +721,8 @@ class MapActivity : AppCompatActivity() {
                     lastAutoSaveLng = lng
                     lastPointLat = lat
                     lastPointLng = lng
-                    withContext(Dispatchers.Main) {
-                        vibrate()
-                        loadLinePoints()
-                    }
-
+                    vibrate()
+                    loadLinePoints()
                 } catch (e: Exception) {
                     Logger.e("自动保存点失败: ${e.message}")
                 }
