@@ -44,7 +44,11 @@ class SettingsActivity : AppCompatActivity() {
             DistanceOption("100 米", 100.0),
             DistanceOption("200 米", 200.0),
             DistanceOption("500 米", 500.0),
-            DistanceOption("1000 米", 1000.0)
+            DistanceOption("1000 米", 1000.0),
+            DistanceOption("2000 米", 2000.0),
+            DistanceOption("3000 米", 3000.0),
+            DistanceOption("5000 米", 5000.0),
+
         )
     }
 

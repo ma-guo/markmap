@@ -1,6 +1,7 @@
 package com.zuxing.markmap
 
 import android.Manifest
+import android.content.DialogInterface
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
@@ -10,8 +11,10 @@ import android.os.VibratorManager
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
@@ -21,8 +24,11 @@ import com.baidu.location.LocationClient
 import com.baidu.location.LocationClientOption
 import com.baidu.mapapi.map.MapStatusUpdateFactory
 import com.baidu.mapapi.map.MapView
+import com.baidu.mapapi.map.MarkerOptions
 import com.baidu.mapapi.map.MyLocationData
+import com.baidu.mapapi.map.Overlay
 import com.baidu.mapapi.model.LatLng
+import com.zuxing.markmap.data.entity.LineEntity
 import com.zuxing.markmap.data.entity.PointEntity
 import com.zuxing.markmap.databinding.ActivityMapBinding
 import kotlinx.coroutines.flow.first
@@ -42,6 +48,7 @@ class MapActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMapBinding
 
     private var lineId: Long = -1L
+    private var currentLineName: String = "未选择"
 
     private lateinit var mapView: MapView
     private lateinit var locationClient: LocationClient
@@ -51,6 +58,11 @@ class MapActivity : AppCompatActivity() {
     private var isFirstLocation = true
     private var isBackgroundLocationEnabled = false
     private var currentLocation: BDLocation? = null
+    private var lastAutoSaveLat: Double? = null
+    private var lastAutoSaveLng: Double? = null
+    private var lastPointLat: Double? = null
+    private var lastPointLng: Double? = null
+    private var pointOverlays: MutableList<Overlay> = mutableListOf()
 
     private val requiredPermissions = arrayOf(
         Manifest.permission.ACCESS_FINE_LOCATION,
@@ -117,8 +129,10 @@ class MapActivity : AppCompatActivity() {
 
         if (lineId != -1L) {
             binding.fabMark.visibility = View.VISIBLE
+            binding.fabBackgroundLocation.visibility = View.VISIBLE
         } else {
             binding.fabMark.visibility = View.GONE
+            binding.fabBackgroundLocation.visibility = View.GONE
         }
 
         if (checkPermissions()) {
@@ -145,6 +159,10 @@ class MapActivity : AppCompatActivity() {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
+            R.id.action_select_line -> {
+                showLineSelectionDialog()
+                true
+            }
             R.id.action_settings -> {
                 startActivity(Intent(this, SettingsActivity::class.java))
                 true
@@ -152,6 +170,95 @@ class MapActivity : AppCompatActivity() {
 
             else -> super.onOptionsItemSelected(item)
         }
+    }
+
+    private fun showLineSelectionDialog() {
+        lifecycleScope.launch {
+            try {
+                val lines = app.repository.getAllLines().first()
+                if (lines.isEmpty()) {
+                    Toast.makeText(this@MapActivity, "暂无路线，请先创建路线", Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
+
+                val lineNames = lines.map { it.name }.toTypedArray()
+                AlertDialog.Builder(this@MapActivity)
+                    .setTitle("选择路线")
+                    .setItems(lineNames) { _, which ->
+                        selectLine(lines[which])
+                    }
+                    .setNegativeButton("取消", null)
+                    .setNeutralButton("清除选择") { _, _ ->
+                        clearLineSelection()
+                    }
+                    .show()
+            } catch (e: Exception) {
+                Logger.e("获取路线列表失败: ${e.message}")
+                Toast.makeText(this@MapActivity, "获取路线失败", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    private fun selectLine(line: LineEntity) {
+        lineId = line.id
+        currentLineName = line.name
+        binding.tvCurrentLine.text = "当前路线: $currentLineName"
+        binding.fabMark.visibility = View.VISIBLE
+        binding.fabBackgroundLocation.visibility = View.VISIBLE
+        loadLinePoints()
+    }
+
+    private fun clearLineSelection() {
+        lineId = -1L
+        currentLineName = "未选择"
+        binding.tvCurrentLine.text = "当前路线: 未选择"
+        binding.fabMark.visibility = View.GONE
+        binding.fabBackgroundLocation.visibility = View.GONE
+        binding.tvDistanceToLast.text = "距上一个点: - 米"
+        lastPointLat = null
+        lastPointLng = null
+        clearPointOverlays()
+    }
+
+    private fun loadLinePoints() {
+        if (lineId == -1L) return
+
+        lifecycleScope.launch {
+            try {
+                val points = app.repository.getPointsByLineId(lineId).first()
+                displayLinePoints(points)
+            } catch (e: Exception) {
+                Logger.e("加载路线点失败: ${e.message}")
+            }
+        }
+    }
+
+    private fun displayLinePoints(points: List<PointEntity>) {
+        clearPointOverlays()
+
+        points.forEachIndexed { index, point ->
+            val latLng = LatLng(point.latitude, point.longitude)
+            val marker = mapView.map.addOverlay(
+                MarkerOptions()
+                    .position(latLng)
+                    .title("点${index + 1}")
+            ) as Overlay
+            pointOverlays.add(marker)
+        }
+
+        if (points.isNotEmpty()) {
+            val lastPoint = points.last()
+            lastPointLat = lastPoint.latitude
+            lastPointLng = lastPoint.longitude
+            val ll = LatLng(lastPoint.latitude, lastPoint.longitude)
+            val update = MapStatusUpdateFactory.newLatLng(ll)
+            mapView.map.animateMapStatus(update)
+        }
+    }
+
+    private fun clearPointOverlays() {
+        pointOverlays.forEach { it.remove() }
+        pointOverlays.clear()
     }
 
     private fun setupFloatingButtons() {
@@ -279,6 +386,9 @@ class MapActivity : AppCompatActivity() {
 
                 app.repository.insertPoint(point)
                 Toast.makeText(this@MapActivity, "已保存", Toast.LENGTH_SHORT).show()
+                lastPointLat = location.latitude
+                lastPointLng = location.longitude
+                loadLinePoints()
             } catch (e: Exception) {
                 Logger.e("保存点失败: ${e.message}")
                 Toast.makeText(this@MapActivity, "保存失败", Toast.LENGTH_SHORT).show()
@@ -382,6 +492,9 @@ class MapActivity : AppCompatActivity() {
 
                     binding.btnSaveCenter.text = "已保存"
                     Toast.makeText(this@MapActivity, "位置已保存", Toast.LENGTH_SHORT).show()
+                    lastPointLat = latitude
+                    lastPointLng = longitude
+                    loadLinePoints()
 
                     binding.btnSaveCenter.postDelayed({
                         binding.btnSaveCenter.text = "保存"
@@ -430,18 +543,18 @@ class MapActivity : AppCompatActivity() {
     private fun enableBackgroundLocation() {
         isBackgroundLocationEnabled = true
         isFirstLocation = true
-//        binding.fabBackgroundLocation.setIcon(R.drawable.lock_open_48px)
-        LocationService.start(this, lineId)
+        lastAutoSaveLat = null
+        lastAutoSaveLng = null
+        binding.fabBackgroundLocation.setIcon(R.drawable.lock_open_48px)
         binding.fabBackgroundLocation.setIconTintAnim()
-        Toast.makeText(this, "后台定位已开启", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "自动保存已开启", Toast.LENGTH_SHORT).show()
     }
 
     private fun disableBackgroundLocation() {
         isBackgroundLocationEnabled = false
         binding.fabBackgroundLocation.setIcon(R.drawable.lock_24px)
         binding.fabBackgroundLocation.setIconTint(Color.WHITE)
-        LocationService.stop(this)
-        Toast.makeText(this, "后台定位已关闭", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "自动保存已关闭", Toast.LENGTH_SHORT).show()
     }
 
     private fun checkPermissions(): Boolean {
@@ -467,10 +580,6 @@ class MapActivity : AppCompatActivity() {
         binding.progressBar.visibility = View.GONE
         currentLocation = location
 
-        if (isBackgroundLocationEnabled) {
-            vibrate()
-        }
-
         if (location.locType == BDLocation.TypeGpsLocation ||
             location.locType == BDLocation.TypeNetWorkLocation ||
             location.locType == BDLocation.TypeOffLineLocation
@@ -480,7 +589,7 @@ class MapActivity : AppCompatActivity() {
                 append("定位时间: ").append(SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())).append("\n")
                 append("纬度: ").append(location.latitude).append("\n")
                 append("经度: ").append(location.longitude).append("\n")
-                append("海拔: ").append(if (location.hasAltitude()) "${location.altitude}m" else "未知").append("\n")
+                append("海拔: ").append(if (location.hasAltitude()) "${location.altitude}m" else "未知")
             }.toString()
             binding.tvLocationAddress.text = StringBuilder().apply {
                 append("地址: ").append(location.addrStr).append("\n")
@@ -488,6 +597,18 @@ class MapActivity : AppCompatActivity() {
                     append("位置描述: ").append(it)
                 }
             }.toString()
+
+            val distance = lastPointLat?.let { lastLat ->
+                lastPointLng?.let { lastLng ->
+                    Utils.calculateDistance(lastLat, lastLng, location.latitude, location.longitude)
+                }
+            }
+
+            binding.tvDistanceToLast.text = if (distance != null) {
+                String.format("距上一个点: %.1f 米", distance)
+            } else {
+                "距上一个点: - 米"
+            }
 
             val locData = MyLocationData.Builder()
                 .accuracy(location.radius)
@@ -502,10 +623,62 @@ class MapActivity : AppCompatActivity() {
                 val update = MapStatusUpdateFactory.newLatLng(ll)
                 mapView.map.animateMapStatus(update)
             }
+
+            if (isBackgroundLocationEnabled) {
+                checkAndAutoSavePoint(location)
+            }
+
             binding.fabMark.visibility = View.VISIBLE
         } else {
             binding.tvLocationInfo.text = "定位失败，错误码: ${location.locType}"
+            binding.tvLocationAddress.text = ""
             binding.fabMark.visibility = View.GONE
+        }
+    }
+
+    private fun checkAndAutoSavePoint(location: BDLocation) {
+        if (lineId == -1L) return
+
+        val lat = location.latitude
+        val lng = location.longitude
+        val distanceThreshold = prefs.getFloat(SettingsActivity.KEY_DISTANCE, SettingsActivity.DEFAULT_DISTANCE.toFloat()).toDouble()
+
+        val distance = lastAutoSaveLat?.let { lastLat ->
+            lastAutoSaveLng?.let { lastLng ->
+                Utils.calculateDistance(lastLat, lastLng, lat, lng)
+            }
+        } ?: Double.MAX_VALUE
+
+        if (distance >= distanceThreshold.toDouble()) {
+            lifecycleScope.launch {
+                try {
+                    val maxSortOrder = getMaxSortOrder(lineId)
+                    val point = PointEntity(
+                        lineId = lineId,
+                        longitude = lng,
+                        latitude = lat,
+                        altitude = if (location.hasAltitude()) location.altitude else null,
+                        address = location.addrStr,
+                        description = location.locationDescribe,
+                        sortOrder = maxSortOrder + 1,
+                        createTime = System.currentTimeMillis(),
+                        modifyTime = System.currentTimeMillis()
+                    )
+                    app.repository.insertPoint(point)
+                    Logger.d("自动保存点成功, 距离=$distance")
+
+                    lastAutoSaveLat = lat
+                    lastAutoSaveLng = lng
+                    lastPointLat = lat
+                    lastPointLng = lng
+                    vibrate()
+                    loadLinePoints()
+                } catch (e: Exception) {
+                    Logger.e("自动保存点失败: ${e.message}")
+                }
+            }
+        } else {
+            Logger.d("距离太近($distance < $distanceThreshold), 不保存")
         }
     }
 

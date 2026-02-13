@@ -64,6 +64,15 @@
                 android:textColor="@color/black"
                 android:textSize="12sp" />
 
+            <TextView
+                android:id="@+id/tvCurrentLine"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="当前路线: 未选择"
+                android:textColor="@color/black"
+                android:textSize="12sp" />
+
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnSaveCenter"
                 style="@style/Widget.Material3.Button.TonalButton"
@@ -82,9 +91,9 @@
     <androidx.cardview.widget.CardView
         android:id="@+id/infoPanel"
         android:layout_width="0dp"
-        android:layout_height="wrap_content"
+        android:layout_height="180dp"
         android:layout_margin="8dp"
-        android:maxHeight="160dp"
+        android:maxHeight="180dp"
         app:cardBackgroundColor="@color/white"
         app:cardCornerRadius="12dp"
         app:cardElevation="4dp"
@@ -128,8 +137,19 @@
                 android:textColor="@color/black"
                 android:textSize="14sp"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/tvLocationInfo"
+                app:layout_constraintTop_toBottomOf="@id/tvDistanceToLast"
                 tools:text="点击定位按钮获取位置信息" />
+
+            <TextView
+                android:id="@+id/tvDistanceToLast"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="距上一个点: - 米"
+                android:layout_marginTop="-4dp"
+                android:textColor="@color/black"
+                android:textSize="12sp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/tvLocationInfo" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 
