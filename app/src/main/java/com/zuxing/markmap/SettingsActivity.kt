@@ -26,7 +26,9 @@ class SettingsActivity : AppCompatActivity() {
         const val DEFAULT_DISTANCE = 10L
 
         val INTERVAL_OPTIONS = listOf(
+            IntervalOption("5 秒", 5_000L),
             IntervalOption("10 秒", 10_000L),
+            IntervalOption("20 秒", 20_000L),
             IntervalOption("30 秒", 30_000L),
             IntervalOption("1 分钟", 60_000L),
             IntervalOption("2 分钟", 120_000L),

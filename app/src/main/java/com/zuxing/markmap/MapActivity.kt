@@ -286,13 +286,13 @@ class MapActivity : AppCompatActivity() {
             isLocationNotify = true
             setIgnoreKillProcess(true)
             SetIgnoreCacheException(false)
-            setWifiCacheTimeOut(2 * 60 * 1000)
+            setWifiCacheTimeOut(10 * 60 * 1000)
             enableSimulateGps = true
             setIsNeedAddress(true)
             setIsNeedAltitude(true)
             setIsNeedLocationDescribe(true)
             isNeedPoiRegion = true
-            setIsNeedLocationPoiList(true)
+            setIsNeedLocationPoiList(false)
         }
         locationClient.locOption = option
 
@@ -624,6 +624,9 @@ class MapActivity : AppCompatActivity() {
     @SuppressLint("DefaultLocale")
     private fun processLocation(location: BDLocation) {
         binding.progressBar.visibility = View.GONE
+        if(location.radius > 1000) {
+            return
+        }
         currentLocation = location
 
         if (location.locType == BDLocation.TypeGpsLocation ||
@@ -743,6 +746,8 @@ class MapActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         initDistanceThreshold()
+        val interval = prefs.getLong(SettingsActivity.KEY_INTERVAL, SettingsActivity.DEFAULT_INTERVAL)
+        locationClient.locOption.setScanSpan(interval.toInt())
         mapView.onResume()
     }
 
