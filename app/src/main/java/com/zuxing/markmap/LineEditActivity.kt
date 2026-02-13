@@ -1,8 +1,11 @@
 package com.zuxing.markmap
 
 import android.os.Bundle
+import android.view.Menu
+import android.view.MenuItem
 import android.widget.ArrayAdapter
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.addTextChangedListener
 import androidx.lifecycle.lifecycleScope
@@ -52,6 +55,42 @@ class LineEditActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         binding.toolbar.setNavigationOnClickListener {
             finish()
+        }
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.menu_line_edit, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.action_delete -> {
+                showDeleteConfirmDialog()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
+
+    private fun showDeleteConfirmDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("删除路线")
+            .setMessage("确定要删除路线 \"${currentLine?.name}\" 吗？删除后可在回收站恢复。")
+            .setPositiveButton("删除") { _, _ ->
+                deleteLine()
+            }
+            .setNegativeButton("取消", null)
+            .show()
+    }
+
+    private fun deleteLine() {
+        currentLine?.let { line ->
+            lifecycleScope.launch {
+                app.repository.softDeleteLine(line.id)
+                Toast.makeText(this@LineEditActivity, "路线已删除", Toast.LENGTH_SHORT).show()
+                finish()
+            }
         }
     }
 

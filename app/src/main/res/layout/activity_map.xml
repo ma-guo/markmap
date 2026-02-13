@@ -156,6 +156,14 @@
     </androidx.cardview.widget.CardView>
 
     <com.zuxing.markmap.widget.FloatingButton
+        android:id="@+id/fabRoute"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        app:layout_constraintBottom_toTopOf="@id/fabBackgroundLocation"
+        app:layout_constraintEnd_toEndOf="@id/fabBackgroundLocation" />
+
+    <com.zuxing.markmap.widget.FloatingButton
         android:id="@+id/fabBackgroundLocation"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

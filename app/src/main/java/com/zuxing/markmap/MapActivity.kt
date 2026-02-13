@@ -1,7 +1,7 @@
 package com.zuxing.markmap
 
 import android.Manifest
-import android.content.DialogInterface
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
@@ -11,7 +11,6 @@ import android.os.VibratorManager
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
-import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -27,6 +26,7 @@ import com.baidu.mapapi.map.MapView
 import com.baidu.mapapi.map.MarkerOptions
 import com.baidu.mapapi.map.MyLocationData
 import com.baidu.mapapi.map.Overlay
+import com.baidu.mapapi.map.PolylineOptions
 import com.baidu.mapapi.model.LatLng
 import com.zuxing.markmap.data.entity.LineEntity
 import com.zuxing.markmap.data.entity.PointEntity
@@ -63,6 +63,9 @@ class MapActivity : AppCompatActivity() {
     private var lastPointLat: Double? = null
     private var lastPointLng: Double? = null
     private var pointOverlays: MutableList<Overlay> = mutableListOf()
+    private var routePolyline: Overlay? = null
+    private var isRouteVisible = false
+    private var mDistanceThresholds = 1000
 
     private val requiredPermissions = arrayOf(
         Manifest.permission.ACCESS_FINE_LOCATION,
@@ -110,6 +113,7 @@ class MapActivity : AppCompatActivity() {
             @Suppress("DEPRECATION")
             getSystemService(VIBRATOR_SERVICE) as Vibrator
         }
+        initDistanceThreshold()
 
         setupToolbar()
         mapView.map.isMyLocationEnabled = true
@@ -163,6 +167,7 @@ class MapActivity : AppCompatActivity() {
                 showLineSelectionDialog()
                 true
             }
+
             R.id.action_settings -> {
                 startActivity(Intent(this, SettingsActivity::class.java))
                 true
@@ -262,6 +267,7 @@ class MapActivity : AppCompatActivity() {
     }
 
     private fun setupFloatingButtons() {
+        binding.fabRoute.setIcon(R.drawable.routes_24px)
         binding.fabBackgroundLocation.setIcon(R.drawable.lock_24px)
         binding.fabLocation.setIcon(R.drawable.my_location_24px)
     }
@@ -346,6 +352,14 @@ class MapActivity : AppCompatActivity() {
         binding.btnSaveCenter.setOnClickListener {
             if (lineId != -1L) {
                 saveCenterPoint()
+            } else {
+                Toast.makeText(this, "请先选择路线", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        binding.fabRoute.setOnClickListener {
+            if (lineId != -1L) {
+                toggleRoute()
             } else {
                 Toast.makeText(this, "请先选择路线", Toast.LENGTH_SHORT).show()
             }
@@ -522,6 +536,67 @@ class MapActivity : AppCompatActivity() {
         }
     }
 
+    private fun toggleRoute() {
+        if (isRouteVisible) {
+            hideRoute()
+        } else {
+            showRoute()
+        }
+    }
+
+    private fun showRoute() {
+        if (lineId == -1L) return
+
+        lifecycleScope.launch {
+            try {
+                val points = app.repository.getPointsByLineId(lineId).first()
+                if (points.isEmpty()) {
+                    runOnUiThread {
+                        Toast.makeText(this@MapActivity, "该路线暂无点", Toast.LENGTH_SHORT).show()
+                    }
+                    return@launch
+                }
+
+                val latLngs = points.sortedBy { it.sortOrder }.map { point ->
+                    LatLng(point.latitude, point.longitude)
+                }
+
+                if (latLngs.size >= 2) {
+                    val polylineOptions = PolylineOptions()
+                        .points(latLngs)
+                        .width(8)
+                        .color(Color.parseColor("#4CAF50"))
+
+                    routePolyline = mapView.map.addOverlay(polylineOptions)
+                    isRouteVisible = true
+                    runOnUiThread {
+                        binding.fabRoute.setIconTint(ContextCompat.getColor(this@MapActivity, android.R.color.darker_gray))
+                        Toast.makeText(this@MapActivity, "路线已显示", Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    runOnUiThread {
+                        Toast.makeText(this@MapActivity, "至少需要2个点才能显示路线", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            } catch (e: Exception) {
+                Logger.e("显示路线失败: ${e.message}")
+                runOnUiThread {
+                    Toast.makeText(this@MapActivity, "显示路线失败", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    private fun hideRoute() {
+        routePolyline?.let {
+            it.remove()
+            routePolyline = null
+        }
+        isRouteVisible = false
+        binding.fabRoute.setIconTint(ContextCompat.getColor(this, android.R.color.white))
+        Toast.makeText(this, "路线已隐藏", Toast.LENGTH_SHORT).show()
+    }
+
     private fun toggleBackgroundLocation() {
         if (isBackgroundLocationEnabled) {
             disableBackgroundLocation()
@@ -576,6 +651,7 @@ class MapActivity : AppCompatActivity() {
         }
     }
 
+    @SuppressLint("DefaultLocale")
     private fun processLocation(location: BDLocation) {
         binding.progressBar.visibility = View.GONE
         currentLocation = location
@@ -605,7 +681,7 @@ class MapActivity : AppCompatActivity() {
             }
 
             binding.tvDistanceToLast.text = if (distance != null) {
-                String.format("距上一个点: %.1f 米", distance)
+                "距上一个点: ${distance.toInt()} 米 ${mDistanceThresholds }米"
             } else {
                 "距上一个点: - 米"
             }
@@ -636,12 +712,16 @@ class MapActivity : AppCompatActivity() {
         }
     }
 
+    private fun initDistanceThreshold() {
+        mDistanceThresholds = prefs.getLong(SettingsActivity.KEY_DISTANCE, SettingsActivity.DEFAULT_DISTANCE).toInt()
+    }
+
     private fun checkAndAutoSavePoint(location: BDLocation) {
         if (lineId == -1L) return
 
         val lat = location.latitude
         val lng = location.longitude
-        val distanceThreshold = prefs.getFloat(SettingsActivity.KEY_DISTANCE, SettingsActivity.DEFAULT_DISTANCE.toFloat()).toDouble()
+        val distanceThreshold = mDistanceThresholds
 
         val distance = lastAutoSaveLat?.let { lastLat ->
             lastAutoSaveLng?.let { lastLng ->
@@ -692,6 +772,7 @@ class MapActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        initDistanceThreshold()
         mapView.onResume()
     }
 

@@ -167,7 +167,7 @@ class LocationService : Service() {
         val lat = location.latitude
         val lng = location.longitude
 
-        val distanceThreshold = prefs.getDouble(SettingsActivity.KEY_DISTANCE, SettingsActivity.DEFAULT_DISTANCE)
+        val distanceThreshold = prefs.getLong(SettingsActivity.KEY_DISTANCE, SettingsActivity.DEFAULT_DISTANCE)
 
         val distance = lastLatitude?.let { lastLat ->
             lastLongitude?.let { lastLng ->

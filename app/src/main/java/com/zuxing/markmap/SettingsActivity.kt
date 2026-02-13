@@ -1,6 +1,5 @@
 package com.zuxing.markmap
 
-import android.content.SharedPreferences
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
@@ -16,7 +15,7 @@ class SettingsActivity : AppCompatActivity() {
 
     private var pendingVibrate: Boolean = true
     private var pendingInterval: Long = DEFAULT_INTERVAL
-    private var pendingDistance: Double = DEFAULT_DISTANCE
+    private var pendingDistance: Long = DEFAULT_DISTANCE
 
     companion object {
         const val KEY_VIBRATE = "vibrate_enabled"
@@ -24,7 +23,7 @@ class SettingsActivity : AppCompatActivity() {
         const val KEY_DISTANCE = "location_distance"
         const val DEFAULT_VIBRATE = true
         const val DEFAULT_INTERVAL = 30_000L
-        const val DEFAULT_DISTANCE = 10.0
+        const val DEFAULT_DISTANCE = 10L
 
         val INTERVAL_OPTIONS = listOf(
             IntervalOption("10 秒", 10_000L),
@@ -36,24 +35,24 @@ class SettingsActivity : AppCompatActivity() {
         )
 
         val DISTANCE_OPTIONS = listOf(
-            DistanceOption("5 米", 5.0),
-            DistanceOption("10 米", 10.0),
-            DistanceOption("20 米", 20.0),
-            DistanceOption("30 米", 30.0),
-            DistanceOption("50 米", 50.0),
-            DistanceOption("100 米", 100.0),
-            DistanceOption("200 米", 200.0),
-            DistanceOption("500 米", 500.0),
-            DistanceOption("1000 米", 1000.0),
-            DistanceOption("2000 米", 2000.0),
-            DistanceOption("3000 米", 3000.0),
-            DistanceOption("5000 米", 5000.0),
+            DistanceOption("5 米", 5),
+            DistanceOption("10 米", 10),
+            DistanceOption("20 米", 20),
+            DistanceOption("30 米", 30),
+            DistanceOption("50 米", 50),
+            DistanceOption("100 米", 100),
+            DistanceOption("200 米", 200),
+            DistanceOption("500 米", 500),
+            DistanceOption("1000 米", 1000),
+            DistanceOption("2000 米", 2000),
+            DistanceOption("3000 米", 3000),
+            DistanceOption("5000 米", 5000),
 
         )
     }
 
     data class IntervalOption(val label: String, val value: Long)
-    data class DistanceOption(val label: String, val value: Double)
+    data class DistanceOption(val label: String, val value: Long)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -111,7 +110,7 @@ class SettingsActivity : AppCompatActivity() {
     private fun loadSettings() {
         val vibrateEnabled = prefs.getBoolean(KEY_VIBRATE, DEFAULT_VIBRATE)
         val interval = prefs.getLong(KEY_INTERVAL, DEFAULT_INTERVAL)
-        val distance = prefs.getDouble(KEY_DISTANCE, DEFAULT_DISTANCE)
+        val distance = prefs.getLong(KEY_DISTANCE, DEFAULT_DISTANCE)
 
         pendingVibrate = vibrateEnabled
         pendingInterval = interval
@@ -144,16 +143,8 @@ class SettingsActivity : AppCompatActivity() {
         prefs.edit().apply {
             putBoolean(KEY_VIBRATE, pendingVibrate)
             putLong(KEY_INTERVAL, pendingInterval)
-            putDouble(KEY_DISTANCE, pendingDistance)
+            putLong(KEY_DISTANCE, pendingDistance)
         }.apply()
         Toast.makeText(this, "设置已保存", Toast.LENGTH_SHORT).show()
-    }
-
-    private fun SharedPreferences.Editor.putDouble(key: String, value: Double): SharedPreferences.Editor {
-        return putLong(key, java.lang.Double.doubleToRawLongBits(value))
-    }
-
-    private fun SharedPreferences.getDouble(key: String, defaultValue: Double): Double {
-        return java.lang.Double.longBitsToDouble(getLong(key, java.lang.Double.doubleToRawLongBits(defaultValue)))
     }
 }
