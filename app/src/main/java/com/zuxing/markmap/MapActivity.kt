@@ -71,7 +71,10 @@ class MapActivity : AppCompatActivity() {
 
     private val requiredPermissions = arrayOf(
         Manifest.permission.ACCESS_FINE_LOCATION,
-        Manifest.permission.ACCESS_COARSE_LOCATION
+        Manifest.permission.ACCESS_COARSE_LOCATION,
+        Manifest.permission.VIBRATE,
+        Manifest.permission.INTERNET,
+        Manifest.permission.CHANGE_WIFI_STATE,
     )
 
     private val vibratePermissionLauncher = registerForActivityResult(
@@ -541,7 +544,6 @@ class MapActivity : AppCompatActivity() {
                     isRouteVisible = true
                     runOnUiThread {
                         binding.fabRoute.setIconTint(ContextCompat.getColor(this@MapActivity, android.R.color.darker_gray))
-                        Toast.makeText(this@MapActivity, "路线已显示", Toast.LENGTH_SHORT).show()
                     }
                 } else {
                     runOnUiThread {
@@ -564,7 +566,6 @@ class MapActivity : AppCompatActivity() {
         }
         isRouteVisible = false
         binding.fabRoute.setIconTint(ContextCompat.getColor(this, android.R.color.white))
-        Toast.makeText(this, "路线已隐藏", Toast.LENGTH_SHORT).show()
     }
 
     private fun toggleBackgroundLocation() {
