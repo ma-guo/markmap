@@ -59,6 +59,7 @@ class MapActivity : AppCompatActivity() {
     private lateinit var prefs: android.content.SharedPreferences
     private var isFirstLocation = true
     private var isBackgroundLocationEnabled = false
+    private var isBackgroundLocked = false
     private var currentLocation: BDLocation? = null
     private var lastAutoSaveLat: Double? = null
     private var lastAutoSaveLng: Double? = null
@@ -157,7 +158,9 @@ class MapActivity : AppCompatActivity() {
         setSupportActionBar(binding.toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         binding.toolbar.setNavigationOnClickListener {
-            finish()
+            if (!isBackgroundLocked || !isBackgroundLocationEnabled) {
+                finish()
+            }
         }
     }
 
@@ -314,6 +317,19 @@ class MapActivity : AppCompatActivity() {
 
         binding.fabBackgroundLocation.setOnClickListener {
             toggleBackgroundLocation()
+        }
+        binding.fabBackgroundLocation.setOnLongClickListener {
+            isBackgroundLocked = !isBackgroundLocked
+            if (isBackgroundLocationEnabled) {
+                if (isBackgroundLocked) {
+                    binding.fabBackgroundLocation.setIcon(R.drawable.lock_24px)
+                } else {
+                    binding.fabBackgroundLocation.setIcon(R.drawable.lock_open_48px)
+                }
+            } else {
+                binding.fabBackgroundLocation.setIcon(R.drawable.lock_24px)
+            }
+            true
         }
 
         binding.fabMark.setOnClickListener {
@@ -569,6 +585,9 @@ class MapActivity : AppCompatActivity() {
     }
 
     private fun toggleBackgroundLocation() {
+        if (isBackgroundLocked) {
+            return
+        }
         if (isBackgroundLocationEnabled) {
             disableBackgroundLocation()
         } else {
@@ -625,7 +644,7 @@ class MapActivity : AppCompatActivity() {
     @SuppressLint("DefaultLocale")
     private fun processLocation(location: BDLocation) {
         binding.progressBar.visibility = View.GONE
-        if(location.radius > 1000) {
+        if (location.radius > 1000) {
             return
         }
         currentLocation = location
@@ -655,7 +674,7 @@ class MapActivity : AppCompatActivity() {
             }
 
             binding.tvDistanceToLast.text = if (distance != null) {
-                "距上一个点: ${distance.toInt()} 米 ${mDistanceThresholds }米"
+                "距上一个点: ${distance.toInt()} 米 ${mDistanceThresholds}米"
             } else {
                 "距上一个点: - 米"
             }
@@ -762,5 +781,12 @@ class MapActivity : AppCompatActivity() {
         mapView.map.isMyLocationEnabled = false
         locationClient.stop()
         mapView.onDestroy()
+    }
+
+    override fun onBackPressed() {
+        if (isBackgroundLocked && isBackgroundLocationEnabled) {
+            return
+        }
+        super.onBackPressed()
     }
 }
