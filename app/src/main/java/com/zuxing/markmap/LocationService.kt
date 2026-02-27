@@ -186,7 +186,7 @@ class LocationService : Service() {
                         altitude = if (location.hasAltitude()) location.altitude else null,
                         address = location.addrStr,
                         description = location.locationDescribe,
-                        sortOrder = maxSortOrder + 1,
+                        sortOrder = maxSortOrder + 10,
                         createTime = System.currentTimeMillis(),
                         modifyTime = System.currentTimeMillis()
                     )

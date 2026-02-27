@@ -48,55 +48,81 @@
                 android:textColor="@color/black"
                 android:textSize="16sp" />
 
-            <TextView
-                android:layout_width="wrap_content"
+            <com.google.android.material.switchmaterial.SwitchMaterial
+                android:id="@+id/switchShowCenterPanel"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
-                android:text="定位间隔"
+                android:layout_marginTop="16dp"
+                android:checked="false"
+                android:text="显示中心位置面板"
                 android:textColor="@color/black"
                 android:textSize="16sp" />
 
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/tilInterval"
-                style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp">
-
-                <AutoCompleteTextView
-                    android:id="@+id/actvInterval"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="none"
-                    android:text="30 秒"
-                    android:textSize="16sp" />
-
-            </com.google.android.material.textfield.TextInputLayout>
-
-            <TextView
-                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
-                android:text="保存距离阈值"
-                android:textColor="@color/black"
-                android:textSize="16sp" />
+                android:orientation="horizontal">
 
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/tilDistance"
-                style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp">
-
-                <AutoCompleteTextView
-                    android:id="@+id/actvDistance"
-                    android:layout_width="match_parent"
+                <TextView
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:inputType="none"
-                    android:text="10 米"
+                    android:layout_weight="1"
+                    android:text="定位间隔"
+                    android:textColor="@color/black"
                     android:textSize="16sp" />
 
-            </com.google.android.material.textfield.TextInputLayout>
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilInterval"
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1">
+
+                    <AutoCompleteTextView
+                        android:id="@+id/actvInterval"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="none"
+                        android:text="30 秒"
+                        android:textSize="16sp" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="保存距离阈值"
+                    android:textColor="@color/black"
+                    android:textSize="16sp" />
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilDistance"
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1">
+
+                    <AutoCompleteTextView
+                        android:id="@+id/actvDistance"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="none"
+                        android:text="10 米"
+                        android:textSize="16sp" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
+            </LinearLayout>
 
         </LinearLayout>
 

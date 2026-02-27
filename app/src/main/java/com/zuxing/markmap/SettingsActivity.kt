@@ -16,14 +16,17 @@ class SettingsActivity : AppCompatActivity() {
     private var pendingVibrate: Boolean = true
     private var pendingInterval: Long = DEFAULT_INTERVAL
     private var pendingDistance: Long = DEFAULT_DISTANCE
+    private var pendingShowCenterPanel: Boolean = DEFAULT_SHOW_CENTER_PANEL
 
     companion object {
         const val KEY_VIBRATE = "vibrate_enabled"
         const val KEY_INTERVAL = "location_interval"
         const val KEY_DISTANCE = "location_distance"
+        const val KEY_SHOW_CENTER_PANEL = "show_center_panel"
         const val DEFAULT_VIBRATE = true
         const val DEFAULT_INTERVAL = 30_000L
         const val DEFAULT_DISTANCE = 10L
+        const val DEFAULT_SHOW_CENTER_PANEL = false
 
         val INTERVAL_OPTIONS = listOf(
             IntervalOption("5 秒", 5_000L),
@@ -113,12 +116,15 @@ class SettingsActivity : AppCompatActivity() {
         val vibrateEnabled = prefs.getBoolean(KEY_VIBRATE, DEFAULT_VIBRATE)
         val interval = prefs.getLong(KEY_INTERVAL, DEFAULT_INTERVAL)
         val distance = prefs.getLong(KEY_DISTANCE, DEFAULT_DISTANCE)
+        val showCenterPanel = prefs.getBoolean(KEY_SHOW_CENTER_PANEL, DEFAULT_SHOW_CENTER_PANEL)
 
         pendingVibrate = vibrateEnabled
         pendingInterval = interval
         pendingDistance = distance
+        pendingShowCenterPanel = showCenterPanel
 
         binding.switchVibrate.isChecked = vibrateEnabled
+        binding.switchShowCenterPanel.isChecked = showCenterPanel
 
         val intervalOption = INTERVAL_OPTIONS.find { it.value == interval } ?: INTERVAL_OPTIONS[1]
         binding.actvInterval.setText(intervalOption.label, false)
@@ -130,6 +136,10 @@ class SettingsActivity : AppCompatActivity() {
     private fun setupListeners() {
         binding.switchVibrate.setOnCheckedChangeListener { _, isChecked ->
             pendingVibrate = isChecked
+        }
+
+        binding.switchShowCenterPanel.setOnCheckedChangeListener { _, isChecked ->
+            pendingShowCenterPanel = isChecked
         }
 
         binding.actvInterval.setOnItemClickListener { _, _, position, _ ->
@@ -146,6 +156,7 @@ class SettingsActivity : AppCompatActivity() {
             putBoolean(KEY_VIBRATE, pendingVibrate)
             putLong(KEY_INTERVAL, pendingInterval)
             putLong(KEY_DISTANCE, pendingDistance)
+            putBoolean(KEY_SHOW_CENTER_PANEL, pendingShowCenterPanel)
         }.apply()
         Toast.makeText(this, "设置已保存", Toast.LENGTH_SHORT).show()
     }
