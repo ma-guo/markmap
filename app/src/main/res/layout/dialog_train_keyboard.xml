@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="请输入列车车次"
+        android:textColor="@color/black"
+        android:textSize="16sp"
+        android:textStyle="bold" />
+
+    <EditText
+        android:id="@+id/etTrainCode"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/edit_text_bg"
+        android:cursorVisible="false"
+        android:focusable="false"
+        android:gravity="center"
+        android:paddingHorizontal="12dp"
+        android:textColor="@color/black"
+        android:textSize="22sp"
+        android:textStyle="bold" />
+
+    <LinearLayout
+        android:id="@+id/dateContainer"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/edit_text_bg"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="12dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="日期"
+            android:textColor="#757575"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/tvDateValue"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:textColor="@color/black"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+    </LinearLayout>
+
+    <GridLayout
+        android:id="@+id/keyboardGrid"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:columnCount="5"
+        android:rowCount="4">
+
+        <TextView
+            android:id="@+id/keyG"
+            style="@style/KeyButtonOrange"
+            android:text="G"
+            android:tag="G" />
+
+        <TextView
+            android:id="@+id/keyD"
+            style="@style/KeyButtonOrange"
+            android:text="D"
+            android:tag="D" />
+
+        <TextView
+            android:id="@+id/key1"
+            style="@style/KeyButtonBlack"
+            android:text="1"
+            android:tag="1" />
+
+        <TextView
+            android:id="@+id/key2"
+            style="@style/KeyButtonBlack"
+            android:text="2"
+            android:tag="2" />
+
+        <TextView
+            android:id="@+id/key3"
+            style="@style/KeyButtonBlack"
+            android:text="3"
+            android:tag="3" />
+
+        <TextView
+            android:id="@+id/keyC"
+            style="@style/KeyButtonOrange"
+            android:text="C"
+            android:tag="C" />
+
+        <TextView
+            android:id="@+id/keyK"
+            style="@style/KeyButtonOrange"
+            android:text="K"
+            android:tag="K" />
+
+        <TextView
+            android:id="@+id/key4"
+            style="@style/KeyButtonBlack"
+            android:text="4"
+            android:tag="4" />
+
+        <TextView
+            android:id="@+id/key5"
+            style="@style/KeyButtonBlack"
+            android:text="5"
+            android:tag="5" />
+
+        <TextView
+            android:id="@+id/key6"
+            style="@style/KeyButtonBlack"
+            android:text="6"
+            android:tag="6" />
+
+        <TextView
+            android:id="@+id/keyL"
+            style="@style/KeyButtonOrange"
+            android:text="L"
+            android:tag="L" />
+
+        <TextView
+            android:id="@+id/keyT"
+            style="@style/KeyButtonOrange"
+            android:text="T"
+            android:tag="T" />
+
+        <TextView
+            android:id="@+id/key7"
+            style="@style/KeyButtonBlack"
+            android:text="7"
+            android:tag="7" />
+
+        <TextView
+            android:id="@+id/key8"
+            style="@style/KeyButtonBlack"
+            android:text="8"
+            android:tag="8" />
+
+        <TextView
+            android:id="@+id/key9"
+            style="@style/KeyButtonBlack"
+            android:text="9"
+            android:tag="9" />
+
+        <TextView
+            android:id="@+id/keyZ"
+            style="@style/KeyButtonOrange"
+            android:text="Z"
+            android:tag="Z" />
+
+        <TextView
+            android:id="@+id/keyY"
+            style="@style/KeyButtonOrange"
+            android:text="Y"
+            android:tag="Y" />
+
+        <TextView
+            android:id="@+id/keyS"
+            style="@style/KeyButtonOrange"
+            android:text="S"
+            android:tag="S" />
+
+        <TextView
+            android:id="@+id/key0"
+            style="@style/KeyButtonBlack"
+            android:text="0"
+            android:tag="0" />
+
+        <TextView
+            android:id="@+id/keyX"
+            style="@style/KeyButtonOrange"
+            android:text="X"
+            android:tag="X" />
+
+    </GridLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:gravity="end"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/btnCancel"
+            android:layout_width="0dp"
+            android:layout_height="44dp"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="取消"
+            android:textColor="@color/black"
+            android:textSize="16sp" />
+
+        <TextView
+            android:id="@+id/btnConfirm"
+            android:layout_width="0dp"
+            android:layout_height="44dp"
+            android:layout_marginStart="12dp"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="确认"
+            android:textColor="#1976D2"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+    </LinearLayout>
+
+</LinearLayout>
