@@ -52,6 +52,10 @@ class GroupListActivity : AppCompatActivity() {
                 showTrainInputDialog()
                 true
             }
+            R.id.action_ticket -> {
+                startActivity(Intent(this, TicketQueryActivity::class.java))
+                true
+            }
             else -> super.onOptionsItemSelected(item)
         }
     }

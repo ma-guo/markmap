@@ -8,4 +8,10 @@
         android:title="列车运行图"
         app:showAsAction="ifRoom" />
 
+    <item
+        android:id="@+id/action_ticket"
+        android:icon="@drawable/search_24px"
+        android:title="余票查询"
+        app:showAsAction="ifRoom" />
+
 </menu>

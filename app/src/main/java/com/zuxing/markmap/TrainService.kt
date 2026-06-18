@@ -4,7 +4,9 @@ import com.google.gson.annotations.SerializedName
 import retrofit2.Call
 import retrofit2.http.Field
 import retrofit2.http.FormUrlEncoded
+import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.Query
 
 interface TrainService {
 
@@ -24,6 +26,11 @@ interface TrainService {
         @Field("version") version: String = "v2",
         @Field("trainNo") trainNo: String,
     ): Call<TrainMapResponse>
+
+    @GET("/wxxcx/wechat/main/getAllStations")
+    fun getAllStations(
+        @Query("version") version: String = "1.34"
+    ): Call<StationListResponse>
 }
 
 data class TrainInfoResponse(
@@ -64,4 +71,22 @@ data class TrainMapResponse(
 data class TrainLineSegment(
     val line: List<List<Double>>? = null,
     val index: Int = 0
+)
+
+data class StationListResponse(
+    val status: Boolean = false,
+    val data: StationListData? = null
+)
+
+data class StationListData(
+    val stations: List<StationEntity>? = null
+)
+
+data class StationEntity(
+    @SerializedName("station_name") val stationName: String? = null,
+    @SerializedName("station_telecode") val stationTelecode: String? = null,
+    @SerializedName("station_pycode") val stationPycode: String? = null,
+    @SerializedName("station_firstcode") val stationFirstcode: String? = null,
+    @SerializedName("province_name") val provinceName: String? = null,
+    @SerializedName("city_name") val cityName: String? = null
 )

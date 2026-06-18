@@ -114,6 +114,16 @@
             android:name=".GroupListActivity"
             android:exported="false"
             android:theme="@style/Theme.MarkMap" />
+
+        <activity
+            android:name=".TicketQueryActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MarkMap" />
+
+        <activity
+            android:name=".StationSelectActivity"
+            android:exported="false"
+            android:theme="@style/Theme.MarkMap" />
     </application>
 
 </manifest>
