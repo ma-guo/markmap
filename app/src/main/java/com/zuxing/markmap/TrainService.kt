@@ -31,6 +31,14 @@ interface TrainService {
     fun getAllStations(
         @Query("version") version: String = "1.34"
     ): Call<StationListResponse>
+
+    @POST("/wxxcx/wechat/ticketinfo/getStopStation")
+    @FormUrlEncoded
+    fun getStopStation(
+        @Field("train_no") trainNo: String,
+        @Field("train_date") trainDate: String,
+        @Field("f_station_telcode") fStationTelcode: String,
+    ): Call<StopStationResponse>
 }
 
 data class TrainInfoResponse(
@@ -89,4 +97,23 @@ data class StationEntity(
     @SerializedName("station_firstcode") val stationFirstcode: String? = null,
     @SerializedName("province_name") val provinceName: String? = null,
     @SerializedName("city_name") val cityName: String? = null
+)
+
+data class StopStationResponse(
+    val status: Boolean = false,
+    val data: StopStationData? = null
+)
+
+data class StopStationData(
+    val trainStopInfo: List<StopStationInfo>? = null
+)
+
+data class StopStationInfo(
+    @SerializedName("station_name") val stationName: String? = null,
+    @SerializedName("station_no") val stationNo: String? = null,
+    @SerializedName("arrive_time") val arriveTime: String? = null,
+    @SerializedName("start_time") val startTime: String? = null,
+    @SerializedName("stopover_time") val stopoverTime: String? = null,
+    @SerializedName("arrive_day_diff") val arriveDayDiff: String? = null,
+    @SerializedName("start_day_diff") val startDayDiff: String? = null
 )

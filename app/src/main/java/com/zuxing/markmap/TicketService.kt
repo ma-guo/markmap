@@ -34,6 +34,8 @@ data class TicketInfo(
     val stationTrainCode: String,
     val fromStation: String,
     val toStation: String,
+    val fromTelecode: String,
+    val toTelecode: String,
     val startTime: String,
     val arriveTime: String,
     val duration: String,
