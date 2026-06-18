@@ -34,7 +34,24 @@ data class TrainInfoResponse(
 
 data class TrainInfoData(
     val trainNo: String? = null,
-    val trainCode: String? = null
+    val trainCode: String? = null,
+    val trainDetail: TrainDetail? = null
+)
+
+data class TrainDetail(
+    val stopTime: List<TrainStopTime>? = null
+)
+
+data class TrainStopTime(
+    val stationName: String? = null,
+    val stationNo: String? = null,
+    val lon: String? = null,
+    val lat: String? = null,
+    val arriveTime: String? = null,
+    val startTime: String? = null,
+    val runningTime: String? = null,
+    @SerializedName("stopover_time") val stopoverTime: String? = null,
+    val dayDifference: String? = null
 )
 
 data class TrainMapResponse(

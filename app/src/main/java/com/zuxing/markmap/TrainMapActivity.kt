@@ -23,7 +23,7 @@ import com.baidu.mapapi.model.LatLngBounds
 import com.baidu.mapapi.utils.CoordinateConverter
 import com.zuxing.markmap.databinding.ActivityTrainMapBinding
 import com.zuxing.markmap.databinding.ItemPointSimpleBinding
-import kotlin.math.abs
+
 import kotlinx.coroutines.Dispatchers
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
@@ -45,7 +45,8 @@ class TrainMapActivity : AppCompatActivity() {
     data class StationInfo(
         val name: String,
         val latLng: LatLng,
-        val distanceFromStart: Double = 0.0
+        val distanceFromStart: Double = 0.0,
+        val startTime: String = ""
     )
 
     private class StationAdapter(
@@ -69,10 +70,16 @@ class TrainMapActivity : AppCompatActivity() {
 
             fun bind(item: StationInfo) {
                 binding.tvPointDescription.text = item.name.ifEmpty { "车站" }
+                binding.tvStartTime.text = formatTime(item.startTime)
                 binding.tvDistance.text = formatDistance(item.distanceFromStart)
                 binding.root.setOnClickListener {
                     onItemClick(item)
                 }
+            }
+
+            private fun formatTime(time: String): String {
+                if (time.isBlank() || time.length < 4) return ""
+                return "${time.substring(0, 2)}:${time.substring(2, 4)}"
             }
 
             private fun formatDistance(dist: Double): String {
@@ -176,10 +183,20 @@ class TrainMapActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             try {
-                val trainNo = withContext(Dispatchers.IO) {
-                    val response = trainService.getTrainInfo(trainCode, date).execute()
-                    if (response.isSuccessful) response.body()?.data?.trainNo else null
+                val trainInfoResponse = withContext(Dispatchers.IO) {
+                    trainService.getTrainInfo(trainCode, date).execute()
                 }
+
+                if (!trainInfoResponse.isSuccessful || trainInfoResponse.body() == null) {
+                    withContext(Dispatchers.Main) {
+                        binding.progressBar.visibility = View.GONE
+                        Toast.makeText(this@TrainMapActivity, "未找到列车信息，请检查车次和日期", Toast.LENGTH_SHORT).show()
+                    }
+                    return@launch
+                }
+
+                val trainInfoData = trainInfoResponse.body()!!.data
+                val trainNo = trainInfoData?.trainNo
 
                 if (trainNo.isNullOrEmpty()) {
                     withContext(Dispatchers.Main) {
@@ -189,22 +206,27 @@ class TrainMapActivity : AppCompatActivity() {
                     return@launch
                 }
 
+                val apiStations = trainInfoData.trainDetail?.stopTime
+                    ?.sortedBy { it.stationNo?.toIntOrNull() ?: Int.MAX_VALUE }
+                    ?: emptyList()
+
                 val mapResponse = withContext(Dispatchers.IO) {
                     trainService.getTrainMapLine("v2", trainNo).execute()
                 }
 
                 withContext(Dispatchers.Main) {
                     binding.progressBar.visibility = View.GONE
-                    if (mapResponse.isSuccessful && mapResponse.body()?.status == true) {
-                        val segments = mapResponse.body()?.data
-                        if (!segments.isNullOrEmpty()) {
-                            displayTrainRoute(segments)
-                        } else {
-                            Toast.makeText(this@TrainMapActivity, "未获取到运行图数据", Toast.LENGTH_SHORT).show()
-                        }
+                    val segments = if (mapResponse.isSuccessful && mapResponse.body()?.status == true) {
+                        mapResponse.body()?.data
                     } else {
+                        null
+                    }
+
+                    if (segments.isNullOrEmpty() && apiStations.isEmpty()) {
                         val msg = mapResponse.body()?.errorMsg
-                        Toast.makeText(this@TrainMapActivity, msg ?: "获取运行图失败", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@TrainMapActivity, msg ?: "未获取到运行图数据", Toast.LENGTH_SHORT).show()
+                    } else {
+                        displayTrainRoute(segments, apiStations)
                     }
                 }
             } catch (e: Exception) {
@@ -224,67 +246,63 @@ class TrainMapActivity : AppCompatActivity() {
         return converter.convert()
     }
 
-    private fun displayTrainRoute(segments: Map<String, TrainLineSegment>) {
+    private fun displayTrainRoute(
+        segments: Map<String, TrainLineSegment>?,
+        apiStations: List<TrainStopTime>
+    ) {
         val allLatLngs = mutableListOf<LatLng>()
         val cumulativeDistances = mutableListOf<Double>()
-        var lastPoint: LatLng? = null
-        var accumulatedDist = 0.0
-        val stationInfos = mutableListOf<Pair<String, LatLng>>()
-        var lastStationPoint: LatLng? = null
 
-        val sortedEntries = segments.entries.sortedBy { it.value.index }
+        if (!segments.isNullOrEmpty()) {
+            var lastPoint: LatLng? = null
+            var accumulatedDist = 0.0
+            val sortedEntries = segments.entries.sortedBy { it.value.index }
 
-        sortedEntries.forEach { (key, segment) ->
-            val line = segment.line ?: return@forEach
-            if (line.size < 2) return@forEach
+            sortedEntries.forEach { (_, segment) ->
+                val line = segment.line ?: return@forEach
+                if (line.size < 2) return@forEach
+                val points = line.map { gcj02ToBd09(it[1], it[0]) }
 
-            val stationNames = key.split("-")
-            val depName = stationNames.getOrElse(0) { "" }
-            val arrName = stationNames.getOrElse(1) { "" }
-            val points = line.map { gcj02ToBd09(it[1], it[0]) }
-
-            val depLatLng = points.first()
-            if (lastStationPoint == null || Utils.calculateDistance(
-                    lastStationPoint!!.latitude, lastStationPoint!!.longitude,
-                    depLatLng.latitude, depLatLng.longitude
-                ) >= 500.0
-            ) {
-                stationInfos.add(depName to depLatLng)
-                lastStationPoint = depLatLng
-            }
-
-            points.forEach { pt ->
-                if (lastPoint == null || lastPoint != pt) {
-                    if (lastPoint != null) {
-                        accumulatedDist += Utils.calculateDistance(
-                            lastPoint!!.latitude, lastPoint!!.longitude,
-                            pt.latitude, pt.longitude
-                        )
+                points.forEach { pt ->
+                    if (lastPoint == null || lastPoint != pt) {
+                        if (lastPoint != null) {
+                            accumulatedDist += Utils.calculateDistance(
+                                lastPoint!!.latitude, lastPoint!!.longitude,
+                                pt.latitude, pt.longitude
+                            )
+                        }
+                        allLatLngs.add(pt)
+                        cumulativeDistances.add(accumulatedDist)
+                        lastPoint = pt
                     }
-                    allLatLngs.add(pt)
-                    cumulativeDistances.add(accumulatedDist)
-                    lastPoint = pt
                 }
-            }
-
-            val arrLatLng = points.last()
-            if (Utils.calculateDistance(
-                    lastStationPoint!!.latitude, lastStationPoint!!.longitude,
-                    arrLatLng.latitude, arrLatLng.longitude
-                ) >= 500.0
-            ) {
-                stationInfos.add(arrName to arrLatLng)
-                lastStationPoint = arrLatLng
             }
         }
 
-        stationInfoList = stationInfos.map { (name, latLng) ->
-            val idx = allLatLngs.indexOfFirst {
-                abs(it.latitude - latLng.latitude) < 1e-7 &&
-                abs(it.longitude - latLng.longitude) < 1e-7
+        stationInfoList = apiStations.mapNotNull { apiStation ->
+            val name = apiStation.stationName ?: return@mapNotNull null
+            val lon = apiStation.lon?.toDoubleOrNull() ?: return@mapNotNull null
+            val lat = apiStation.lat?.toDoubleOrNull() ?: return@mapNotNull null
+            val bd09LatLng = gcj02ToBd09(lat, lon)
+            val startTime = apiStation.startTime ?: ""
+
+            var dist = 0.0
+            if (allLatLngs.isNotEmpty()) {
+                var minDist = Double.MAX_VALUE
+                var closestIdx = -1
+                allLatLngs.forEachIndexed { idx, pt ->
+                    val d = Utils.calculateDistance(
+                        bd09LatLng.latitude, bd09LatLng.longitude,
+                        pt.latitude, pt.longitude
+                    )
+                    if (d < minDist) {
+                        minDist = d
+                        closestIdx = idx
+                    }
+                }
+                dist = if (closestIdx >= 0) cumulativeDistances[closestIdx] else 0.0
             }
-            val dist = if (idx >= 0) cumulativeDistances[idx] else 0.0
-            StationInfo(name, latLng, dist)
+            StationInfo(name, bd09LatLng, dist, startTime)
         }
 
         val stationSize = stationInfoList.size
@@ -317,9 +335,14 @@ class TrainMapActivity : AppCompatActivity() {
             )
         }
 
-        if (allLatLngs.isNotEmpty()) {
+        val allPoints = if (allLatLngs.isNotEmpty()) {
+            allLatLngs
+        } else {
+            stationInfoList.map { it.latLng }
+        }
+        if (allPoints.isNotEmpty()) {
             val builder = LatLngBounds.Builder()
-            allLatLngs.forEach { builder.include(it) }
+            allPoints.forEach { builder.include(it) }
             mapView.map.animateMapStatus(MapStatusUpdateFactory.newLatLngBounds(builder.build()))
         }
 

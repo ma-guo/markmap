@@ -22,10 +22,23 @@
         tools:text="Point Description" />
 
     <TextView
+        android:id="@+id/tvStartTime"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:minWidth="40dp"
+        android:gravity="end"
+        android:textColor="#FFBB5500"
+        android:textSize="12sp"
+        tools:text="18:25" />
+
+    <TextView
         android:id="@+id/tvDistance"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
+        android:minWidth="48dp"
+        android:gravity="end"
         android:textColor="@color/teal_700"
         android:textSize="12sp"
         tools:text="1.2km" />
