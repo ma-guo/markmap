@@ -7,6 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
@@ -20,14 +21,13 @@ import com.baidu.mapapi.map.Overlay
 import com.baidu.mapapi.map.PolylineOptions
 import com.baidu.mapapi.model.LatLng
 import com.baidu.mapapi.model.LatLngBounds
-import com.baidu.mapapi.utils.CoordinateConverter
+import com.google.gson.GsonBuilder
 import com.zuxing.markmap.databinding.ActivityTrainMapBinding
 import com.zuxing.markmap.databinding.ItemPointSimpleBinding
-
 import kotlinx.coroutines.Dispatchers
-import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
@@ -35,9 +35,11 @@ class TrainMapActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityTrainMapBinding
     private lateinit var mapView: MapView
-    private var polylineOverlay: Overlay? = null
+    private val polylineOverlays = mutableListOf<Overlay>()
     private val markerList = mutableListOf<Overlay>()
     private lateinit var trainService: TrainService
+    private lateinit var ticketService: TicketService
+    private lateinit var ticketHttpClient: OkHttpClient
     private var isListExpanded = false
     private var stationInfoList = listOf<StationInfo>()
     private var currentTrainCode = ""
@@ -176,10 +178,21 @@ class TrainMapActivity : AppCompatActivity() {
             .addConverterFactory(GsonConverterFactory.create())
             .build()
         trainService = retrofit.create(TrainService::class.java)
+
+        // 拼接区间路线需要余票查询，12306 需要先拿会话 Cookie
+        ticketHttpClient = createTicketHttpClient()
+        val gson = GsonBuilder().setLenient().create()
+        ticketService = Retrofit.Builder()
+            .baseUrl("https://kyfw.12306.cn/")
+            .client(ticketHttpClient)
+            .addConverterFactory(GsonConverterFactory.create(gson))
+            .build()
+            .create(TicketService::class.java)
     }
 
     private fun loadTrainRoute(trainCode: String, date: String) {
         binding.progressBar.visibility = View.VISIBLE
+        binding.tvStationCount.text = "正在查询列车信息…"
 
         lifecycleScope.launch {
             try {
@@ -187,22 +200,10 @@ class TrainMapActivity : AppCompatActivity() {
                     trainService.getTrainInfo(trainCode, date).execute()
                 }
 
-                if (!trainInfoResponse.isSuccessful || trainInfoResponse.body() == null) {
-                    withContext(Dispatchers.Main) {
-                        binding.progressBar.visibility = View.GONE
-                        Toast.makeText(this@TrainMapActivity, "未找到列车信息，请检查车次和日期", Toast.LENGTH_SHORT).show()
-                    }
-                    return@launch
-                }
-
-                val trainInfoData = trainInfoResponse.body()!!.data
+                val trainInfoData = trainInfoResponse.body()?.data
                 val trainNo = trainInfoData?.trainNo
-
-                if (trainNo.isNullOrEmpty()) {
-                    withContext(Dispatchers.Main) {
-                        binding.progressBar.visibility = View.GONE
-                        Toast.makeText(this@TrainMapActivity, "未找到列车信息，请检查车次和日期", Toast.LENGTH_SHORT).show()
-                    }
+                if (!trainInfoResponse.isSuccessful || trainInfoData == null || trainNo.isNullOrEmpty()) {
+                    showLoadError("未找到列车信息，请检查车次和日期")
                     return@launch
                 }
 
@@ -213,68 +214,141 @@ class TrainMapActivity : AppCompatActivity() {
                 val mapResponse = withContext(Dispatchers.IO) {
                     trainService.getTrainMapLine("v2", trainNo).execute()
                 }
+                val segments = if (mapResponse.isSuccessful && mapResponse.body()?.status == true) {
+                    mapResponse.body()?.data
+                } else {
+                    null
+                }
+
+                if (segments.isNullOrEmpty() && apiStations.isEmpty()) {
+                    showLoadError(mapResponse.body()?.errorMsg ?: "未获取到运行图数据")
+                    return@launch
+                }
+
+                if (segments.isNullOrEmpty()) {
+                    withContext(Dispatchers.Main) {
+                        binding.tvStationCount.text = "正在拼接分段路线…"
+                    }
+                }
+
+                val parts = withContext(Dispatchers.IO) {
+                    buildRouteParts(segments, apiStations, date, trainCode, trainNo)
+                }
 
                 withContext(Dispatchers.Main) {
                     binding.progressBar.visibility = View.GONE
-                    val segments = if (mapResponse.isSuccessful && mapResponse.body()?.status == true) {
-                        mapResponse.body()?.data
+                    if (parts.isEmpty()) {
+                        binding.tvStationCount.text = ""
+                        Toast.makeText(
+                            this@TrainMapActivity,
+                            "未获取到运行图数据",
+                            Toast.LENGTH_SHORT
+                        ).show()
                     } else {
-                        null
-                    }
-
-                    if (segments.isNullOrEmpty() && apiStations.isEmpty()) {
-                        val msg = mapResponse.body()?.errorMsg
-                        Toast.makeText(this@TrainMapActivity, msg ?: "未获取到运行图数据", Toast.LENGTH_SHORT).show()
-                    } else {
-                        displayTrainRoute(segments, apiStations)
+                        displayTrainRoute(parts, apiStations)
                     }
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
                     binding.progressBar.visibility = View.GONE
-                    Toast.makeText(this@TrainMapActivity, "请求失败: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+                    binding.tvStationCount.text = ""
+                    Toast.makeText(
+                        this@TrainMapActivity,
+                        "请求失败: ${e.localizedMessage}",
+                        Toast.LENGTH_SHORT
+                    ).show()
                 }
             }
         }
     }
 
-    private fun gcj02ToBd09(lat: Double, lng: Double): LatLng {
-        val source = LatLng(lat, lng)
-        val converter = CoordinateConverter()
-        converter.from(CoordinateConverter.CoordType.COMMON)
-        converter.coord(source)
-        return converter.convert()
+    private suspend fun showLoadError(message: String) {
+        withContext(Dispatchers.Main) {
+            binding.progressBar.visibility = View.GONE
+            binding.tvStationCount.text = ""
+            Toast.makeText(this@TrainMapActivity, message, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    /**
+     * 本车走向为空时，按经停站区间从其他车次拼接；实在找不到的区间用直线兜底。
+     */
+    private suspend fun buildRouteParts(
+        segments: Map<String, TrainLineSegment>?,
+        apiStations: List<TrainStopTime>,
+        date: String,
+        trainCode: String,
+        trainNo: String,
+    ): List<TrainRouteStitcher.RoutePart> {
+        if (!segments.isNullOrEmpty()) {
+            val points = buildPointsFromSegments(segments)
+            if (points != null) {
+                return listOf(TrainRouteStitcher.RoutePart(points, approximate = false))
+            }
+        }
+
+        val anchors = apiStations.mapNotNull { toAnchor(it) }
+        if (anchors.size < 2) return emptyList()
+
+        val stitcher = TrainRouteStitcher(
+            trainService = trainService,
+            ticketService = ticketService,
+            httpClient = ticketHttpClient,
+            date = date,
+            targetTrainCode = trainCode,
+            targetTrainNo = trainNo,
+        )
+        return stitcher.resolve(anchors)
+    }
+
+    private fun buildPointsFromSegments(segments: Map<String, TrainLineSegment>): List<LatLng>? {
+        val points = mutableListOf<LatLng>()
+        segments.entries.sortedBy { it.value.index }.forEach { (_, segment) ->
+            segment.line?.forEach { coordinate ->
+                if (coordinate.size >= 2) {
+                    val point = Utils.gcj02ToBd09(coordinate[1], coordinate[0])
+                    if (points.lastOrNull() != point) {
+                        points.add(point)
+                    }
+                }
+            }
+        }
+        return points.takeIf { it.size >= 2 }
+    }
+
+    private fun toAnchor(stop: TrainStopTime): TrainRouteStitcher.Anchor? {
+        val name = stop.stationName ?: return null
+        val lon = stop.lon?.toDoubleOrNull()
+        val lat = stop.lat?.toDoubleOrNull()
+        val latLng = if (lon != null && lat != null) Utils.gcj02ToBd09(lat, lon) else null
+        return TrainRouteStitcher.Anchor(
+            name = name,
+            telecode = stop.stationTelecode,
+            latLng = latLng,
+        )
     }
 
     private fun displayTrainRoute(
-        segments: Map<String, TrainLineSegment>?,
+        parts: List<TrainRouteStitcher.RoutePart>,
         apiStations: List<TrainStopTime>
     ) {
         val allLatLngs = mutableListOf<LatLng>()
         val cumulativeDistances = mutableListOf<Double>()
 
-        if (!segments.isNullOrEmpty()) {
-            var lastPoint: LatLng? = null
-            var accumulatedDist = 0.0
-            val sortedEntries = segments.entries.sortedBy { it.value.index }
-
-            sortedEntries.forEach { (_, segment) ->
-                val line = segment.line ?: return@forEach
-                if (line.size < 2) return@forEach
-                val points = line.map { gcj02ToBd09(it[1], it[0]) }
-
-                points.forEach { pt ->
-                    if (lastPoint == null || lastPoint != pt) {
-                        if (lastPoint != null) {
-                            accumulatedDist += Utils.calculateDistance(
-                                lastPoint!!.latitude, lastPoint!!.longitude,
-                                pt.latitude, pt.longitude
-                            )
-                        }
-                        allLatLngs.add(pt)
-                        cumulativeDistances.add(accumulatedDist)
-                        lastPoint = pt
+        parts.forEach { part ->
+            part.points.forEach { point ->
+                if (allLatLngs.isEmpty() || allLatLngs.last() != point) {
+                    if (allLatLngs.isNotEmpty()) {
+                        val last = allLatLngs.last()
+                        val distance = Utils.calculateDistance(
+                            last.latitude, last.longitude,
+                            point.latitude, point.longitude
+                        )
+                        cumulativeDistances.add(cumulativeDistances.last() + distance)
+                    } else {
+                        cumulativeDistances.add(0.0)
                     }
+                    allLatLngs.add(point)
                 }
             }
         }
@@ -283,17 +357,17 @@ class TrainMapActivity : AppCompatActivity() {
             val name = apiStation.stationName ?: return@mapNotNull null
             val lon = apiStation.lon?.toDoubleOrNull() ?: return@mapNotNull null
             val lat = apiStation.lat?.toDoubleOrNull() ?: return@mapNotNull null
-            val bd09LatLng = gcj02ToBd09(lat, lon)
+            val bd09LatLng = Utils.gcj02ToBd09(lat, lon)
             val startTime = apiStation.startTime ?: ""
 
             var dist = 0.0
             if (allLatLngs.isNotEmpty()) {
                 var minDist = Double.MAX_VALUE
                 var closestIdx = -1
-                allLatLngs.forEachIndexed { idx, pt ->
+                allLatLngs.forEachIndexed { idx, point ->
                     val d = Utils.calculateDistance(
                         bd09LatLng.latitude, bd09LatLng.longitude,
-                        pt.latitude, pt.longitude
+                        point.latitude, point.longitude
                     )
                     if (d < minDist) {
                         minDist = d
@@ -305,16 +379,29 @@ class TrainMapActivity : AppCompatActivity() {
             StationInfo(name, bd09LatLng, dist, startTime)
         }
 
-        val stationSize = stationInfoList.size
+        val approximateCount = parts.count { it.approximate }
+        val missingCoordinateCount = apiStations.size - stationInfoList.size
         val totalDistance = stationInfoList.lastOrNull()?.distanceFromStart ?: 0.0
-        binding.tvStationCount.text = "车站: $stationSize  总距离: ${formatDistance(totalDistance)}"
+
+        binding.tvStationCount.text = buildString {
+            append("车站: ${apiStations.size}  总距离: ")
+            if (approximateCount > 0) append("约")
+            append(formatDistance(totalDistance))
+            if (approximateCount > 0) append("  (部分路段为示意)")
+            if (missingCoordinateCount > 0) append("  ($missingCoordinateCount 个车站缺少坐标)")
+        }
 
         (binding.rvStations.adapter as? StationAdapter)?.submitList(stationInfoList)
 
-        stationInfoList.forEachIndexed { index, info ->
-            val iconRes = when (index) {
-                0 -> R.drawable.location_on_48dp_start
-                stationInfoList.size - 1 -> R.drawable.location_on_48dp_end
+        val firstApiStation = apiStations.firstOrNull()?.stationName
+        val lastApiStation = apiStations.lastOrNull()?.stationName
+
+        markerList.forEach { it.remove() }
+        markerList.clear()
+        stationInfoList.forEach { info ->
+            val iconRes = when (info.name) {
+                firstApiStation -> R.drawable.location_on_48dp_start
+                lastApiStation -> R.drawable.location_on_48dp_end
                 else -> R.drawable.location_on_48dp_opsz48
             }
             val marker = mapView.map.addOverlay(
@@ -326,13 +413,19 @@ class TrainMapActivity : AppCompatActivity() {
             markerList.add(marker)
         }
 
-        if (allLatLngs.size >= 2) {
-            polylineOverlay = mapView.map.addOverlay(
-                PolylineOptions()
-                    .points(allLatLngs)
-                    .width(8)
-                    .color(Color.parseColor("#4CAF50"))
-            )
+        polylineOverlays.forEach { it.remove() }
+        polylineOverlays.clear()
+        parts.forEach { part ->
+            if (part.points.size >= 2) {
+                val options = PolylineOptions()
+                    .points(part.points)
+                    .width(if (part.approximate) 6 else 8)
+                    .color(Color.parseColor(if (part.approximate) "#9E9E9E" else "#4CAF50"))
+                if (part.approximate) {
+                    options.dottedLine(true)
+                }
+                polylineOverlays.add(mapView.map.addOverlay(options))
+            }
         }
 
         val allPoints = if (allLatLngs.isNotEmpty()) {
@@ -346,8 +439,17 @@ class TrainMapActivity : AppCompatActivity() {
             mapView.map.animateMapStatus(MapStatusUpdateFactory.newLatLngBounds(builder.build()))
         }
 
-        val startName = stationInfoList.firstOrNull()?.name ?: ""
-        val endName = stationInfoList.lastOrNull()?.name ?: ""
+        if (approximateCount > 0) {
+            val message = if (approximateCount == parts.size) {
+                "未找到真实走向，已按经停站直线示意"
+            } else {
+                "部分路段缺少真实走向，已用虚线示意"
+            }
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+        }
+
+        val startName = firstApiStation ?: stationInfoList.firstOrNull()?.name ?: ""
+        val endName = lastApiStation ?: stationInfoList.lastOrNull()?.name ?: ""
         binding.toolbar.title = "$currentTrainCode $startName-$endName"
     }
 
@@ -372,7 +474,7 @@ class TrainMapActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         markerList.forEach { it.remove() }
-        polylineOverlay?.remove()
+        polylineOverlays.forEach { it.remove() }
         mapView.onDestroy()
     }
 }

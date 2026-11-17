@@ -60,6 +60,7 @@ data class TrainDetail(
 data class TrainStopTime(
     val stationName: String? = null,
     val stationNo: String? = null,
+    val stationTelecode: String? = null,
     val lon: String? = null,
     val lat: String? = null,
     val arriveTime: String? = null,

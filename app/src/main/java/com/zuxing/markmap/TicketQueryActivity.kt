@@ -38,6 +38,7 @@ class TicketQueryActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityTicketQueryBinding
     private lateinit var ticketService: TicketService
+    private lateinit var httpClient: OkHttpClient
     private var selectedYear: Int = 0
     private var selectedMonth: Int = 0
     private var selectedDay: Int = 0
@@ -101,14 +102,9 @@ class TicketQueryActivity : AppCompatActivity() {
 
     private fun initService() {
         val client = OkHttpClient.Builder()
+            .cookieJar(MemoryCookieJar())
             .followRedirects(true)
             .followSslRedirects(true)
-            .addInterceptor { chain ->
-                val request = chain.request().newBuilder()
-//                    .header("Referer", "https://servicewechat.com/wxa51f55ab3b2655b9/144/page-frame.html")
-                    .build()
-                chain.proceed(request)
-            }
             .addNetworkInterceptor { chain ->
                 val request = chain.request()
                 Logger.e("余票请求: ${request.url}")
@@ -117,6 +113,7 @@ class TicketQueryActivity : AppCompatActivity() {
                 response
             }
             .build()
+        httpClient = client
         val gson = GsonBuilder().setLenient().create()
         val retrofit = Retrofit.Builder()
             .baseUrl("https://kyfw.12306.cn/")
@@ -187,7 +184,8 @@ class TicketQueryActivity : AppCompatActivity() {
                 val body = withContext(Dispatchers.IO) {
                     val date = String.format(Locale.CHINA, "%04d-%02d-%02d", selectedYear, selectedMonth + 1, selectedDay)
                     dateShort = date.replace("-", "")
-                    ticketService.queryTickets(date, fromStation, toStation).execute().body()
+                    TicketSession.warmUp(httpClient)
+                    ticketService.queryTicketsAuto(date, fromStation, toStation)
                 } ?: TicketQueryResponse(status = false)
 
                 withContext(Dispatchers.Main) {
