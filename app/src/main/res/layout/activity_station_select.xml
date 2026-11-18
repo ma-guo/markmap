@@ -3,50 +3,67 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/background"
     android:orientation="vertical">
 
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/toolbar"
+        style="@style/Widget.MarkMap.Toolbar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        android:background="?attr/colorPrimary"
-        android:title="选择车站"
-        android:titleTextColor="@color/white"
-        app:navigationIcon="@drawable/ic_arrow_back" />
+        app:navigationIcon="@drawable/ic_arrow_back"
+        app:title="选择车站" />
 
     <EditText
         android:id="@+id/etSearch"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="8dp"
-        android:hint="搜索车站名称/拼音/编码"
+        android:layout_height="52dp"
+        android:layout_marginHorizontal="@dimen/screen_padding"
+        android:layout_marginTop="@dimen/space_m"
+        android:background="@drawable/edit_text_bg"
+        android:drawableStart="@drawable/search_24px"
+        android:drawablePadding="@dimen/space_s"
+        android:gravity="center_vertical"
+        android:hint="搜索车站名称 / 拼音 / 编码"
+        android:inputType="text"
+        android:paddingHorizontal="@dimen/space_m"
         android:singleLine="true"
-        android:textSize="14sp" />
+        android:textColor="@color/ink"
+        android:textColorHint="@color/ink_tertiary"
+        android:textSize="@dimen/text_body" />
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvStations"
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
-        android:padding="8dp" />
+        android:layout_weight="1">
 
-    <ProgressBar
-        android:id="@+id/progressBar"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:layout_marginBottom="16dp"
-        android:visibility="gone" />
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvStations"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:paddingHorizontal="@dimen/space_s"
+            android:paddingTop="@dimen/space_s"
+            android:paddingBottom="@dimen/space_l" />
 
-    <TextView
-        android:id="@+id/tvEmpty"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:layout_marginBottom="40dp"
-        android:text="加载中..."
-        android:textColor="@color/gray"
-        android:textSize="14sp"
-        android:visibility="gone" />
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:indeterminateTint="@color/primary"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/tvEmpty"
+            style="@style/TextAppearance.MarkMap.Body"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="加载中…"
+            android:textColor="@color/ink_secondary"
+            android:visibility="gone" />
+
+    </FrameLayout>
 
 </LinearLayout>

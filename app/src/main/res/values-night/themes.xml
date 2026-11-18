@@ -1,7 +1,6 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Base.Theme.MarkMap" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your dark theme here. -->
-<!--         <item name="colorPrimary">@color/white</item>-->
-    </style>
+<resources>
+    <!--
+        本项目采用统一的浅色视觉方案，夜间模式继续使用 values 中的同一套颜色，
+        这里保持为空，避免 values-night 覆盖 Base.Theme.MarkMap 导致样式丢失。
+    -->
 </resources>

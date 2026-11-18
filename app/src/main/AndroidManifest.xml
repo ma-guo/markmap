@@ -68,7 +68,8 @@
         <activity
             android:name=".PointEditActivity"
             android:exported="false"
-            android:theme="@style/Theme.MarkMap" />
+            android:theme="@style/Theme.MarkMap"
+            android:windowSoftInputMode="adjustResize" />
 
         <activity
             android:name=".LineMapActivity"
@@ -78,7 +79,8 @@
         <activity
             android:name=".LineEditActivity"
             android:exported="false"
-            android:theme="@style/Theme.MarkMap" />
+            android:theme="@style/Theme.MarkMap"
+            android:windowSoftInputMode="adjustResize" />
 
         <activity
             android:name=".LineListActivity"
@@ -93,7 +95,8 @@
         <activity
             android:name=".GroupEditActivity"
             android:exported="false"
-            android:theme="@style/Theme.MarkMap" />
+            android:theme="@style/Theme.MarkMap"
+            android:windowSoftInputMode="adjustResize" />
 
         <activity
             android:name=".MapActivity"
@@ -123,7 +126,8 @@
         <activity
             android:name=".StationSelectActivity"
             android:exported="false"
-            android:theme="@style/Theme.MarkMap" />
+            android:theme="@style/Theme.MarkMap"
+            android:windowSoftInputMode="adjustResize" />
     </application>
 
 </manifest>

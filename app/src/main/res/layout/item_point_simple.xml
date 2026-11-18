@@ -6,41 +6,42 @@
     android:background="@drawable/selector_point_item"
     android:foreground="?android:attr/selectableItemBackground"
     android:gravity="center_vertical"
+    android:minHeight="48dp"
     android:orientation="horizontal"
-    android:paddingHorizontal="8dp"
-    android:paddingVertical="6dp">
+    android:paddingHorizontal="@dimen/space_m"
+    android:paddingVertical="@dimen/space_s">
 
     <TextView
         android:id="@+id/tvPointDescription"
+        style="@style/TextAppearance.MarkMap.Body"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:ellipsize="end"
         android:maxLines="1"
-        android:textColor="@color/black"
-        android:textSize="13sp"
+        android:textColor="@color/ink"
         tools:text="Point Description" />
 
     <TextView
         android:id="@+id/tvStartTime"
+        style="@style/TextAppearance.MarkMap.Label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:minWidth="40dp"
+        android:layout_marginStart="@dimen/space_s"
         android:gravity="end"
-        android:textColor="#FFBB5500"
-        android:textSize="12sp"
+        android:minWidth="40dp"
+        android:textColor="@color/warning"
         tools:text="18:25" />
 
     <TextView
         android:id="@+id/tvDistance"
+        style="@style/TextAppearance.MarkMap.Label"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:minWidth="48dp"
+        android:layout_marginStart="@dimen/space_s"
         android:gravity="end"
-        android:textColor="@color/teal_700"
-        android:textSize="12sp"
+        android:minWidth="48dp"
+        android:textColor="@color/primary"
         tools:text="1.2km" />
 
 </LinearLayout>

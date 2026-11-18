@@ -1,5 +1,6 @@
 package com.zuxing.markmap.data.adapter
 
+import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
@@ -43,6 +44,7 @@ class PointAdapter(
             }
         }
 
+        @SuppressLint("DefaultLocale", "SetTextI18n")
         fun bind(point: PointEntity) {
             binding.tvName.text = point.description ?: "未命名点"
             binding.tvAddress.text = point.address ?: ""

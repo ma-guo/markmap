@@ -754,7 +754,7 @@ class MapActivity : AppCompatActivity() {
                     val polylineOptions = PolylineOptions()
                         .points(latLngs)
                         .width(8)
-                        .color(Color.parseColor("#4CAF50"))
+                        .color(ContextCompat.getColor(this@MapActivity, R.color.primary))
 
                     routePolyline = mapView.map.addOverlay(polylineOptions)
                     isRouteVisible = true

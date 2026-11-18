@@ -62,21 +62,44 @@ class TrainRouteStitcher(
 
     suspend fun resolve(anchors: List<Anchor>): List<RoutePart> = withContext(Dispatchers.IO) {
         if (anchors.size < 2) return@withContext emptyList()
+        // 二分要一直细到相邻站，预算按站点数放宽，避免长交路在中途提前退化成直线
+        ticketQueryBudget = maxOf(MAX_TICKET_QUERIES, anchors.size * 2)
+        mapLineBudget = maxOf(MAX_MAP_LINE_FETCHES, anchors.size * 2)
         TicketSession.warmUp(httpClient)
-        resolveRange(anchors, 0, anchors.lastIndex, 0)
+        resolveRange(anchors, 0, anchors.lastIndex)
     }
+
+    /**
+     * 只解析一个站间区间（如「福泉 -> 贵阳」）。
+     *
+     * 与 [resolve] 不同，即使只有两个站也会主动查询经过该区间的其他车次，
+     * 优先复用它们的真实走向；实在找不到时才用两站直线兜底。
+     */
+    suspend fun resolveSegment(from: Anchor, to: Anchor): List<RoutePart> =
+        withContext(Dispatchers.IO) {
+            ticketQueryBudget = maxOf(MAX_TICKET_QUERIES, 24)
+            mapLineBudget = maxOf(MAX_MAP_LINE_FETCHES, 24)
+            TicketSession.warmUp(httpClient)
+
+            val donor = findDonorRoute(from, to)
+            if (donor != null) {
+                listOf(RoutePart(donor.points, donor.approximate))
+            } else {
+                listOf(straightPart(from, to))
+            }
+        }
 
     private fun resolveRange(
         anchors: List<Anchor>,
         fromIndex: Int,
         toIndex: Int,
-        depth: Int,
     ): List<RoutePart> {
         if (fromIndex >= toIndex) return emptyList()
+        // 已经细到相邻两站，没有中间站可再拆分
         if (toIndex - fromIndex == 1) {
             return listOf(straightPart(anchors[fromIndex], anchors[toIndex]))
         }
-        if (isTimeUp()) {
+        if (isTimeUp() || (ticketQueryBudget <= 0 && mapLineBudget <= 0)) {
             return straightChain(anchors, fromIndex, toIndex)
         }
 
@@ -85,19 +108,14 @@ class TrainRouteStitcher(
             return listOf(RoutePart(it.points, it.approximate))
         }
 
-        if (depth >= MAX_DEPTH) {
-            return straightChain(anchors, fromIndex, toIndex)
-        }
-
-        // 2. 在中间的枢纽站尝试拆分，优先靠前的枢纽以便保留更长的真实区间
-        val candidates = splitCandidates(anchors, fromIndex, toIndex)
-        for (mid in candidates) {
+        // 2. 在枢纽/中点尝试拆分，优先复用较长的一侧（如 H->W 已找到，就继续递归 A->H）
+        for (mid in splitCandidates(anchors, fromIndex, toIndex)) {
             if (ticketQueryBudget <= 0 && mapLineBudget <= 0) break
 
             if (mid < toIndex - 1) {
                 val suffix = findDonorRoute(anchors[mid], anchors[toIndex])
                 if (suffix != null) {
-                    return resolveRange(anchors, fromIndex, mid, depth + 1) +
+                    return resolveRange(anchors, fromIndex, mid) +
                             RoutePart(suffix.points, suffix.approximate)
                 }
             }
@@ -106,15 +124,16 @@ class TrainRouteStitcher(
                 val prefix = findDonorRoute(anchors[fromIndex], anchors[mid])
                 if (prefix != null) {
                     return listOf(RoutePart(prefix.points, prefix.approximate)) +
-                            resolveRange(anchors, mid, toIndex, depth + 1)
+                            resolveRange(anchors, mid, toIndex)
                 }
             }
         }
 
-        // 3. 完全没有真实数据，按枢纽/中点继续拆分，最终退化为相邻站直线
-        val mid = candidates.firstOrNull() ?: ((fromIndex + toIndex) / 2)
-        return resolveRange(anchors, fromIndex, mid, depth + 1) +
-                resolveRange(anchors, mid, toIndex, depth + 1)
+        // 3. 一整段都没有真实数据：严格从中点二分，继续递归到相邻站为止，
+        //    而不是在这里直接退化成一条长直线。
+        val mid = (fromIndex + toIndex) / 2
+        return resolveRange(anchors, fromIndex, mid) +
+                resolveRange(anchors, mid, toIndex)
     }
 
     private fun straightPart(from: Anchor, to: Anchor): RoutePart {
@@ -134,18 +153,19 @@ class TrainRouteStitcher(
     }
 
     /**
-     * 区间拆分点：优先选择评分高的枢纽站，且越靠前越好；没有枢纽时取中点。
+     * 区间拆分点：中点优先（保证严格二分），再补充评分高的枢纽站。
      */
     private fun splitCandidates(anchors: List<Anchor>, fromIndex: Int, toIndex: Int): List<Int> {
+        val mid = (fromIndex + toIndex) / 2
         val hubs = (fromIndex + 1 until toIndex)
-            .filter { hubScore(anchors[it].name) > 0 }
+            .filter { it != mid && hubScore(anchors[it].name) > 0 }
             .sortedWith(
                 compareByDescending<Int> { hubScore(anchors[it].name) }
                     .thenBy { it }
             )
             .take(MAX_SPLIT_CANDIDATES)
 
-        return hubs.ifEmpty { listOf((fromIndex + toIndex) / 2) }
+        return (listOf(mid) + hubs).distinct()
     }
 
     /**
@@ -373,12 +393,11 @@ class TrainRouteStitcher(
     }
 
     companion object {
-        private const val MAX_DEPTH = 6
         private const val MAX_DONOR_TRIALS = 3
         private const val MAX_SPLIT_CANDIDATES = 5
-        private const val MAX_TICKET_QUERIES = 12
-        private const val MAX_MAP_LINE_FETCHES = 12
-        private const val MAX_STITCH_MILLIS = 25_000L
+        private const val MAX_TICKET_QUERIES = 24
+        private const val MAX_MAP_LINE_FETCHES = 24
+        private const val MAX_STITCH_MILLIS = 45_000L
         private const val MAX_STATION_TO_LINE_DISTANCE = 50_000.0
 
         /**
@@ -435,5 +454,18 @@ fun createTicketHttpClient(): OkHttpClient {
         .connectTimeout(10, TimeUnit.SECONDS)
         .readTimeout(15, TimeUnit.SECONDS)
         .callTimeout(20, TimeUnit.SECONDS)
+        // 12306 会按 UA/Referer 判断请求来源，缺失时容易 302 到错误页
+        .addInterceptor { chain ->
+            val request = chain.request().newBuilder()
+                .header(
+                    "User-Agent",
+                    "Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 " +
+                            "(KHTML, like Gecko) Chrome/120.0 Mobile Safari/537.36"
+                )
+                .header("Referer", "https://kyfw.12306.cn/otn/leftTicket/init")
+                .header("Accept", "application/json, text/javascript, */*; q=0.01")
+                .build()
+            chain.proceed(request)
+        }
         .build()
 }

@@ -1,39 +1,43 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Base.Theme.MarkMap" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-<!--         <item name="colorPrimary">@color/white</item>-->
+    <!-- 应用主题：浅色、低饱和、以内容为主 -->
+    <style name="Base.Theme.MarkMap" parent="Theme.Material3.Light.NoActionBar">
+        <!-- 品牌色 -->
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorPrimaryContainer">@color/primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/primary_dark</item>
+
+        <item name="colorSecondary">@color/accent</item>
+        <item name="colorOnSecondary">@color/white</item>
+        <item name="colorSecondaryContainer">@color/accent_container</item>
+        <item name="colorOnSecondaryContainer">@color/accent</item>
+
+        <!-- 表面与文字 -->
+        <item name="colorSurface">@color/surface</item>
+        <item name="colorOnSurface">@color/ink</item>
+        <item name="colorSurfaceVariant">@color/surface_alt</item>
+        <item name="colorOnSurfaceVariant">@color/ink_secondary</item>
+        <item name="colorOutline">@color/outline</item>
+
+        <item name="colorError">@color/error</item>
+        <item name="colorOnError">@color/white</item>
+
+        <item name="android:colorBackground">@color/background</item>
+        <item name="colorOnBackground">@color/ink</item>
+        <item name="android:windowBackground">@color/background</item>
+
+        <!-- 系统栏 -->
+        <item name="android:statusBarColor">@color/background</item>
+        <item name="android:navigationBarColor">@color/background</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:forceDarkAllowed" tools:targetApi="q">false</item>
+
+        <!-- 全局字体与默认组件 -->
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="materialButtonStyle">@style/Widget.MarkMap.Button</item>
+        <item name="materialCardViewStyle">@style/Widget.MarkMap.Card</item>
     </style>
 
     <style name="Theme.MarkMap" parent="Base.Theme.MarkMap" />
-
-    <style name="KeyButtonOrange">
-        <item name="android:layout_width">0dp</item>
-        <item name="android:layout_height">48dp</item>
-        <item name="android:layout_margin">3dp</item>
-        <item name="android:layout_columnWeight">1</item>
-        <item name="android:layout_gravity">fill</item>
-        <item name="android:background">@android:color/transparent</item>
-        <item name="android:textColor">#FF9800</item>
-        <item name="android:textSize">20sp</item>
-        <item name="android:textStyle">bold</item>
-        <item name="android:gravity">center</item>
-        <item name="android:clickable">true</item>
-        <item name="android:focusable">true</item>
-    </style>
-
-    <style name="KeyButtonBlack">
-        <item name="android:layout_width">0dp</item>
-        <item name="android:layout_height">48dp</item>
-        <item name="android:layout_margin">3dp</item>
-        <item name="android:layout_columnWeight">1</item>
-        <item name="android:layout_gravity">fill</item>
-        <item name="android:background">@android:color/transparent</item>
-        <item name="android:textColor">#212121</item>
-        <item name="android:textSize">20sp</item>
-        <item name="android:textStyle">bold</item>
-        <item name="android:gravity">center</item>
-        <item name="android:clickable">true</item>
-        <item name="android:focusable">true</item>
-    </style>
 </resources>

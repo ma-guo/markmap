@@ -1,52 +1,49 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:paddingHorizontal="12dp"
-    android:paddingTop="16dp"
-    android:paddingBottom="12dp">
+    android:paddingHorizontal="@dimen/space_xl"
+    android:paddingTop="@dimen/space_xl"
+    android:paddingBottom="@dimen/space_m">
 
     <TextView
         android:id="@+id/tvDialogTitle"
+        style="@style/TextAppearance.MarkMap.Title"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textColor="@color/black"
-        android:textSize="16sp"
-        android:textStyle="bold" />
+        android:textColor="@color/ink" />
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="@dimen/space_m"
         android:orientation="horizontal"
         android:paddingStart="28dp">
 
         <TextView
+            style="@style/TextAppearance.MarkMap.Caption"
             android:layout_width="46dp"
             android:layout_height="wrap_content"
             android:gravity="end"
-            android:text="到站"
-            android:textColor="@color/gray"
-            android:textSize="11sp" />
+            android:text="到站" />
 
         <TextView
+            style="@style/TextAppearance.MarkMap.Caption"
             android:layout_width="46dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="6dp"
             android:gravity="end"
-            android:text="发车"
-            android:textColor="@color/gray"
-            android:textSize="11sp" />
+            android:text="发车" />
 
         <TextView
+            style="@style/TextAppearance.MarkMap.Caption"
             android:layout_width="42dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="4dp"
             android:gravity="end"
-            android:text="停留"
-            android:textColor="@color/gray"
-            android:textSize="11sp" />
+            android:text="停留" />
     </LinearLayout>
 
     <ProgressBar
@@ -54,12 +51,14 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
-        android:layout_marginVertical="16dp"
+        android:layout_marginVertical="@dimen/space_l"
+        android:indeterminateTint="@color/primary"
         android:visibility="gone" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvStopStations"
         android:layout_width="match_parent"
-        android:layout_height="320dp" />
+        android:layout_height="320dp"
+        tools:listitem="@layout/item_stop_station" />
 
 </LinearLayout>

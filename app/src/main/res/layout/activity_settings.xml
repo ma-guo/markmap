@@ -4,10 +4,12 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/background"
     tools:context=".SettingsActivity">
 
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/toolbar"
+        style="@style/Widget.MarkMap.Toolbar"
         android:layout_width="0dp"
         android:layout_height="?attr/actionBarSize"
         app:layout_constraintEnd_toEndOf="parent"
@@ -19,6 +21,7 @@
     <ScrollView
         android:layout_width="0dp"
         android:layout_height="0dp"
+        android:clipToPadding="false"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -28,101 +31,152 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:paddingHorizontal="@dimen/screen_padding"
+            android:paddingTop="@dimen/space_xl"
+            android:paddingBottom="@dimen/space_xxl">
 
             <TextView
+                style="@style/TextAppearance.MarkMap.Label"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="后台定位设置"
-                android:textColor="?attr/colorPrimary"
-                android:textSize="14sp"
-                android:textStyle="bold" />
+                android:layout_marginStart="@dimen/space_xs"
+                android:text="后台定位" />
 
-            <com.google.android.material.switchmaterial.SwitchMaterial
-                android:id="@+id/switchVibrate"
+            <com.google.android.material.card.MaterialCardView
+                style="@style/Widget.MarkMap.Card"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:checked="true"
-                android:text="定位震动"
-                android:textColor="@color/black"
-                android:textSize="16sp" />
+                android:layout_marginTop="@dimen/space_s">
 
-            <com.google.android.material.switchmaterial.SwitchMaterial
-                android:id="@+id/switchShowCenterPanel"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:checked="false"
-                android:text="显示中心位置面板"
-                android:textColor="@color/black"
-                android:textSize="16sp" />
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="24dp"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:layout_width="0dp"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="定位间隔"
-                    android:textColor="@color/black"
-                    android:textSize="16sp" />
+                    android:orientation="vertical"
+                    android:padding="@dimen/card_padding">
 
-                <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/tilInterval"
-                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1">
-
-                    <AutoCompleteTextView
-                        android:id="@+id/actvInterval"
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/switchVibrate"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:inputType="none"
-                        android:text="30 秒"
-                        android:textSize="16sp" />
+                        android:checked="true"
+                        android:gravity="center_vertical"
+                        android:minHeight="48dp"
+                        android:text="定位震动"
+                        android:textColor="@color/ink"
+                        android:textSize="@dimen/text_body" />
 
-                </com.google.android.material.textfield.TextInputLayout>
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginVertical="@dimen/space_xs"
+                        android:background="@color/divider" />
 
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="保存距离阈值"
-                    android:textColor="@color/black"
-                    android:textSize="16sp" />
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/tilDistance"
-                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1">
-
-                    <AutoCompleteTextView
-                        android:id="@+id/actvDistance"
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/switchShowCenterPanel"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:inputType="none"
-                        android:text="10 米"
-                        android:textSize="16sp" />
+                        android:checked="false"
+                        android:gravity="center_vertical"
+                        android:minHeight="48dp"
+                        android:text="显示中心位置面板"
+                        android:textColor="@color/ink"
+                        android:textSize="@dimen/text_body" />
 
-                </com.google.android.material.textfield.TextInputLayout>
+                </LinearLayout>
 
-            </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <TextView
+                style="@style/TextAppearance.MarkMap.Label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/space_xs"
+                android:layout_marginTop="@dimen/space_xxl"
+                android:text="定位参数" />
+
+            <com.google.android.material.card.MaterialCardView
+                style="@style/Widget.MarkMap.Card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_s">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="@dimen/card_padding">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            style="@style/TextAppearance.MarkMap.Body"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="定位间隔" />
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/tilInterval"
+                            style="@style/Widget.MarkMap.TextInputLayout.Dropdown"
+                            android:layout_width="168dp"
+                            android:layout_height="wrap_content">
+
+                            <AutoCompleteTextView
+                                android:id="@+id/actvInterval"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="none"
+                                android:text="30 秒"
+                                android:textSize="@dimen/text_body" />
+
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginVertical="@dimen/space_m"
+                        android:background="@color/divider" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            style="@style/TextAppearance.MarkMap.Body"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="保存距离阈值" />
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/tilDistance"
+                            style="@style/Widget.MarkMap.TextInputLayout.Dropdown"
+                            android:layout_width="168dp"
+                            android:layout_height="wrap_content">
+
+                            <AutoCompleteTextView
+                                android:id="@+id/actvDistance"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:inputType="none"
+                                android:text="10 米"
+                                android:textSize="@dimen/text_body" />
+
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
 
         </LinearLayout>
 

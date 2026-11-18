@@ -4,116 +4,177 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/background"
     android:orientation="vertical"
     tools:context=".TicketQueryActivity">
 
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/toolbar"
+        style="@style/Widget.MarkMap.Toolbar"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
-        android:background="?attr/colorPrimary"
-        android:title="余票查询"
-        android:titleTextColor="@color/white"
-        app:navigationIcon="@drawable/ic_arrow_back" />
+        app:navigationIcon="@drawable/ic_arrow_back"
+        app:title="余票查询" />
 
-    <LinearLayout
+    <com.google.android.material.card.MaterialCardView
+        style="@style/Widget.MarkMap.Card"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="12dp"
-        android:gravity="center_vertical">
+        android:layout_marginHorizontal="@dimen/screen_padding"
+        android:layout_marginTop="@dimen/space_m">
 
-        <EditText
-            android:id="@+id/etFromStation"
-            android:layout_width="0dp"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:hint="出发站"
-            android:singleLine="true"
-            android:textSize="14sp"
-            android:inputType="textCapCharacters"
-            android:focusable="false"
-            android:clickable="true"
-            android:cursorVisible="false" />
+            android:orientation="vertical"
+            android:padding="@dimen/space_l">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginHorizontal="4dp"
-            android:text="→"
-            android:textSize="18sp"
-            android:textColor="@color/gray" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
 
-        <EditText
-            android:id="@+id/etToStation"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:hint="到达站"
-            android:singleLine="true"
-            android:textSize="14sp"
-            android:inputType="textCapCharacters"
-            android:focusable="false"
-            android:clickable="true"
-            android:cursorVisible="false" />
+                <EditText
+                    android:id="@+id/etFromStation"
+                    android:layout_width="0dp"
+                    android:layout_height="52dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/edit_text_bg"
+                    android:clickable="true"
+                    android:cursorVisible="false"
+                    android:focusable="false"
+                    android:gravity="center_vertical"
+                    android:hint="出发站"
+                    android:inputType="textCapCharacters"
+                    android:paddingHorizontal="@dimen/space_m"
+                    android:singleLine="true"
+                    android:textColor="@color/ink"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
 
-        <TextView
-            android:id="@+id/tvDate"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:padding="8dp"
-            android:background="?android:attr/selectableItemBackground"
-            android:textColor="@color/teal_700"
-            android:textSize="13sp"
-            tools:text="2026-06-18" />
-    </LinearLayout>
+                <androidx.appcompat.widget.AppCompatImageButton
+                    android:id="@+id/btnSwapStations"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_marginHorizontal="@dimen/space_xs"
+                    android:background="@drawable/bg_icon_button"
+                    android:contentDescription="切换出发站和到达站"
+                    android:padding="12dp"
+                    android:src="@drawable/ic_swap_horizontal_24"
+                    app:tint="@color/primary" />
 
-    <Button
-        android:id="@+id/btnQuery"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginHorizontal="12dp"
-        android:layout_marginBottom="8dp"
-        android:text="查询"
-        android:textColor="@color/white"
-        android:backgroundTint="@color/teal_700" />
+                <EditText
+                    android:id="@+id/etToStation"
+                    android:layout_width="0dp"
+                    android:layout_height="52dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/edit_text_bg"
+                    android:clickable="true"
+                    android:cursorVisible="false"
+                    android:focusable="false"
+                    android:gravity="center_vertical"
+                    android:hint="到达站"
+                    android:inputType="textCapCharacters"
+                    android:paddingHorizontal="@dimen/space_m"
+                    android:singleLine="true"
+                    android:textColor="@color/ink"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
 
-    <ProgressBar
-        android:id="@+id/progressBar"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:visibility="gone" />
+            </LinearLayout>
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvTickets"
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_m"
+                android:gravity="center_vertical"
+                android:minHeight="44dp"
+                android:orientation="horizontal"
+                android:paddingHorizontal="@dimen/space_xs">
+
+                <TextView
+                    style="@style/TextAppearance.MarkMap.Label"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="出行日期" />
+
+                <TextView
+                    android:id="@+id/tvDate"
+                    style="@style/TextAppearance.MarkMap.Body"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="?android:attr/selectableItemBackground"
+                    android:paddingHorizontal="@dimen/space_m"
+                    android:paddingVertical="@dimen/space_s"
+                    android:textColor="@color/primary"
+                    android:textStyle="bold"
+                    tools:text="2026-06-18" />
+
+            </LinearLayout>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnQuery"
+                style="@style/Widget.MarkMap.Button"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/button_height"
+                android:layout_marginTop="@dimen/space_s"
+                android:text="查询余票"
+                android:textColor="@color/white" />
+
+        </LinearLayout>
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
-        android:padding="8dp"
-        tools:listitem="@layout/item_ticket" />
+        android:layout_weight="1">
 
-    <Button
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvTickets"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:paddingHorizontal="@dimen/screen_padding"
+            android:paddingTop="@dimen/space_m"
+            android:paddingBottom="@dimen/space_m"
+            tools:listitem="@layout/item_ticket" />
+
+        <ProgressBar
+            android:id="@+id/progressBar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:indeterminateTint="@color/primary"
+            android:visibility="gone" />
+
+        <TextView
+            android:id="@+id/tvEmpty"
+            style="@style/TextAppearance.MarkMap.Body"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:gravity="center"
+            android:text="没有查到余票信息"
+            android:textColor="@color/ink_secondary"
+            android:visibility="gone" />
+
+    </FrameLayout>
+
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btnTrainMap"
+        style="@style/Widget.MarkMap.Button"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginHorizontal="12dp"
-        android:layout_marginBottom="8dp"
-        android:text="查看运行图"
+        android:layout_height="@dimen/button_height"
+        android:layout_marginHorizontal="@dimen/screen_padding"
+        android:layout_marginBottom="@dimen/space_l"
+        android:backgroundTint="@color/accent"
+        android:text="查看列车运行图"
         android:textColor="@color/white"
-        android:backgroundTint="@color/orange_key"
-        android:visibility="gone" />
-
-    <TextView
-        android:id="@+id/tvEmpty"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center"
-        android:layout_marginTop="40dp"
-        android:text="没有查到余票信息"
-        android:textColor="@color/gray"
-        android:textSize="14sp"
-        android:visibility="gone" />
+        android:visibility="gone"
+        app:icon="@drawable/routes_24px"
+        app:iconTint="@color/white" />
 
 </LinearLayout>

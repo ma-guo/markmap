@@ -4,11 +4,13 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/background"
     android:keepScreenOn="true"
     tools:context=".MapActivity">
 
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/toolbar"
+        style="@style/Widget.MarkMap.Toolbar"
         android:layout_width="0dp"
         android:layout_height="?attr/actionBarSize"
         app:layout_constraintEnd_toEndOf="parent"
@@ -30,24 +32,25 @@
 
     <ImageView
         android:id="@+id/centerMarker"
-        android:layout_width="32dp"
-        android:layout_height="32dp"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
         android:contentDescription="中心标记"
-        android:src="@android:drawable/ic_menu_compass"
+        android:src="@drawable/my_location_24px"
+        android:tint="@color/primary"
         app:layout_constraintBottom_toTopOf="@id/infoPanel"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        app:tint="@color/primary" />
 
-    <androidx.cardview.widget.CardView
+    <com.google.android.material.card.MaterialCardView
         android:id="@+id/centerLocationCard"
+        style="@style/Widget.MarkMap.Card"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:layout_marginTop="8dp"
-        app:cardBackgroundColor="@color/white"
-        app:cardCornerRadius="8dp"
-        app:cardElevation="4dp"
+        android:layout_marginStart="@dimen/space_m"
+        android:layout_marginTop="@dimen/space_m"
+        app:cardCornerRadius="@dimen/radius_m"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/toolbar">
 
@@ -55,31 +58,33 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="8dp">
+            android:padding="@dimen/space_m">
 
             <TextView
                 android:id="@+id/tvCenterLocation"
+                style="@style/TextAppearance.MarkMap.BodySmall"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="中心位置: 获取中..."
-                android:textColor="@color/black"
-                android:textSize="12sp" />
+                android:maxLines="2"
+                android:maxWidth="240dp"
+                android:text="中心位置：获取中…"
+                android:textColor="@color/ink" />
 
             <TextView
                 android:id="@+id/tvCurrentLine"
+                style="@style/TextAppearance.MarkMap.Caption"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="当前路线: 未选择"
-                android:textColor="@color/black"
-                android:textSize="12sp" />
+                android:layout_marginTop="2dp"
+                android:text="当前路线：未选择" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnSaveCenter"
                 style="@style/Widget.Material3.Button.TonalButton"
                 android:layout_width="wrap_content"
                 android:layout_height="36dp"
-                android:layout_marginTop="4dp"
+                android:layout_marginTop="@dimen/space_s"
+                android:minHeight="0dp"
                 android:text="保存"
                 android:textSize="12sp"
                 app:icon="@drawable/save_24px"
@@ -87,16 +92,15 @@
 
         </LinearLayout>
 
-    </androidx.cardview.widget.CardView>
+    </com.google.android.material.card.MaterialCardView>
 
-    <androidx.cardview.widget.CardView
+    <com.google.android.material.card.MaterialCardView
         android:id="@+id/infoPanel"
+        style="@style/Widget.MarkMap.Card"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_margin="8dp"
-        app:cardBackgroundColor="@color/white"
-        app:cardCornerRadius="12dp"
-        app:cardElevation="4dp"
+        android:layout_margin="@dimen/space_m"
+        app:cardCornerRadius="20dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
@@ -104,69 +108,83 @@
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="16dp">
+            android:padding="@dimen/card_padding">
 
             <androidx.appcompat.widget.AppCompatImageButton
                 android:id="@+id/btnTogglePanel"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:background="@drawable/bg_icon_button"
                 android:contentDescription="切换面板"
+                android:padding="8dp"
                 android:rotation="270"
                 android:src="@drawable/ic_arrow_back"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+                app:layout_constraintTop_toTopOf="parent"
+                app:tint="@color/primary" />
 
             <TextView
                 android:id="@+id/tvLocationInfo"
-                android:layout_width="wrap_content"
+                style="@style/TextAppearance.MarkMap.Body"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_marginEnd="@dimen/space_m"
+                android:maxLines="2"
                 android:text="点击定位按钮获取位置信息"
-                android:textColor="@color/black"
-                android:textSize="14sp"
+                android:textColor="@color/ink"
+                android:textStyle="bold"
+                app:layout_constraintEnd_toStartOf="@id/btnTogglePanel"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent" />
 
+            <TextView
+                android:id="@+id/tvDistanceToLast"
+                style="@style/TextAppearance.MarkMap.Caption"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                android:layout_marginEnd="@dimen/space_m"
+                android:text="距上一个点：- 米"
+                app:layout_constraintEnd_toStartOf="@id/btnTogglePanel"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/tvLocationInfo" />
+
+            <TextView
+                android:id="@+id/tvLocationAddress"
+                style="@style/TextAppearance.MarkMap.BodySmall"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_s"
+                android:layout_marginEnd="@dimen/space_m"
+                android:maxLines="3"
+                app:layout_constraintEnd_toStartOf="@id/btnTogglePanel"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/tvDistanceToLast"
+                tools:text="北京市东城区东长安街" />
+
             <androidx.appcompat.widget.AppCompatImageButton
                 android:id="@+id/fabMark"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:background="@color/design_default_color_background"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:layout_marginTop="@dimen/space_s"
+                android:background="@drawable/bg_icon_button"
                 android:clickable="true"
+                android:contentDescription="标记该位置"
                 android:foreground="?android:attr/selectableItemBackgroundBorderless"
+                android:padding="10dp"
                 android:src="@drawable/save_24px"
                 android:visibility="gone"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/btnTogglePanel"
+                app:tint="@color/primary"
                 tools:visibility="visible" />
-
-            <TextView
-                android:id="@+id/tvLocationAddress"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textColor="@color/black"
-                android:textSize="14sp"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/tvDistanceToLast"
-                tools:text="点击定位按钮获取位置信息" />
-
-            <TextView
-                android:id="@+id/tvDistanceToLast"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="-4dp"
-                android:text="距上一个点: - 米"
-                android:textColor="@color/black"
-                android:textSize="12sp"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/tvLocationInfo" />
 
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rvPointList"
                 android:layout_width="0dp"
                 android:layout_height="160dp"
-                android:layout_marginEnd="8dp"
+                android:layout_marginTop="@dimen/space_s"
+                android:layout_marginEnd="@dimen/space_s"
                 android:visibility="gone"
                 app:layout_constraintEnd_toStartOf="@id/btnTogglePanel"
                 app:layout_constraintStart_toStartOf="parent"
@@ -175,13 +193,13 @@
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 
-    </androidx.cardview.widget.CardView>
+    </com.google.android.material.card.MaterialCardView>
 
     <com.zuxing.markmap.widget.FloatingButton
         android:id="@+id/fabRoute"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
+        android:layout_marginBottom="@dimen/space_s"
         app:layout_constraintBottom_toTopOf="@id/fabBackgroundLocation"
         app:layout_constraintEnd_toEndOf="@id/fabBackgroundLocation" />
 
@@ -189,7 +207,7 @@
         android:id="@+id/fabBackgroundLocation"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
+        android:layout_marginBottom="@dimen/space_s"
         app:layout_constraintBottom_toTopOf="@id/fabLocation"
         app:layout_constraintEnd_toEndOf="@id/fabLocation" />
 
@@ -197,7 +215,7 @@
         android:id="@+id/fabLocation"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginEnd="8dp"
+        android:layout_marginEnd="@dimen/space_m"
         android:layout_marginBottom="96dp"
         app:layout_constraintBottom_toTopOf="@id/infoPanel"
         app:layout_constraintEnd_toEndOf="parent" />
@@ -206,6 +224,7 @@
         android:id="@+id/progressBar"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:indeterminateTint="@color/primary"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"

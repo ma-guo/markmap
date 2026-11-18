@@ -1,12 +1,12 @@
 package com.zuxing.markmap
 
-import android.graphics.Color
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -43,6 +43,33 @@ class TrainMapActivity : AppCompatActivity() {
     private var isListExpanded = false
     private var stationInfoList = listOf<StationInfo>()
     private var currentTrainCode = ""
+    private var isSegmentMode = false
+    private var segmentFromTelecode = ""
+    private var segmentToTelecode = ""
+    private var segmentFromName = ""
+    private var segmentToName = ""
+
+    private data class CandidateSegment(
+        val trainCode: String,
+        val fromTelecode: String,
+        val toTelecode: String,
+        val fromName: String,
+        val toName: String,
+    )
+
+    private data class CandidateMatch(
+        val candidate: CandidateSegment,
+        val info: TrainInfoData,
+        val stops: List<TrainStopTime>,
+        val range: Pair<Int, Int>,
+    )
+
+    private companion object {
+        private const val MAX_STATION_TO_LINE_DISTANCE = 50_000.0
+        private const val MAX_CANDIDATE_CHECKS = 24
+        private const val MAX_REVERSE_CANDIDATE_CHECKS = 12
+        private val HIGH_SPEED_PREFIXES = setOf('G', 'D', 'C')
+    }
 
     data class StationInfo(
         val name: String,
@@ -108,13 +135,43 @@ class TrainMapActivity : AppCompatActivity() {
         currentTrainCode = trainCode
         val date = intent.getStringExtra("date") ?: ""
 
+        segmentFromTelecode = intent.getStringExtra("fromTelecode") ?: ""
+        segmentToTelecode = intent.getStringExtra("toTelecode") ?: ""
+        segmentFromName = intent.getStringExtra("fromName") ?: ""
+        segmentToName = intent.getStringExtra("toName") ?: ""
+
+        val trainCodes = (intent.getStringArrayExtra("trainCodes")?.toList() ?: emptyList())
+            .filter { it.isNotBlank() }
+            .distinct()
+            .ifEmpty { listOf(trainCode).filter { it.isNotBlank() } }
+        val fromCodes = intent.getStringArrayExtra("candidateFromTelecodes")?.toList() ?: emptyList()
+        val toCodes = intent.getStringArrayExtra("candidateToTelecodes")?.toList() ?: emptyList()
+        val fromNames = intent.getStringArrayExtra("candidateFromNames")?.toList() ?: emptyList()
+        val toNames = intent.getStringArrayExtra("candidateToNames")?.toList() ?: emptyList()
+
+        val candidates = trainCodes.mapIndexed { index, code ->
+            CandidateSegment(
+                trainCode = code,
+                fromTelecode = fromCodes.getOrElse(index) { segmentFromTelecode },
+                toTelecode = toCodes.getOrElse(index) { segmentToTelecode },
+                fromName = fromNames.getOrElse(index) { segmentFromName },
+                toName = toNames.getOrElse(index) { segmentToName },
+            )
+        }
+
+        isSegmentMode = segmentFromTelecode.isNotBlank() ||
+                segmentToTelecode.isNotBlank() ||
+                segmentFromName.isNotBlank() ||
+                segmentToName.isNotBlank() ||
+                candidates.any { it.fromTelecode.isNotBlank() || it.fromName.isNotBlank() }
+
         setupToolbar()
         setupMap()
         setupStationPanel()
         initService()
 
-        if (trainCode.isNotEmpty() && date.isNotEmpty()) {
-            loadTrainRoute(trainCode, date)
+        if (candidates.isNotEmpty() && date.isNotEmpty()) {
+            loadTrainRoute(candidates, date)
         } else {
             Toast.makeText(this, "参数错误", Toast.LENGTH_SHORT).show()
             finish()
@@ -190,62 +247,64 @@ class TrainMapActivity : AppCompatActivity() {
             .create(TicketService::class.java)
     }
 
-    private fun loadTrainRoute(trainCode: String, date: String) {
+    private data class LoadedRoute(
+        val trainCode: String,
+        val parts: List<TrainRouteStitcher.RoutePart>,
+        val stations: List<TrainStopTime>,
+        val exactSegment: Boolean,
+        val reversed: Boolean = false,
+    )
+
+    private fun loadTrainRoute(candidates: List<CandidateSegment>, date: String) {
         binding.progressBar.visibility = View.VISIBLE
-        binding.tvStationCount.text = "正在查询列车信息…"
+        binding.tvStationCount.text =
+            if (isSegmentMode) "正在查找包含该区间的车次…" else "正在查询列车信息…"
 
         lifecycleScope.launch {
             try {
-                val trainInfoResponse = withContext(Dispatchers.IO) {
-                    trainService.getTrainInfo(trainCode, date).execute()
-                }
-
-                val trainInfoData = trainInfoResponse.body()?.data
-                val trainNo = trainInfoData?.trainNo
-                if (!trainInfoResponse.isSuccessful || trainInfoData == null || trainNo.isNullOrEmpty()) {
-                    showLoadError("未找到列车信息，请检查车次和日期")
-                    return@launch
-                }
-
-                val apiStations = trainInfoData.trainDetail?.stopTime
-                    ?.sortedBy { it.stationNo?.toIntOrNull() ?: Int.MAX_VALUE }
-                    ?: emptyList()
-
-                val mapResponse = withContext(Dispatchers.IO) {
-                    trainService.getTrainMapLine("v2", trainNo).execute()
-                }
-                val segments = if (mapResponse.isSuccessful && mapResponse.body()?.status == true) {
-                    mapResponse.body()?.data
-                } else {
-                    null
-                }
-
-                if (segments.isNullOrEmpty() && apiStations.isEmpty()) {
-                    showLoadError(mapResponse.body()?.errorMsg ?: "未获取到运行图数据")
-                    return@launch
-                }
-
-                if (segments.isNullOrEmpty()) {
-                    withContext(Dispatchers.Main) {
-                        binding.tvStationCount.text = "正在拼接分段路线…"
-                    }
-                }
-
-                val parts = withContext(Dispatchers.IO) {
-                    buildRouteParts(segments, apiStations, date, trainCode, trainNo)
+                val loaded = withContext(Dispatchers.IO) {
+                    resolveTrainRoute(candidates, date)
                 }
 
                 withContext(Dispatchers.Main) {
                     binding.progressBar.visibility = View.GONE
-                    if (parts.isEmpty()) {
+                    if (loaded == null) {
                         binding.tvStationCount.text = ""
                         Toast.makeText(
                             this@TrainMapActivity,
-                            "未获取到运行图数据",
+                            if (isSegmentMode) "未找到包含该区间的车次" else "未获取到运行图数据",
                             Toast.LENGTH_SHORT
                         ).show()
                     } else {
-                        displayTrainRoute(parts, apiStations)
+                        currentTrainCode = loaded.trainCode
+                        displayTrainRoute(loaded.parts, loaded.stations)
+                        if (isSegmentMode && loaded.reversed) {
+                            Toast.makeText(
+                                this@TrainMapActivity,
+                                "当前方向暂无走向，已使用反向本站线路",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        } else if (isSegmentMode && loaded.exactSegment) {
+                            val actualFrom = loaded.stations.firstOrNull()?.stationName ?: ""
+                            val actualTo = loaded.stations.lastOrNull()?.stationName ?: ""
+                            if (actualFrom.isNotBlank() && actualTo.isNotBlank() &&
+                                (normalizeStationName(actualFrom) != normalizeStationName(segmentFromName) ||
+                                        normalizeStationName(actualTo) != normalizeStationName(segmentToName))
+                            ) {
+                                Toast.makeText(
+                                    this@TrainMapActivity,
+                                    "已使用同城站点：$actualFrom → $actualTo",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        }
+                        if (isSegmentMode && !loaded.exactSegment) {
+                            Toast.makeText(
+                                this@TrainMapActivity,
+                                "未找到包含该区间的车次，已展示完整运行图",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
                     }
                 }
             } catch (e: Exception) {
@@ -262,35 +321,304 @@ class TrainMapActivity : AppCompatActivity() {
         }
     }
 
-    private suspend fun showLoadError(message: String) {
-        withContext(Dispatchers.Main) {
-            binding.progressBar.visibility = View.GONE
-            binding.tvStationCount.text = ""
-            Toast.makeText(this@TrainMapActivity, message, Toast.LENGTH_SHORT).show()
-        }
-    }
-
     /**
-     * 本车走向为空时，按经停站区间从其他车次拼接；实在找不到的区间用直线兜底。
+     * 依次尝试候选车次，优先选出经停站按顺序包含目标区间、且自身有真实走向的车次；
+     * 找到后只截取目标区间，避免把整条运行图都画出来。
      */
-    private suspend fun buildRouteParts(
-        segments: Map<String, TrainLineSegment>?,
-        apiStations: List<TrainStopTime>,
+    private suspend fun resolveTrainRoute(
+        candidates: List<CandidateSegment>,
         date: String,
-        trainCode: String,
-        trainNo: String,
-    ): List<TrainRouteStitcher.RoutePart> {
-        if (!segments.isNullOrEmpty()) {
-            val points = buildPointsFromSegments(segments)
-            if (points != null) {
-                return listOf(TrainRouteStitcher.RoutePart(points, approximate = false))
+    ): LoadedRoute? {
+        val limited = candidates.take(MAX_CANDIDATE_CHECKS)
+        if (limited.isEmpty()) return null
+
+        // 非区间模式：沿用原来的逻辑，展示第一个能加载的车次
+        if (!isSegmentMode) {
+            for (candidate in limited) {
+                val code = candidate.trainCode
+                val info = fetchTrainInfo(code, date) ?: continue
+                val stops = sortedStops(info)
+                val parts = buildFullRoute(info, stops, date, code) ?: continue
+                if (parts.isNotEmpty()) {
+                    return LoadedRoute(code, parts, stops, exactSegment = false)
+                }
+            }
+            return null
+        }
+
+        // 候选顺序已按「本站优先 -> 同城站 -> G/D/C 优先」排好
+        val exactCandidates = mutableListOf<CandidateSegment>()
+        val sameCityCandidates = mutableListOf<CandidateSegment>()
+        for (candidate in limited) {
+            if (isExactSegment(candidate)) {
+                exactCandidates.add(candidate)
+            } else {
+                sameCityCandidates.add(candidate)
             }
         }
 
-        val anchors = apiStations.mapNotNull { toAnchor(it) }
-        if (anchors.size < 2) return emptyList()
+        // 1. 本站正向：优先使用用户所选站点本身的走向
+        val exactMatches = mutableListOf<CandidateMatch>()
+        for (candidate in exactCandidates) {
+            val match = matchCandidate(candidate, date) ?: continue
+            exactMatches.add(match)
+            tryMapLine(match)?.let { return it }
+        }
 
-        val stitcher = TrainRouteStitcher(
+        // 2. 本站反向：正向没有走向时，交换始发站再获取一次
+        tryReverse(date, exactMatches.firstOrNull())?.let { return it }
+
+        // 3. 本站两个方向都没有走向时，再使用同城站点
+        val sameCityMatches = mutableListOf<CandidateMatch>()
+        for (candidate in sameCityCandidates) {
+            val match = matchCandidate(candidate, date) ?: continue
+            sameCityMatches.add(match)
+            tryMapLine(match)?.let { return it }
+        }
+
+        // 4. 仍然没有真实走向：借用其他车次的走向拼接目标区间
+        val firstMatched = (exactMatches + sameCityMatches).firstOrNull()
+        if (firstMatched != null) {
+            val range = firstMatched.range
+            val fromAnchor = toAnchor(firstMatched.stops[range.first])
+            val toAnchor = toAnchor(firstMatched.stops[range.second])
+            if (fromAnchor?.latLng != null && toAnchor?.latLng != null) {
+                val stitcher = createStitcher(
+                    date = date,
+                    trainCode = firstMatched.candidate.trainCode,
+                    trainNo = firstMatched.info.trainNo.orEmpty(),
+                )
+                val parts = stitcher.resolveSegment(fromAnchor, toAnchor)
+                if (parts.isNotEmpty()) {
+                    return LoadedRoute(
+                        trainCode = firstMatched.candidate.trainCode,
+                        parts = parts,
+                        stations = firstMatched.stops.subList(range.first, range.second + 1),
+                        exactSegment = true,
+                    )
+                }
+            }
+        }
+
+        // 4. 兜底：没有车次能确认该区间时，展示第一个车次的完整走向
+        val fallbackCode = limited.first().trainCode
+        val fallbackInfo = fetchTrainInfo(fallbackCode, date) ?: return null
+        val fallbackStops = sortedStops(fallbackInfo)
+        val fallbackParts = buildFullRoute(
+            fallbackInfo, fallbackStops, date, fallbackCode
+        ) ?: return null
+        return LoadedRoute(fallbackCode, fallbackParts, fallbackStops, exactSegment = false)
+    }
+
+    private fun fetchTrainInfo(trainCode: String, date: String): TrainInfoData? {
+        return try {
+            val response = trainService.getTrainInfo(trainCode, date).execute()
+            if (response.isSuccessful) response.body()?.data else null
+        } catch (e: Exception) {
+            Logger.e("获取列车信息失败: $trainCode ${e.localizedMessage}", e)
+            null
+        }
+    }
+
+    private fun fetchMapLine(trainNo: String): Map<String, TrainLineSegment>? {
+        return try {
+            val response = trainService.getTrainMapLine("v2", trainNo).execute()
+            if (response.isSuccessful && response.body()?.status == true) {
+                response.body()?.data
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            Logger.e("获取车次走向失败: $trainNo ${e.localizedMessage}", e)
+            null
+        }
+    }
+
+    private fun sortedStops(info: TrainInfoData): List<TrainStopTime> {
+        return info.trainDetail?.stopTime
+            ?.sortedBy { it.stationNo?.toIntOrNull() ?: Int.MAX_VALUE }
+            ?: emptyList()
+    }
+
+    private suspend fun buildFullRoute(
+        info: TrainInfoData,
+        stops: List<TrainStopTime>,
+        date: String,
+        trainCode: String,
+    ): List<TrainRouteStitcher.RoutePart>? {
+        val trainNo = info.trainNo ?: return null
+        val segments = fetchMapLine(trainNo)
+        val points = segments?.let { buildPointsFromSegments(it) }
+        if (points != null) {
+            return listOf(TrainRouteStitcher.RoutePart(points, approximate = false))
+        }
+
+        val anchors = stops.mapNotNull { toAnchor(it) }
+        if (anchors.size < 2) return null
+        return createStitcher(date, trainCode, trainNo).resolve(anchors)
+    }
+
+    private fun isExactSegment(candidate: CandidateSegment): Boolean {
+        return isSameStation(
+            candidate.fromTelecode, candidate.fromName,
+            segmentFromTelecode, segmentFromName
+        ) && isSameStation(
+            candidate.toTelecode, candidate.toName,
+            segmentToTelecode, segmentToName
+        )
+    }
+
+    private fun isSameStation(
+        telecode: String,
+        name: String,
+        otherTelecode: String,
+        otherName: String,
+    ): Boolean {
+        if (telecode.isNotBlank() && otherTelecode.isNotBlank()) {
+            return telecode.equals(otherTelecode, ignoreCase = true)
+        }
+        return name.isNotBlank() &&
+                normalizeStationName(name) == normalizeStationName(otherName)
+    }
+
+    private fun matchCandidate(candidate: CandidateSegment, date: String): CandidateMatch? {
+        val info = fetchTrainInfo(candidate.trainCode, date) ?: return null
+        val stops = sortedStops(info)
+        val range = findStopRange(stops, candidate) ?: return null
+        return CandidateMatch(candidate, info, stops, range)
+    }
+
+    private fun tryMapLine(match: CandidateMatch): LoadedRoute? {
+        val trainNo = match.info.trainNo ?: return null
+        val fromLatLng = stopLatLng(match.stops[match.range.first]) ?: return null
+        val toLatLng = stopLatLng(match.stops[match.range.second]) ?: return null
+        val segments = fetchMapLine(trainNo) ?: return null
+        val points = buildPointsFromSegments(segments) ?: return null
+        val sliced = slicePointsBetween(points, fromLatLng, toLatLng) ?: return null
+
+        return LoadedRoute(
+            trainCode = match.candidate.trainCode,
+            parts = listOf(TrainRouteStitcher.RoutePart(sliced, approximate = false)),
+            stations = match.stops.subList(match.range.first, match.range.second + 1),
+            exactSegment = true,
+        )
+    }
+
+    /**
+     * 当前方向没有走向数据时，只交换本站点再查一次。
+     * 例如「贵阳 -> 凯里」没有数据时，只尝试「凯里 -> 贵阳」本站车次，
+     * 不会把反向同城站也纳入逆向尝试；同城站仍放在后续步骤处理。
+     */
+    private fun tryReverse(date: String, displayMatch: CandidateMatch?): LoadedRoute? {
+        if (segmentFromTelecode.isBlank() || segmentToTelecode.isBlank()) return null
+
+        val candidates = loadReverseCandidates(date)
+            .filter { isReverseExact(it) }
+            .take(MAX_REVERSE_CANDIDATE_CHECKS)
+
+        return tryReverseCandidates(candidates, date, displayMatch)
+    }
+
+    private fun loadReverseCandidates(date: String): List<CandidateSegment> {
+        val response = try {
+            ticketService.queryTicketsAuto(date, segmentToTelecode, segmentFromTelecode)
+        } catch (e: Exception) {
+            Logger.e(
+                "逆向余票查询失败: $segmentToTelecode-$segmentFromTelecode ${e.localizedMessage}",
+                e
+            )
+            null
+        } ?: return emptyList()
+
+        val stationMap = response.data?.map ?: emptyMap()
+        return (response.data?.result ?: emptyList())
+            .mapNotNull { item ->
+                val parts = item.split("|")
+                if (parts.size < 8) return@mapNotNull null
+                val trainCode = extractTrainCode(parts[3])
+                if (trainCode.isBlank()) return@mapNotNull null
+                val fromCode = parts[6]
+                val toCode = parts[7]
+                CandidateSegment(
+                    trainCode = trainCode,
+                    fromTelecode = fromCode,
+                    toTelecode = toCode,
+                    fromName = stationMap[fromCode] ?: fromCode,
+                    toName = stationMap[toCode] ?: toCode,
+                )
+            }
+            .distinctBy { it.trainCode }
+            .sortedWith(
+                compareByDescending<CandidateSegment> {
+                    it.trainCode.firstOrNull()?.uppercaseChar() in HIGH_SPEED_PREFIXES
+                }
+            )
+    }
+
+    private fun tryReverseCandidates(
+        candidates: List<CandidateSegment>,
+        date: String,
+        displayMatch: CandidateMatch?,
+    ): LoadedRoute? {
+        for (candidate in candidates) {
+            val match = matchCandidate(candidate, date) ?: continue
+            val trainNo = match.info.trainNo ?: continue
+            val reverseFrom = stopLatLng(match.stops[match.range.first]) ?: continue
+            val reverseTo = stopLatLng(match.stops[match.range.second]) ?: continue
+
+            // 原方向：segmentFrom -> segmentTo；反向车次：segmentTo -> segmentFrom
+            val targetFrom = displayMatch
+                ?.let { stopLatLng(it.stops[it.range.first]) }
+                ?: reverseTo
+            val targetTo = displayMatch
+                ?.let { stopLatLng(it.stops[it.range.second]) }
+                ?: reverseFrom
+            if (targetFrom == null || targetTo == null) continue
+
+            val segments = fetchMapLine(trainNo) ?: continue
+            val points = buildPointsFromSegments(segments) ?: continue
+            val sliced = slicePointsBetween(points, targetFrom, targetTo) ?: continue
+
+            val stations = displayMatch
+                ?.stops
+                ?.subList(displayMatch.range.first, displayMatch.range.second + 1)
+                ?: match.stops
+                    .subList(match.range.first, match.range.second + 1)
+                    .reversed()
+
+            return LoadedRoute(
+                trainCode = displayMatch?.candidate?.trainCode ?: candidate.trainCode,
+                parts = listOf(TrainRouteStitcher.RoutePart(sliced, approximate = false)),
+                stations = stations.toList(),
+                exactSegment = true,
+                reversed = true,
+            )
+        }
+        return null
+    }
+
+    private fun isReverseExact(candidate: CandidateSegment): Boolean {
+        return isSameStation(
+            candidate.fromTelecode, candidate.fromName,
+            segmentToTelecode, segmentToName
+        ) && isSameStation(
+            candidate.toTelecode, candidate.toName,
+            segmentFromTelecode, segmentFromName
+        )
+    }
+
+    private fun extractTrainCode(stationTrainCode: String): String {
+        val raw = stationTrainCode.trim()
+        val match = Regex("^([A-Z]+\\d+)").find(raw)
+        return match?.groupValues?.getOrNull(1) ?: raw
+    }
+
+    private fun createStitcher(
+        date: String,
+        trainCode: String,
+        trainNo: String,
+    ): TrainRouteStitcher {
+        return TrainRouteStitcher(
             trainService = trainService,
             ticketService = ticketService,
             httpClient = ticketHttpClient,
@@ -298,7 +626,84 @@ class TrainMapActivity : AppCompatActivity() {
             targetTrainCode = trainCode,
             targetTrainNo = trainNo,
         )
-        return stitcher.resolve(anchors)
+    }
+
+    private fun findStopRange(
+        stops: List<TrainStopTime>,
+        candidate: CandidateSegment,
+    ): Pair<Int, Int>? {
+        if (stops.isEmpty()) return null
+        val fromIndex = stops.indexOfFirst {
+            matchesStation(it, candidate.fromTelecode, candidate.fromName)
+        }
+        if (fromIndex < 0) return null
+
+        // 从出发站之后继续找到达站，避免环线/重复停站时取到出发站之前的同名站
+        val toIndex = (fromIndex + 1 until stops.size).firstOrNull {
+            matchesStation(stops[it], candidate.toTelecode, candidate.toName)
+        } ?: return null
+        return fromIndex to toIndex
+    }
+
+    private fun matchesStation(stop: TrainStopTime, telecode: String, name: String): Boolean {
+        val stopCode = stop.stationTelecode?.trim().orEmpty()
+        if (telecode.isNotBlank() && stopCode.equals(telecode, ignoreCase = true)) {
+            return true
+        }
+        if (name.isBlank()) return false
+        return normalizeStationName(stop.stationName) == normalizeStationName(name)
+    }
+
+    private fun normalizeStationName(raw: String?): String {
+        return raw?.trim().orEmpty().removeSuffix("站")
+    }
+
+    private fun stopLatLng(stop: TrainStopTime): LatLng? {
+        val lon = stop.lon?.toDoubleOrNull() ?: return null
+        val lat = stop.lat?.toDoubleOrNull() ?: return null
+        return Utils.gcj02ToBd09(lat, lon)
+    }
+
+    /**
+     * 在完整走向上截取离出发站/到达站最近的两个点之间的折线。
+     */
+    private fun slicePointsBetween(
+        points: List<LatLng>,
+        from: LatLng,
+        to: LatLng,
+    ): List<LatLng>? {
+        if (points.size < 2) return null
+
+        fun nearest(target: LatLng): Pair<Int, Double> {
+            var index = -1
+            var minDistance = Double.MAX_VALUE
+            points.forEachIndexed { i, point ->
+                val distance = Utils.calculateDistance(
+                    point.latitude, point.longitude,
+                    target.latitude, target.longitude
+                )
+                if (distance < minDistance) {
+                    minDistance = distance
+                    index = i
+                }
+            }
+            return index to minDistance
+        }
+
+        val (fromIndex, fromDistance) = nearest(from)
+        val (toIndex, toDistance) = nearest(to)
+        if (fromIndex < 0 || toIndex < 0 || fromIndex == toIndex) return null
+        if (fromDistance > MAX_STATION_TO_LINE_DISTANCE ||
+            toDistance > MAX_STATION_TO_LINE_DISTANCE
+        ) {
+            return null
+        }
+
+        return if (fromIndex < toIndex) {
+            points.subList(fromIndex, toIndex + 1).toList()
+        } else {
+            points.subList(toIndex, fromIndex + 1).toList().reversed()
+        }
     }
 
     private fun buildPointsFromSegments(segments: Map<String, TrainLineSegment>): List<LatLng>? {
@@ -384,7 +789,8 @@ class TrainMapActivity : AppCompatActivity() {
         val totalDistance = stationInfoList.lastOrNull()?.distanceFromStart ?: 0.0
 
         binding.tvStationCount.text = buildString {
-            append("车站: ${apiStations.size}  总距离: ")
+            append("车站: ${apiStations.size}  ")
+            append(if (isSegmentMode) "区间距离: " else "总距离: ")
             if (approximateCount > 0) append("约")
             append(formatDistance(totalDistance))
             if (approximateCount > 0) append("  (部分路段为示意)")
@@ -420,7 +826,12 @@ class TrainMapActivity : AppCompatActivity() {
                 val options = PolylineOptions()
                     .points(part.points)
                     .width(if (part.approximate) 6 else 8)
-                    .color(Color.parseColor(if (part.approximate) "#9E9E9E" else "#4CAF50"))
+                    .color(
+                        ContextCompat.getColor(
+                            this@TrainMapActivity,
+                            if (part.approximate) R.color.ink_tertiary else R.color.primary
+                        )
+                    )
                 if (part.approximate) {
                     options.dottedLine(true)
                 }

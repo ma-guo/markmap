@@ -3,23 +3,24 @@ package com.zuxing.markmap
 import android.app.AlertDialog
 import android.app.DatePickerDialog
 import android.content.Intent
-import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.util.TypedValue
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.google.gson.GsonBuilder
 import com.google.gson.JsonSyntaxException
 import com.zuxing.markmap.databinding.ActivityTicketQueryBinding
 import com.zuxing.markmap.databinding.ItemStopStationBinding
@@ -42,9 +43,21 @@ class TicketQueryActivity : AppCompatActivity() {
     private var selectedYear: Int = 0
     private var selectedMonth: Int = 0
     private var selectedDay: Int = 0
-    private var firstTrainCode = ""
+    private var candidateSegments: List<TicketCandidate> = emptyList()
+    private var segmentFromTelecode = ""
+    private var segmentToTelecode = ""
+    private var segmentFromName = ""
+    private var segmentToName = ""
     private var dateShort = ""
     private var fromStationSelecting = false
+
+    private data class TicketCandidate(
+        val code: String,
+        val fromTelecode: String,
+        val toTelecode: String,
+        val fromName: String,
+        val toName: String,
+    )
 
     private val stationResultLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -63,6 +76,9 @@ class TicketQueryActivity : AppCompatActivity() {
     }
 
     companion object {
+        private const val MAX_CANDIDATE_TRAINS = 30
+        private val HIGH_SPEED_PREFIXES = setOf('G', 'D', 'C')
+
         val SEAT_MAP = mapOf(
             'M' to "动卧", 'O' to "二等座", 'P' to "一等座",
             'W' to "商务座", '9' to "商务座",
@@ -101,24 +117,21 @@ class TicketQueryActivity : AppCompatActivity() {
     }
 
     private fun initService() {
-        val client = OkHttpClient.Builder()
-            .cookieJar(MemoryCookieJar())
-            .followRedirects(true)
-            .followSslRedirects(true)
+        // 复用统一的 12306 客户端（CookieJar + UA/Referer），这里只额外加日志
+        val client = createTicketHttpClient()
+            .newBuilder()
             .addNetworkInterceptor { chain ->
                 val request = chain.request()
                 Logger.e("余票请求: ${request.url}")
                 val response = chain.proceed(request)
-                Logger.e("余票响应码: ${response.code}")
+                Logger.e("余票响应码: ${response.code} ${response.header("Content-Type")}")
                 response
             }
             .build()
         httpClient = client
-        val gson = GsonBuilder().setLenient().create()
         val retrofit = Retrofit.Builder()
             .baseUrl("https://kyfw.12306.cn/")
             .client(client)
-            .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
         ticketService = retrofit.create(TicketService::class.java)
     }
@@ -126,10 +139,12 @@ class TicketQueryActivity : AppCompatActivity() {
     private fun setupListeners() {
         binding.tvDate.setOnClickListener {
             DatePickerDialog(this, { _, year, month, day ->
+                val changed = year != selectedYear || month != selectedMonth || day != selectedDay
                 selectedYear = year
                 selectedMonth = month
                 selectedDay = day
                 updateDateDisplay()
+                if (changed) invalidateQueryResults()
             }, selectedYear, selectedMonth, selectedDay).show()
         }
 
@@ -145,18 +160,53 @@ class TicketQueryActivity : AppCompatActivity() {
             stationResultLauncher.launch(Intent(this, StationSelectActivity::class.java))
         }
 
+        binding.btnSwapStations.setOnClickListener {
+            val fromCode = binding.etFromStation.tag as? String ?: ""
+            val toCode = binding.etToStation.tag as? String ?: ""
+            val fromText = binding.etFromStation.text?.toString().orEmpty()
+            val toText = binding.etToStation.text?.toString().orEmpty()
+
+            binding.etFromStation.tag = toCode
+            binding.etFromStation.setText(toText)
+            binding.etToStation.tag = fromCode
+            binding.etToStation.setText(fromText)
+
+            invalidateQueryResults()
+            binding.btnSwapStations.animate()
+                .rotationBy(180f)
+                .setDuration(220)
+                .start()
+        }
+
         binding.btnTrainMap.setOnClickListener {
-            val trainCode = firstTrainCode
+            val segments = candidateSegments
             val date = dateShort
-            if (trainCode.isEmpty()) {
+            if (segments.isEmpty()) {
                 Toast.makeText(this, "请先查询余票", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
             startActivity(Intent(this, TrainMapActivity::class.java).apply {
-                putExtra("trainCode", trainCode)
+                // 传入本次查询的全部候选车次及各自实际售卖的区间
+                putExtra("trainCode", segments.first().code)
+                putExtra("trainCodes", segments.map { it.code }.toTypedArray())
+                putExtra("candidateFromTelecodes", segments.map { it.fromTelecode }.toTypedArray())
+                putExtra("candidateToTelecodes", segments.map { it.toTelecode }.toTypedArray())
+                putExtra("candidateFromNames", segments.map { it.fromName }.toTypedArray())
+                putExtra("candidateToNames", segments.map { it.toName }.toTypedArray())
                 putExtra("date", date)
+                putExtra("fromTelecode", segmentFromTelecode)
+                putExtra("toTelecode", segmentToTelecode)
+                putExtra("fromName", segmentFromName)
+                putExtra("toName", segmentToName)
             })
         }
+    }
+
+    private fun invalidateQueryResults() {
+        candidateSegments = emptyList()
+        binding.btnTrainMap.visibility = View.GONE
+        (binding.rvTickets.adapter as? TicketAdapter)?.submitList(emptyList())
+        binding.tvEmpty.visibility = View.GONE
     }
 
     private fun updateDateDisplay() {
@@ -178,12 +228,25 @@ class TicketQueryActivity : AppCompatActivity() {
 
         binding.progressBar.visibility = View.VISIBLE
         binding.btnTrainMap.visibility = View.GONE
+        candidateSegments = emptyList()
+
+        // 余票查询日期窗口：今天及更早改到明天，超过 10 天改到第 10 天
+        val rawDate = String.format(
+            Locale.CHINA, "%04d-%02d-%02d",
+            selectedYear, selectedMonth + 1, selectedDay
+        )
+        val date = normalizeTicketQueryDate(rawDate)
+        if (date != rawDate) {
+            selectedYear = date.substring(0, 4).toInt()
+            selectedMonth = date.substring(5, 7).toInt() - 1
+            selectedDay = date.substring(8, 10).toInt()
+            updateDateDisplay()
+        }
+        dateShort = date.replace("-", "")
 
         lifecycleScope.launch {
             try {
                 val body = withContext(Dispatchers.IO) {
-                    val date = String.format(Locale.CHINA, "%04d-%02d-%02d", selectedYear, selectedMonth + 1, selectedDay)
-                    dateShort = date.replace("-", "")
                     TicketSession.warmUp(httpClient)
                     ticketService.queryTicketsAuto(date, fromStation, toStation)
                 } ?: TicketQueryResponse(status = false)
@@ -200,10 +263,43 @@ class TicketQueryActivity : AppCompatActivity() {
                             binding.rvTickets.visibility = View.GONE
                         } else {
                             val tickets = parseResults(result, stationMap)
-                            firstTrainCode = extractTrainCode(tickets.firstOrNull()?.stationTrainCode ?: "")
+                            candidateSegments = tickets
+                                .mapNotNull { ticket ->
+                                    val code = extractTrainCode(ticket.stationTrainCode)
+                                    if (code.isBlank()) {
+                                        null
+                                    } else {
+                                        TicketCandidate(
+                                            code = code,
+                                            fromTelecode = ticket.fromTelecode,
+                                            toTelecode = ticket.toTelecode,
+                                            fromName = ticket.fromStation,
+                                            toName = ticket.toStation,
+                                        )
+                                    }
+                                }
+                                .sortedWith(
+                                    // 1. 优先本站（用户选择的站点）本身，2. 再考虑同城站，3. G/D/C 车次更可能有走向数据
+                                    compareByDescending<TicketCandidate> {
+                                        it.fromTelecode.equals(fromStation, ignoreCase = true) &&
+                                                it.toTelecode.equals(toStation, ignoreCase = true)
+                                    }.thenByDescending {
+                                        it.code.firstOrNull()?.uppercaseChar() in HIGH_SPEED_PREFIXES
+                                    }
+                                )
+                                // 同一车次保留排序后的第一条（本站优先的那条）
+                                .distinctBy { it.code }
+                                .take(MAX_CANDIDATE_TRAINS)
+                            segmentFromTelecode = fromStation
+                            segmentToTelecode = toStation
+                            segmentFromName = stationMap[fromStation]
+                                ?: binding.etFromStation.text.toString().substringBefore("(").trim()
+                            segmentToName = stationMap[toStation]
+                                ?: binding.etToStation.text.toString().substringBefore("(").trim()
                             binding.tvEmpty.visibility = View.GONE
                             binding.rvTickets.visibility = View.VISIBLE
-                            binding.btnTrainMap.visibility = View.VISIBLE
+                            binding.btnTrainMap.visibility =
+                                if (candidateSegments.isNotEmpty()) View.VISIBLE else View.GONE
                             (binding.rvTickets.adapter as? TicketAdapter)?.submitList(tickets)
                         }
                     } else {
@@ -399,28 +495,48 @@ class TicketQueryActivity : AppCompatActivity() {
                 binding.tvStartTime.text = item.startTime
                 binding.tvArriveTime.text = item.arriveTime
 
-                if (item.canBuy) {
-                    binding.tvCanBuy.text = "可订"
-                    binding.tvCanBuy.setBackgroundColor(Color.parseColor("#4CAF50"))
-                } else {
-                    binding.tvCanBuy.text = "停售"
-                    binding.tvCanBuy.setBackgroundColor(Color.parseColor("#F44336"))
-                }
+                val context = binding.root.context
+                val density = context.resources.displayMetrics.density
+                val chipColor = ContextCompat.getColor(
+                    context,
+                    if (item.canBuy) R.color.success else R.color.error
+                )
+                binding.tvCanBuy.text = if (item.canBuy) "可订" else "停售"
+                binding.tvCanBuy.setTextColor(ContextCompat.getColor(context, R.color.white))
+                binding.tvCanBuy.background = roundedChip(chipColor, 9f * density)
 
                 binding.llSeats.removeAllViews()
+                val seatBg = ContextCompat.getColor(context, R.color.primary_container)
+                val seatText = ContextCompat.getColor(context, R.color.primary)
                 for (seat in item.seats) {
                     val price = item.prices[seat]
                     val text = if (price != null && price > 0) "$seat ¥${price / 10f}" else seat
-                    val tv = TextView(binding.root.context).apply {
+                    val tv = TextView(context).apply {
                         this.text = text
-                        setTextColor(Color.WHITE)
-                        setBackgroundColor(Color.parseColor("#1976D2"))
+                        setTextColor(seatText)
+                        background = roundedChip(seatBg, 8f * density)
                         setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f)
-                        val pad = (4 * resources.displayMetrics.density).toInt()
-                        setPadding(pad, pad / 2, pad, pad / 2)
-                        (layoutParams as? ViewGroup.MarginLayoutParams)?.marginEnd = pad
+                        val horizontal = (10 * density).toInt()
+                        val vertical = (5 * density).toInt()
+                        setPadding(horizontal, vertical, horizontal, vertical)
+                        layoutParams = LinearLayout.LayoutParams(
+                            ViewGroup.LayoutParams.WRAP_CONTENT,
+                            ViewGroup.LayoutParams.WRAP_CONTENT
+                        ).apply {
+                            marginEnd = (6 * density).toInt()
+                            topMargin = (4 * density).toInt()
+                            bottomMargin = (4 * density).toInt()
+                        }
                     }
                     binding.llSeats.addView(tv)
+                }
+            }
+
+            private fun roundedChip(color: Int, radiusPx: Float): GradientDrawable {
+                return GradientDrawable().apply {
+                    shape = GradientDrawable.RECTANGLE
+                    cornerRadius = radiusPx
+                    setColor(color)
                 }
             }
         }
