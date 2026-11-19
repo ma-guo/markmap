@@ -103,7 +103,7 @@ class PointEditActivity : AppCompatActivity() {
     private fun showDeleteConfirmationDialog() {
         AlertDialog.Builder(this)
             .setTitle("删除确认")
-            .setMessage("确定要删除这个点吗？此操作不可恢复。")
+            .setMessage("确定要删除这个地点吗？删除后可在回收站恢复。")
             .setPositiveButton("删除") { _, _ ->
                 deletePoint()
             }
@@ -180,8 +180,9 @@ class PointEditActivity : AppCompatActivity() {
                     point.altitude?.let { binding.etAltitude.setText(String.format("%.1f", it)) }
                     binding.etAddress.setText(point.address ?: "")
                     binding.etDescription.setText(point.description ?: "")
-                    binding.etSortOrder.setText(point.sortOrder.toString())
-                    binding.tvLineName.text = "所属线: ${line?.name ?: ""}"
+                    point.tags?.let { binding.etTags.setText(it) }
+                    binding.switchFavorite.isChecked = point.isFavorite
+                    binding.tvLineName.text = "所属路段：${line?.name ?: ""}"
                     binding.tvLineName.visibility = android.view.View.VISIBLE
                     binding.tvCreateTime.text = "创建时间: ${formatTime(point.createTime)}"
                     binding.tvCreateTime.visibility = android.view.View.VISIBLE
@@ -207,7 +208,9 @@ class PointEditActivity : AppCompatActivity() {
         val altitude = binding.etAltitude.text.toString().toDoubleOrNull()
         val address = binding.etAddress.text.toString().trim()
         val description = binding.etDescription.text.toString().trim()
-        val sortOrder = binding.etSortOrder.text.toString().toIntOrNull() ?: 0
+        val tags = binding.etTags.text.toString().trim()
+        val favorite = binding.switchFavorite.isChecked
+        val sortOrder = currentPoint?.sortOrder ?: 0
 
         lifecycleScope.launch(Dispatchers.IO) {
             val point = PointEntity(
@@ -218,6 +221,8 @@ class PointEditActivity : AppCompatActivity() {
                 altitude = altitude,
                 address = address.ifBlank { null },
                 description = description.ifBlank { null },
+                tags = tags.ifBlank { null },
+                isFavorite = favorite,
                 sortOrder = sortOrder,
                 createTime = currentPoint?.createTime ?: System.currentTimeMillis(),
                 modifyTime = System.currentTimeMillis()
@@ -230,8 +235,8 @@ class PointEditActivity : AppCompatActivity() {
             }
 
             withContext(Dispatchers.Main) {
-                Toast.makeText(this@PointEditActivity, "保存成功", Toast.LENGTH_SHORT).show()
-//                finish()
+                Toast.makeText(this@PointEditActivity, "已保存", Toast.LENGTH_SHORT).show()
+                finish()
             }
         }
     }

@@ -8,11 +8,10 @@ import android.graphics.Color
 import android.os.Bundle
 import android.os.Vibrator
 import android.os.VibratorManager
-import android.view.Menu
-import android.view.MenuItem
 import android.view.View
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import android.widget.PopupMenu
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
@@ -107,6 +106,16 @@ class MapActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        if (!(application as MarkMapApplication).baiduReady) {
+            android.widget.Toast.makeText(
+                this,
+                "地图组件不可用：百度地图 SDK 在当前设备初始化失败",
+                android.widget.Toast.LENGTH_LONG
+            ).show()
+            finish()
+            return
+        }
         binding = ActivityMapBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -163,28 +172,24 @@ class MapActivity : AppCompatActivity() {
     }
 
     private fun setupToolbar() {
-        setSupportActionBar(binding.toolbar)
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        binding.toolbar.setNavigationOnClickListener {
+        binding.navBar.applyTopInsetPadding(8f)
+        binding.infoPanel.applyBottomInsetPadding()
+        binding.btnBack.setOnClickListener {
             if (!isBackgroundLocked || !isBackgroundLocationEnabled) {
                 finish()
             }
         }
-    }
-
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.menu_map, menu)
-        return true
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when (item.itemId) {
-            R.id.action_settings -> {
-                startActivity(Intent(this, SettingsActivity::class.java))
-                true
+        binding.btnMore.setOnClickListener { anchor ->
+            PopupMenu(this, anchor).apply {
+                menu.add(0, 1, 0, "设置")
+                setOnMenuItemClickListener { item ->
+                    when (item.itemId) {
+                        1 -> { startActivity(Intent(this@MapActivity, SettingsActivity::class.java)); true }
+                        else -> false
+                    }
+                }
+                show()
             }
-
-            else -> super.onOptionsItemSelected(item)
         }
     }
 
@@ -473,7 +478,7 @@ class MapActivity : AppCompatActivity() {
             if (lineId != -1L) {
                 saveCenterPoint()
             } else {
-                Toast.makeText(this, "请先选择路线", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "请先选择路段", Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -481,7 +486,7 @@ class MapActivity : AppCompatActivity() {
             if (lineId != -1L) {
                 toggleRoute()
             } else {
-                Toast.makeText(this, "请先选择路线", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "请先选择路段", Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -741,7 +746,7 @@ class MapActivity : AppCompatActivity() {
                 val points = app.repository.getPointsByLineId(lineId).first()
                 if (points.isEmpty()) {
                     runOnUiThread {
-                        Toast.makeText(this@MapActivity, "该路线暂无点", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@MapActivity, "该路段暂无地点", Toast.LENGTH_SHORT).show()
                     }
                     return@launch
                 }
@@ -763,13 +768,13 @@ class MapActivity : AppCompatActivity() {
                     }
                 } else {
                     runOnUiThread {
-                        Toast.makeText(this@MapActivity, "至少需要2个点才能显示路线", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@MapActivity, "至少需要 2 个地点才能显示路段", Toast.LENGTH_SHORT).show()
                     }
                 }
             } catch (e: Exception) {
                 Logger.e("显示路线失败: ${e.message}")
                 runOnUiThread {
-                    Toast.makeText(this@MapActivity, "显示路线失败", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@MapActivity, "显示路段失败", Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -995,20 +1000,20 @@ class MapActivity : AppCompatActivity() {
         initShowCenterPanel()
         val interval = prefs.getLong(SettingsActivity.KEY_INTERVAL, SettingsActivity.DEFAULT_INTERVAL)
         locationClient.locOption.setScanSpan(interval.toInt())
-        mapView.onResume()
+        if (this::mapView.isInitialized) mapView.onResume()
     }
 
     override fun onPause() {
         super.onPause()
-        mapView.onPause()
+        if (this::mapView.isInitialized) mapView.onPause()
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        mapView.map.isMyLocationEnabled = false
+        if (this::mapView.isInitialized) mapView.map.isMyLocationEnabled = false
         locationClient.stop()
         customLocationService?.stop()
-        mapView.onDestroy()
+        if (this::mapView.isInitialized) mapView.onDestroy()
     }
 
     override fun onBackPressed() {

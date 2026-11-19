@@ -4,6 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
     android:background="@color/background"
     tools:context=".LineEditActivity">
 
@@ -16,7 +17,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:navigationIcon="@drawable/ic_arrow_back"
-        app:title="编辑路线" />
+        app:title="编辑路段" />
 
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/tilName"
@@ -25,7 +26,7 @@
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="@dimen/screen_padding"
         android:layout_marginTop="@dimen/space_xxl"
-        android:hint="路线名称"
+        android:hint="路段名称"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/toolbar">
@@ -42,24 +43,22 @@
     </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/tilSortOrder"
-        style="@style/Widget.MarkMap.TextInputLayout"
+        android:id="@+id/tilMode"
+        style="@style/Widget.MarkMap.TextInputLayout.Dropdown"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="@dimen/screen_padding"
         android:layout_marginTop="@dimen/space_l"
-        android:hint="排序值"
+        android:hint="交通方式"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tilName">
 
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/etSortOrder"
+        <AutoCompleteTextView
+            android:id="@+id/actvMode"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="number"
-            android:maxLines="1"
-            android:text="0"
+            android:inputType="none"
             android:textSize="@dimen/text_body" />
 
     </com.google.android.material.textfield.TextInputLayout>
@@ -71,10 +70,10 @@
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="@dimen/screen_padding"
         android:layout_marginTop="@dimen/space_l"
-        android:hint="所属组"
+        android:hint="所属行程"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tilSortOrder">
+        app:layout_constraintTop_toBottomOf="@id/tilMode">
 
         <AutoCompleteTextView
             android:id="@+id/actvGroup"
@@ -98,17 +97,16 @@
         app:layout_constraintTop_toBottomOf="@id/tilGroup"
         tools:text="创建时间：2024-01-01 12:00:00" />
 
-    <com.google.android.material.button.MaterialButton
+    <TextView
         android:id="@+id/btnSave"
-        style="@style/Widget.MarkMap.Button"
         android:layout_width="0dp"
         android:layout_height="@dimen/button_height"
-        android:layout_marginHorizontal="@dimen/screen_padding"
-        android:layout_marginBottom="@dimen/space_xxl"
+        android:background="@drawable/bg_btn_primary"
+        android:gravity="center"
         android:text="保存"
         android:textColor="@color/white"
-        app:icon="@drawable/save_24px"
-        app:iconTint="@color/white"
+        android:textSize="16sp"
+        android:textStyle="bold"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />

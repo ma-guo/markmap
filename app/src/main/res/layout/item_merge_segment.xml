@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    style="@style/Widget.MarkMap.Card"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginVertical="5dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="8dp"
+        android:paddingTop="10dp"
+        android:paddingEnd="4dp"
+        android:paddingBottom="10dp">
+
+        <CheckBox
+            android:id="@+id/cbSelect"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:buttonTint="@color/primary"
+            android:gravity="center" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:paddingStart="2dp"
+            android:paddingEnd="8dp">
+
+            <TextView
+                android:id="@+id/tvName"
+                style="@style/TextAppearance.MarkMap.Title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                tools:text="北京 → 上海" />
+
+            <TextView
+                android:id="@+id/tvMeta"
+                style="@style/TextAppearance.MarkMap.BodySmall"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="2dp"
+                tools:text="火车 · 12 个地点 · 1,318 公里" />
+        </LinearLayout>
+
+        <ImageButton
+            android:id="@+id/btnReverse"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="切换方向"
+            android:padding="8dp"
+            android:src="@drawable/ic_swap_horizontal_24"
+            app:tint="@color/ink_secondary" />
+
+        <ImageButton
+            android:id="@+id/btnUp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="上移"
+            android:padding="8dp"
+            android:src="@drawable/arrow_drop_up_24px"
+            app:tint="@color/ink_secondary" />
+
+        <ImageButton
+            android:id="@+id/btnDown"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="下移"
+            android:padding="8dp"
+            android:src="@drawable/arrow_drop_down_24px"
+            app:tint="@color/ink_secondary" />
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

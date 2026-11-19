@@ -8,27 +8,16 @@
     android:keepScreenOn="true"
     tools:context=".MapActivity">
 
-    <com.google.android.material.appbar.MaterialToolbar
-        android:id="@+id/toolbar"
-        style="@style/Widget.MarkMap.Toolbar"
-        android:layout_width="0dp"
-        android:layout_height="?attr/actionBarSize"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:navigationIcon="@drawable/ic_arrow_back"
-        app:title="地图定位" />
-
     <com.baidu.mapapi.map.MapView
         android:id="@+id/bmapView"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:clickable="true"
         android:focusable="true"
-        app:layout_constraintBottom_toTopOf="@id/infoPanel"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/toolbar" />
+        app:layout_constraintTop_toTopOf="parent" />
 
     <ImageView
         android:id="@+id/centerMarker"
@@ -36,12 +25,68 @@
         android:layout_height="36dp"
         android:contentDescription="中心标记"
         android:src="@drawable/my_location_24px"
-        android:tint="@color/primary"
-        app:layout_constraintBottom_toTopOf="@id/infoPanel"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:tint="@color/primary" />
+
+    <LinearLayout
+        android:id="@+id/navBar"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <ImageButton
+            android:id="@+id/btnBack"
+            android:layout_width="38dp"
+            android:layout_height="38dp"
+            android:background="@drawable/bg_round_btn"
+            android:contentDescription="返回"
+            android:padding="9dp"
+            android:src="@drawable/ic_arrow_back"
+            app:tint="@color/ink" />
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <TextView
+            android:id="@+id/tvTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_pill"
+            android:paddingStart="14dp"
+            android:paddingTop="8dp"
+            android:paddingEnd="14dp"
+            android:paddingBottom="8dp"
+            android:text="记录"
+            android:textColor="@color/ink"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <ImageButton
+            android:id="@+id/btnMore"
+            android:layout_width="38dp"
+            android:layout_height="38dp"
+            android:background="@drawable/bg_round_btn"
+            android:contentDescription="更多"
+            android:padding="9dp"
+            android:src="@drawable/ic_more_horiz_24"
+            app:tint="@color/ink" />
+    </LinearLayout>
 
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/centerLocationCard"
@@ -76,7 +121,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
-                android:text="当前路线：未选择" />
+                android:text="当前路段：未选择" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnSaveCenter"
@@ -94,21 +139,44 @@
 
     </com.google.android.material.card.MaterialCardView>
 
-    <com.google.android.material.card.MaterialCardView
+    <LinearLayout
         android:id="@+id/infoPanel"
-        style="@style/Widget.MarkMap.Card"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_margin="@dimen/space_m"
-        app:cardCornerRadius="20dp"
+        android:background="@drawable/bg_sheet"
+        android:elevation="12dp"
+        android:orientation="vertical"
+        android:paddingStart="22dp"
+        android:paddingTop="14dp"
+        android:paddingEnd="22dp"
+        android:paddingBottom="22dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
-        <androidx.constraintlayout.widget.ConstraintLayout
+        <View
+            android:layout_width="40dp"
+            android:layout_height="4dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="16dp"
+            android:background="@drawable/bg_grab" />
+
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:padding="@dimen/card_padding">
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/tvLocationInfo"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:maxLines="2"
+                android:text="点击定位按钮获取位置信息"
+                android:textColor="@color/ink"
+                android:textSize="17sp"
+                android:textStyle="bold" />
 
             <androidx.appcompat.widget.AppCompatImageButton
                 android:id="@+id/btnTogglePanel"
@@ -119,106 +187,76 @@
                 android:padding="8dp"
                 android:rotation="270"
                 android:src="@drawable/ic_arrow_back"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
                 app:tint="@color/primary" />
+        </LinearLayout>
 
-            <TextView
-                android:id="@+id/tvLocationInfo"
-                style="@style/TextAppearance.MarkMap.Body"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginEnd="@dimen/space_m"
-                android:maxLines="2"
-                android:text="点击定位按钮获取位置信息"
-                android:textColor="@color/ink"
-                android:textStyle="bold"
-                app:layout_constraintEnd_toStartOf="@id/btnTogglePanel"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+        <TextView
+            android:id="@+id/tvDistanceToLast"
+            style="@style/TextAppearance.MarkMap.Caption"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="距上一个点：- 米" />
 
-            <TextView
-                android:id="@+id/tvDistanceToLast"
-                style="@style/TextAppearance.MarkMap.Caption"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:layout_marginEnd="@dimen/space_m"
-                android:text="距上一个点：- 米"
-                app:layout_constraintEnd_toStartOf="@id/btnTogglePanel"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/tvLocationInfo" />
+        <TextView
+            android:id="@+id/tvLocationAddress"
+            style="@style/TextAppearance.MarkMap.BodySmall"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/space_s"
+            android:maxLines="2"
+            tools:text="北京市东城区东长安街" />
 
-            <TextView
-                android:id="@+id/tvLocationAddress"
-                style="@style/TextAppearance.MarkMap.BodySmall"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_s"
-                android:layout_marginEnd="@dimen/space_m"
-                android:maxLines="3"
-                app:layout_constraintEnd_toStartOf="@id/btnTogglePanel"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/tvDistanceToLast"
-                tools:text="北京市东城区东长安街" />
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvPointList"
+            android:layout_width="match_parent"
+            android:layout_height="160dp"
+            android:layout_marginTop="@dimen/space_s"
+            android:visibility="gone"
+            tools:visibility="visible" />
 
-            <androidx.appcompat.widget.AppCompatImageButton
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:gravity="center_horizontal"
+            android:orientation="horizontal">
+
+            <com.zuxing.markmap.widget.FloatingButton
                 android:id="@+id/fabMark"
-                android:layout_width="44dp"
-                android:layout_height="44dp"
-                android:layout_marginTop="@dimen/space_s"
-                android:background="@drawable/bg_icon_button"
-                android:clickable="true"
-                android:contentDescription="标记该位置"
-                android:foreground="?android:attr/selectableItemBackgroundBorderless"
-                android:padding="10dp"
-                android:src="@drawable/save_24px"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
                 android:visibility="gone"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/btnTogglePanel"
-                app:tint="@color/primary"
                 tools:visibility="visible" />
 
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvPointList"
+            <Space
                 android:layout_width="0dp"
-                android:layout_height="160dp"
-                android:layout_marginTop="@dimen/space_s"
-                android:layout_marginEnd="@dimen/space_s"
-                android:visibility="gone"
-                app:layout_constraintEnd_toStartOf="@id/btnTogglePanel"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                tools:visibility="visible" />
+                android:layout_height="1dp"
+                android:layout_weight="1" />
 
-        </androidx.constraintlayout.widget.ConstraintLayout>
+            <com.zuxing.markmap.widget.FloatingButton
+                android:id="@+id/fabLocation"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
 
-    </com.google.android.material.card.MaterialCardView>
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
 
-    <com.zuxing.markmap.widget.FloatingButton
-        android:id="@+id/fabRoute"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="@dimen/space_s"
-        app:layout_constraintBottom_toTopOf="@id/fabBackgroundLocation"
-        app:layout_constraintEnd_toEndOf="@id/fabBackgroundLocation" />
+            <com.zuxing.markmap.widget.FloatingButton
+                android:id="@+id/fabRoute"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
 
-    <com.zuxing.markmap.widget.FloatingButton
-        android:id="@+id/fabBackgroundLocation"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginBottom="@dimen/space_s"
-        app:layout_constraintBottom_toTopOf="@id/fabLocation"
-        app:layout_constraintEnd_toEndOf="@id/fabLocation" />
+            <com.zuxing.markmap.widget.FloatingButton
+                android:id="@+id/fabBackgroundLocation"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp" />
+        </LinearLayout>
 
-    <com.zuxing.markmap.widget.FloatingButton
-        android:id="@+id/fabLocation"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginEnd="@dimen/space_m"
-        android:layout_marginBottom="96dp"
-        app:layout_constraintBottom_toTopOf="@id/infoPanel"
-        app:layout_constraintEnd_toEndOf="parent" />
+    </LinearLayout>
 
     <ProgressBar
         android:id="@+id/progressBar"

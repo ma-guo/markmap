@@ -8,8 +8,11 @@ import android.view.MenuItem
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.android.material.snackbar.Snackbar
 import com.zuxing.markmap.data.adapter.PointAdapter
+import com.zuxing.markmap.widget.SwipeToDeleteCallback
 import com.zuxing.markmap.databinding.ActivityPointListBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
@@ -79,6 +82,34 @@ class PointListActivity : AppCompatActivity() {
         binding.recyclerView.layoutManager = LinearLayoutManager(this)
         binding.recyclerView.adapter = adapter
 
+        ItemTouchHelper(SwipeToDeleteCallback(this) { position ->
+            adapter.currentList.getOrNull(position)?.let { deletePoint(it) }
+        }).attachToRecyclerView(binding.recyclerView)
+
+        ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(
+            ItemTouchHelper.UP or ItemTouchHelper.DOWN, 0
+        ) {
+            override fun onMove(
+                rv: androidx.recyclerview.widget.RecyclerView,
+                vh: androidx.recyclerview.widget.RecyclerView.ViewHolder,
+                target: androidx.recyclerview.widget.RecyclerView.ViewHolder
+            ): Boolean {
+                val from = vh.adapterPosition
+                val to = target.adapterPosition
+                if (from == androidx.recyclerview.widget.RecyclerView.NO_POSITION ||
+                    to == androidx.recyclerview.widget.RecyclerView.NO_POSITION
+                ) return false
+                val list = adapter.currentList.toMutableList()
+                val item = list.removeAt(from)
+                list.add(to, item)
+                adapter.submitList(list)
+                persistOrder(list)
+                return true
+            }
+
+            override fun onSwiped(vh: androidx.recyclerview.widget.RecyclerView.ViewHolder, direction: Int) {}
+        }).attachToRecyclerView(binding.recyclerView)
+
         binding.fabAdd.setIcon(R.drawable.add_24px)
         binding.fabAdd.setOnClickListener {
             navigateToMap()
@@ -105,6 +136,25 @@ class PointListActivity : AppCompatActivity() {
                     }
                 }
             }
+        }
+    }
+
+    private fun persistOrder(list: List<com.zuxing.markmap.data.entity.PointEntity>) {
+        lifecycleScope.launch {
+            list.forEachIndexed { index, point ->
+                if (point.sortOrder != index + 1) app.repository.updatePoint(point.copy(sortOrder = index + 1))
+            }
+        }
+    }
+
+    private fun deletePoint(point: com.zuxing.markmap.data.entity.PointEntity) {
+        lifecycleScope.launch {
+            app.repository.softDeletePoint(point.id)
+            Snackbar.make(binding.root, "已删除该地点", Snackbar.LENGTH_LONG)
+                .setAction("撤销") {
+                    lifecycleScope.launch { app.repository.restorePoint(point.id) }
+                }
+                .show()
         }
     }
 

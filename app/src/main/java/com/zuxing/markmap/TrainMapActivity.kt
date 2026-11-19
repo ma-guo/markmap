@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import android.widget.PopupMenu
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
@@ -25,6 +26,7 @@ import com.google.gson.GsonBuilder
 import com.zuxing.markmap.databinding.ActivityTrainMapBinding
 import com.zuxing.markmap.databinding.ItemPointSimpleBinding
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -40,7 +42,6 @@ class TrainMapActivity : AppCompatActivity() {
     private lateinit var trainService: TrainService
     private lateinit var ticketService: TicketService
     private lateinit var ticketHttpClient: OkHttpClient
-    private var isListExpanded = false
     private var stationInfoList = listOf<StationInfo>()
     private var currentTrainCode = ""
     private var isSegmentMode = false
@@ -90,17 +91,24 @@ class TrainMapActivity : AppCompatActivity() {
         }
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-            holder.bind(getItem(position))
+            holder.bind(getItem(position), position, itemCount)
         }
 
         inner class ViewHolder(
             private val binding: ItemPointSimpleBinding
         ) : RecyclerView.ViewHolder(binding.root) {
 
-            fun bind(item: StationInfo) {
+            fun bind(item: StationInfo, position: Int, total: Int) {
                 binding.tvPointDescription.text = item.name.ifEmpty { "车站" }
                 binding.tvStartTime.text = formatTime(item.startTime)
                 binding.tvDistance.text = formatDistance(item.distanceFromStart)
+                binding.node.setBackgroundResource(
+                    when {
+                        position == 0 -> R.drawable.bg_node_start
+                        position == total - 1 -> R.drawable.bg_node_end
+                        else -> R.drawable.bg_node_mid
+                    }
+                )
                 binding.root.setOnClickListener {
                     onItemClick(item)
                 }
@@ -128,6 +136,16 @@ class TrainMapActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        if (!(application as MarkMapApplication).baiduReady) {
+            android.widget.Toast.makeText(
+                this,
+                "地图组件不可用：百度地图 SDK 在当前设备初始化失败",
+                android.widget.Toast.LENGTH_LONG
+            ).show()
+            finish()
+            return
+        }
         binding = ActivityTrainMapBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -179,9 +197,82 @@ class TrainMapActivity : AppCompatActivity() {
     }
 
     private fun setupToolbar() {
-        setSupportActionBar(binding.toolbar)
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        binding.toolbar.setNavigationOnClickListener { finish() }
+        binding.navBar.applyTopInsetPadding(8f)
+        binding.btnBack.setOnClickListener { finish() }
+        binding.btnRecenter.setOnClickListener { recenter() }
+        binding.btnMore.setOnClickListener { anchor ->
+            PopupMenu(this, anchor).apply {
+                menu.add(0, 1, 0, "回到全览")
+                menu.add(0, 2, 1, "保存为路段")
+                setOnMenuItemClickListener { item ->
+                    when (item.itemId) {
+                        1 -> { recenter(); true }
+                        2 -> { saveAsSegment(); true }
+                        else -> false
+                    }
+                }
+                show()
+            }
+        }
+    }
+
+    private fun recenter() {
+        if (stationInfoList.isEmpty()) return
+        val builder = LatLngBounds.Builder()
+        stationInfoList.forEach { builder.include(it.latLng) }
+        mapView.map.animateMapStatus(MapStatusUpdateFactory.newLatLngBounds(builder.build(), 80, 80))
+    }
+
+    private fun saveAsSegment() {
+        if (stationInfoList.isEmpty()) {
+            android.widget.Toast.makeText(this, "暂无站点数据", android.widget.Toast.LENGTH_SHORT).show()
+            return
+        }
+        val application = application as MarkMapApplication
+        lifecycleScope.launch {
+            val groups = application.repository.getAllGroups().first()
+            if (groups.isEmpty()) {
+                android.widget.Toast.makeText(this@TrainMapActivity, "请先创建行程", android.widget.Toast.LENGTH_SHORT).show()
+                return@launch
+            }
+            val names = groups.map { it.name }.toTypedArray()
+            androidx.appcompat.app.AlertDialog.Builder(this@TrainMapActivity)
+                .setTitle("保存为路段")
+                .setItems(names) { _, which -> persistSegment(application, groups[which].id) }
+                .show()
+        }
+    }
+
+    private fun persistSegment(application: MarkMapApplication, groupId: Long) {
+        val name = binding.tvTitle.text.toString().ifBlank { currentTrainCode.ifBlank { "铁路行程" } }
+        val now = System.currentTimeMillis()
+        lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            val lineId = application.repository.insertLine(
+                com.zuxing.markmap.data.entity.LineEntity(
+                    name = name,
+                    groupId = groupId,
+                    sortOrder = 0,
+                    transportMode = com.zuxing.markmap.domain.TransportMode.TRAIN.name,
+                    startTime = now,
+                    endTime = now + stationInfoList.size * 60_000L
+                )
+            )
+            val points = stationInfoList.mapIndexed { index, st ->
+                com.zuxing.markmap.data.entity.PointEntity(
+                    lineId = lineId,
+                    longitude = st.latLng.longitude,
+                    latitude = st.latLng.latitude,
+                    description = st.name,
+                    sortOrder = index + 1,
+                    createTime = now + index * 60_000L,
+                    modifyTime = now + index * 60_000L
+                )
+            }
+            application.repository.insertPoints(points)
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                android.widget.Toast.makeText(this@TrainMapActivity, "已保存到行程", android.widget.Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     private fun setupMap() {
@@ -199,34 +290,6 @@ class TrainMapActivity : AppCompatActivity() {
             mapView.map.animateMapStatus(update)
         }
 
-        binding.cardToggleList.setOnClickListener { toggleStationList() }
-    }
-
-    private fun toggleStationList() {
-        if (isListExpanded) collapseStationList() else expandStationList()
-    }
-
-    private fun expandStationList() {
-        isListExpanded = true
-        binding.cardStationList.visibility = View.VISIBLE
-        binding.cardStationList.translationY = binding.cardStationList.height.toFloat()
-        binding.cardStationList.animate()
-            .translationY(0f)
-            .setDuration(200)
-            .start()
-        binding.ivToggleIcon.setImageResource(R.drawable.arrow_drop_down_24px)
-    }
-
-    private fun collapseStationList() {
-        isListExpanded = false
-        binding.cardStationList.animate()
-            .translationY(binding.cardStationList.height.toFloat())
-            .setDuration(200)
-            .withEndAction {
-                binding.cardStationList.visibility = View.GONE
-            }
-            .start()
-        binding.ivToggleIcon.setImageResource(R.drawable.arrow_drop_up_24px)
     }
 
     private fun initService() {
@@ -861,7 +924,7 @@ class TrainMapActivity : AppCompatActivity() {
 
         val startName = firstApiStation ?: stationInfoList.firstOrNull()?.name ?: ""
         val endName = lastApiStation ?: stationInfoList.lastOrNull()?.name ?: ""
-        binding.toolbar.title = "$currentTrainCode $startName-$endName"
+        binding.tvTitle.text = "$currentTrainCode $startName-$endName"
     }
 
     private fun formatDistance(dist: Double): String {
@@ -874,18 +937,18 @@ class TrainMapActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        mapView.onResume()
+        if (this::mapView.isInitialized) mapView.onResume()
     }
 
     override fun onPause() {
         super.onPause()
-        mapView.onPause()
+        if (this::mapView.isInitialized) mapView.onPause()
     }
 
     override fun onDestroy() {
         super.onDestroy()
         markerList.forEach { it.remove() }
         polylineOverlays.forEach { it.remove() }
-        mapView.onDestroy()
+        if (this::mapView.isInitialized) mapView.onDestroy()
     }
 }

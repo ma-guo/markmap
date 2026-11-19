@@ -4,6 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
     android:background="@color/background"
     tools:context=".SettingsActivity">
 
@@ -176,6 +177,156 @@
 
                 </LinearLayout>
 
+            </com.google.android.material.card.MaterialCardView>
+
+            <TextView
+                style="@style/TextAppearance.MarkMap.Label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/space_xs"
+                android:layout_marginTop="@dimen/space_xxl"
+                android:text="数据" />
+
+            <com.google.android.material.card.MaterialCardView
+                style="@style/Widget.MarkMap.Card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_s">
+
+                <LinearLayout
+                    android:id="@+id/rowRecycleBin"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center_vertical"
+                    android:minHeight="54dp"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="@dimen/card_padding">
+
+                    <TextView
+                        style="@style/TextAppearance.MarkMap.Body"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="回收站"
+                        android:textColor="@color/ink" />
+
+                    <ImageView
+                        android:layout_width="18dp"
+                        android:layout_height="18dp"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_chevron_right_24"
+                        app:tint="@color/ink_tertiary" />
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
+
+
+            <TextView
+                style="@style/TextAppearance.MarkMap.Label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/space_xs"
+                android:layout_marginTop="@dimen/space_xxl"
+                android:text="成长" />
+
+            <com.google.android.material.card.MaterialCardView
+                style="@style/Widget.MarkMap.Card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_s">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <LinearLayout
+                        android:id="@+id/rowAchievements"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="?attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center_vertical"
+                        android:minHeight="54dp"
+                        android:orientation="horizontal"
+                        android:paddingHorizontal="@dimen/card_padding">
+
+                        <TextView
+                            style="@style/TextAppearance.MarkMap.Body"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="成就徽章"
+                            android:textColor="@color/ink" />
+
+                        <ImageView
+                            android:layout_width="18dp"
+                            android:layout_height="18dp"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_chevron_right_24"
+                            app:tint="@color/ink_tertiary" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/rowMileage"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="?attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center_vertical"
+                        android:minHeight="54dp"
+                        android:orientation="horizontal"
+                        android:paddingHorizontal="@dimen/card_padding">
+
+                        <TextView
+                            style="@style/TextAppearance.MarkMap.Body"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="里程等级"
+                            android:textColor="@color/ink" />
+
+                        <ImageView
+                            android:layout_width="18dp"
+                            android:layout_height="18dp"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_chevron_right_24"
+                            app:tint="@color/ink_tertiary" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/rowReport"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="?attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center_vertical"
+                        android:minHeight="54dp"
+                        android:orientation="horizontal"
+                        android:paddingHorizontal="@dimen/card_padding">
+
+                        <TextView
+                            style="@style/TextAppearance.MarkMap.Body"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="足迹报告"
+                            android:textColor="@color/ink" />
+
+                        <ImageView
+                            android:layout_width="18dp"
+                            android:layout_height="18dp"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_chevron_right_24"
+                            app:tint="@color/ink_tertiary" />
+                    </LinearLayout>
+                </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
         </LinearLayout>

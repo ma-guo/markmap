@@ -1,16 +1,16 @@
 package com.zuxing.markmap
 
 import android.graphics.Color
-import android.graphics.drawable.ColorDrawable
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
-import android.view.Menu
-import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ArrayAdapter
-import android.widget.PopupWindow
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
+import android.widget.PopupMenu
+import android.widget.TextView
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -29,9 +29,11 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.zuxing.markmap.data.entity.PointEntity
 import com.zuxing.markmap.databinding.ActivityLineMapBinding
 import com.zuxing.markmap.databinding.ItemPointSimpleBinding
-import com.zuxing.markmap.databinding.PopupLineMapControlBinding
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
@@ -42,16 +44,12 @@ class LineMapActivity : AppCompatActivity() {
     private lateinit var binding: ActivityLineMapBinding
     private lateinit var mapView: MapView
     private lateinit var app: MarkMapApplication
-    private lateinit var controlPopupWindow: PopupWindow
-    private lateinit var controlBinding: PopupLineMapControlBinding
     private var mapPointList: List<MapPointEntity> = emptyList()
     private var markerList: List<Overlay> = emptyList()
     private var polylineOverlay: Overlay? = null
-    private var isPanelExpanded = false
-    private var isListExpanded = false
     private var showMarkers = true
     private var showInfo = true
-    private var currentLineColor = Color.BLUE
+    private var currentLineColor = Color.parseColor("#2E5D5C")
     private var selectedPointId: Long? = null
     private var lineId: Long = -1L
     private var groupId: Long = -1L
@@ -66,12 +64,12 @@ class LineMapActivity : AppCompatActivity() {
     data class ColorData(val name: String, val color: Int)
 
     private val lineColors = listOf(
-        ColorData("蓝色", Color.BLUE),
-        ColorData("红色", Color.RED),
-        ColorData("绿色", Color.GREEN),
-        ColorData("紫色", -65281),
-        ColorData("橙色", -26624),
-        ColorData("青色", -10580465)
+        ColorData("黛青", Color.parseColor("#2E5D5C")),
+        ColorData("陶土", Color.parseColor("#B96A4B")),
+        ColorData("苔绿", Color.parseColor("#70897A")),
+        ColorData("墨灰", Color.parseColor("#5F6F6D")),
+        ColorData("雾蓝", Color.parseColor("#7E9AA1")),
+        ColorData("金色", Color.parseColor("#BE9F66"))
     )
 
     private class PointAdapter(
@@ -99,14 +97,14 @@ class LineMapActivity : AppCompatActivity() {
         }
 
         override fun onBindViewHolder(holder: PointViewHolder, position: Int) {
-            holder.bind(getItem(position))
+            holder.bind(getItem(position), position, itemCount)
         }
 
         inner class PointViewHolder(
             private val binding: ItemPointSimpleBinding
         ) : RecyclerView.ViewHolder(binding.root) {
 
-            fun bind(mapPoint: MapPointEntity) {
+            fun bind(mapPoint: MapPointEntity, position: Int, total: Int) {
                 val point = mapPoint.point
                 binding.tvPointDescription.text = when {
                     !point.description.isNullOrBlank() -> point.description
@@ -114,6 +112,15 @@ class LineMapActivity : AppCompatActivity() {
                     else -> "${point.latitude}, ${point.longitude}"
                 }
                 binding.tvDistance.text = formatDistance(mapPoint.distanceFromStart)
+                binding.tvStartTime.text = SimpleDateFormat("MM.dd HH:mm", Locale.getDefault())
+                    .format(Date(point.createTime))
+                binding.node.setBackgroundResource(
+                    when {
+                        position == 0 -> R.drawable.bg_node_start
+                        position == total - 1 -> R.drawable.bg_node_end
+                        else -> R.drawable.bg_node_mid
+                    }
+                )
                 binding.root.isSelected = point.id == selectedPointId
                 binding.root.setOnClickListener {
                     selectedPointId = point.id
@@ -144,6 +151,16 @@ class LineMapActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        if (!(application as MarkMapApplication).baiduReady) {
+            android.widget.Toast.makeText(
+                this,
+                "地图组件不可用：百度地图 SDK 在当前设备初始化失败",
+                android.widget.Toast.LENGTH_LONG
+            ).show()
+            finish()
+            return
+        }
         binding = ActivityLineMapBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -154,31 +171,43 @@ class LineMapActivity : AppCompatActivity() {
         setupToolbar()
         setupMap()
         setupPointList()
-        setupToggleList()
-        setupControlPanel()
+        setupSheet()
         loadPoints()
     }
 
     private fun setupToolbar() {
-        setSupportActionBar(binding.toolbar)
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        binding.toolbar.setNavigationOnClickListener {
-            finish()
-        }
+        binding.navBar.applyTopInsetPadding(8f)
+        binding.btnBack.setOnClickListener { finish() }
+        binding.btnMore.setOnClickListener { showOverflow(it) }
+        binding.btnRecenter.setOnClickListener { recenter() }
     }
 
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.menu_line_map, menu)
-        return true
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when (item.itemId) {
-            R.id.action_settings -> {
-                toggleControlPanel()
-                true
+    private fun showOverflow(anchor: View) {
+        PopupMenu(this, anchor).apply {
+            menu.add(0, 1, 0, "回到全览")
+            menu.add(0, 2, 1, "剖面")
+            menu.add(0, 3, 2, "轨迹回放")
+            menu.add(0, 4, 3, if (showMarkers) "隐藏点标记" else "显示点标记")
+            menu.add(0, 5, 4, if (showInfo) "隐藏点信息" else "显示点信息")
+            setOnMenuItemClickListener { item ->
+                when (item.itemId) {
+                    1 -> { recenter(); true }
+                    2 -> {
+                        startActivity(Intent(this@LineMapActivity, ProfileActivity::class.java).apply {
+                            if (lineId != -1L) putExtra("lineId", lineId) else putExtra("groupId", groupId)
+                        }); true
+                    }
+                    3 -> {
+                        startActivity(Intent(this@LineMapActivity, PlaybackActivity::class.java).apply {
+                            if (lineId != -1L) putExtra("lineId", lineId) else putExtra("groupId", groupId)
+                        }); true
+                    }
+                    4 -> { showMarkers = !showMarkers; updateToggleStyles(); updateMapDisplay(); true }
+                    5 -> { showInfo = !showInfo; updateToggleStyles(); updateMarkers(); true }
+                    else -> false
+                }
             }
-            else -> super.onOptionsItemSelected(item)
+            show()
         }
     }
 
@@ -196,105 +225,62 @@ class LineMapActivity : AppCompatActivity() {
 
     private fun centerOnPoint(point: PointEntity) {
         val latLng = LatLng(point.latitude, point.longitude)
-        val update = MapStatusUpdateFactory.newLatLng(latLng)
         selectedPointId = point.id
-        mapView.map.animateMapStatus(update)
+        mapView.map.animateMapStatus(MapStatusUpdateFactory.newLatLng(latLng))
         updateMarkers()
     }
 
-    private fun setupToggleList() {
-        binding.cardToggleList.setOnClickListener {
-            toggleList()
-        }
-    }
-
-    private fun toggleList() {
-        if (isListExpanded) {
-            collapseList()
-        } else {
-            expandList()
-        }
-    }
-
-    private fun expandList() {
-        isListExpanded = true
-        binding.cardPointList.visibility = View.VISIBLE
-        binding.cardPointList.translationY = binding.cardPointList.height.toFloat()
-        binding.cardPointList.animate()
-            .translationY(0f)
-            .setDuration(200)
-            .start()
-        binding.ivToggleIcon.setImageResource(R.drawable.arrow_drop_down_24px)
-    }
-
-    private fun collapseList() {
-        isListExpanded = false
-        binding.cardPointList.animate()
-            .translationY(binding.cardPointList.height.toFloat())
-            .setDuration(200)
-            .withEndAction {
-                binding.cardPointList.visibility = View.GONE
-            }
-            .start()
-        binding.ivToggleIcon.setImageResource(R.drawable.arrow_drop_up_24px)
-    }
-
-
-    private fun setupControlPanel() {
-        controlBinding = PopupLineMapControlBinding.inflate(LayoutInflater.from(this))
-
-        val popupWidth = (160 * resources.displayMetrics.density).toInt()
-        controlPopupWindow = PopupWindow(
-            controlBinding.root,
-            popupWidth,
-            ViewGroup.LayoutParams.WRAP_CONTENT,
-            true
-        ).apply {
-            setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-            isOutsideTouchable = true
-            setOnDismissListener {
-                isPanelExpanded = false
-            }
-        }
-
-        controlBinding.switchShowMarkers.setOnCheckedChangeListener { _, isChecked ->
-            showMarkers = isChecked
+    private fun setupSheet() {
+        binding.tvTglMarkers.setOnClickListener {
+            showMarkers = !showMarkers
+            updateToggleStyles()
             updateMapDisplay()
         }
-
-        controlBinding.switchShowInfo.setOnCheckedChangeListener { _, isChecked ->
-            showInfo = isChecked
+        binding.tvTglInfo.setOnClickListener {
+            showInfo = !showInfo
+            updateToggleStyles()
             updateMarkers()
         }
-
-        setupColorDropdown()
+        binding.tvColor.setOnClickListener { showColorDialog() }
+        binding.tvColor.text = lineColors.first().name
+        binding.tvColor.setTextColor(lineColors.first().color)
+        updateToggleStyles()
     }
 
-    private fun setupColorDropdown() {
-        val colorNames = lineColors.map { it.name }
-        val adapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, colorNames)
-        controlBinding.actvColor.setAdapter(adapter)
-        controlBinding.actvColor.setText(lineColors[0].name, false)
-        controlBinding.actvColor.setOnItemClickListener { _, _, position, _ ->
-            currentLineColor = lineColors[position].color
-            updatePolylineColor()
-        }
+    private fun updateToggleStyles() {
+        styleToggle(binding.tvTglMarkers, showMarkers)
+        styleToggle(binding.tvTglInfo, showInfo)
     }
 
-    private fun toggleControlPanel() {
-        if (isPanelExpanded) {
-            controlPopupWindow.dismiss()
-            isPanelExpanded = false
-        } else {
-            showControlPanel()
-        }
+    private fun styleToggle(view: TextView, on: Boolean) {
+        view.setBackgroundResource(if (on) R.drawable.bg_seg_on else android.R.color.transparent)
+        view.setTextColor(
+            ContextCompat.getColor(this, if (on) R.color.primary else R.color.ink_tertiary)
+        )
     }
 
-    private fun showControlPanel() {
-        val marginRight = (10 * resources.displayMetrics.density).toInt()
-        val xOffset = binding.toolbar.width - controlPopupWindow.width - marginRight
-        controlPopupWindow.showAsDropDown(binding.toolbar, xOffset, 8)
-        isPanelExpanded = true
+    private fun showColorDialog() {
+        val names = lineColors.map { it.name }.toTypedArray()
+        val current = lineColors.indexOfFirst { it.color == currentLineColor }.coerceAtLeast(0)
+        AlertDialog.Builder(this)
+            .setTitle("连线颜色")
+            .setSingleChoiceItems(names, current) { dialog, which ->
+                currentLineColor = lineColors[which].color
+                binding.tvColor.text = lineColors[which].name
+                binding.tvColor.setTextColor(lineColors[which].color)
+                updatePolylineColor()
+                dialog.dismiss()
+            }
+            .show()
+    }
+
+    private fun recenter() {
+        if (mapPointList.isEmpty()) return
+        val builder = LatLngBounds.Builder()
+        mapPointList.forEach { builder.include(LatLng(it.point.latitude, it.point.longitude)) }
+        mapView.map.animateMapStatus(
+            MapStatusUpdateFactory.newLatLngBounds(builder.build(), 80, 80)
+        )
     }
 
     private fun loadPoints() {
@@ -332,14 +318,25 @@ class LineMapActivity : AppCompatActivity() {
                     mapPoint.copy(distanceFromStart = distances.getOrElse(index) { 0.0 })
                 }
 
+                if (lineId != -1L) {
+                    val line = app.repository.getLineById(lineId)
+                    line?.let {
+                        binding.tvName.text = it.name
+                        binding.tvTitle.text = it.name
+                    }
+                } else {
+                    binding.tvName.text = "行程地图"
+                }
+
                 if (mapPointList.isEmpty()) {
-                    binding.tvPointCountList.text = "点数量: 0"
+                    binding.tvCount.text = "共 0 个点位"
                     binding.progressBar.visibility = View.GONE
                     return@launch
                 }
 
                 val totalDistance = distances.lastOrNull() ?: 0.0
-                binding.tvPointCountList.text = "点数量: ${mapPointList.size}  总距离: ${formatDistance(totalDistance)}"
+                binding.tvStat.text = formatDistance(totalDistance)
+                binding.tvCount.text = "共 ${mapPointList.size} 个点位"
                 (binding.rvPoints.adapter as? PointAdapter)?.submitList(mapPointList)
                 displayPointsOnMap()
 
@@ -399,16 +396,12 @@ class LineMapActivity : AppCompatActivity() {
 
         if (showMarkers) {
             val markers = mutableListOf<Overlay>()
-            sortedPoints.forEachIndexed { _, mapPoint ->
+            sortedPoints.forEachIndexed { index, mapPoint ->
                 if (shouldShowMarker(mapPoint, sortedPoints)) {
                     val point = mapPoint.point
                     val latLng = LatLng(point.latitude, point.longitude)
 
-                    val title = if (showInfo) {
-                        point.description ?: ""
-                    } else {
-                        ""
-                    }
+                    val title = if (showInfo) "#${index + 1} ${point.description ?: ""}" else ""
 
                     val iconRes = when {
                         point.id == sortedPoints.firstOrNull()?.point?.id -> R.drawable.location_on_48dp_start
@@ -462,16 +455,12 @@ class LineMapActivity : AppCompatActivity() {
 
         if (showMarkers) {
             val markers = mutableListOf<Overlay>()
-            sortedPoints.forEachIndexed { _, mapPoint ->
+            sortedPoints.forEachIndexed { index, mapPoint ->
                 if (shouldShowMarker(mapPoint, sortedPoints)) {
                     val point = mapPoint.point
                     val latLng = LatLng(point.latitude, point.longitude)
 
-                    val title = if (showInfo) {
-                        point.description ?: ""
-                    } else {
-                        ""
-                    }
+                    val title = if (showInfo) "#${index + 1} ${point.description ?: ""}" else ""
 
                     val iconRes = when {
                         point.id == sortedPoints.firstOrNull()?.point?.id -> R.drawable.location_on_48dp_start
@@ -539,16 +528,12 @@ class LineMapActivity : AppCompatActivity() {
 
         if (showMarkers) {
             val markers = mutableListOf<Overlay>()
-            sortedPoints.forEachIndexed { _, mapPoint ->
+            sortedPoints.forEachIndexed { index, mapPoint ->
                 if (shouldShowMarker(mapPoint, sortedPoints)) {
                     val point = mapPoint.point
                     val latLng = LatLng(point.latitude, point.longitude)
 
-                    val title = if (showInfo) {
-                        point.description ?: ""
-                    } else {
-                        ""
-                    }
+                    val title = if (showInfo) "#${index + 1} ${point.description ?: ""}" else ""
 
                     val iconRes = when {
                         point.id == sortedPoints.firstOrNull()?.point?.id -> R.drawable.location_on_48dp_start
@@ -579,16 +564,16 @@ class LineMapActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        mapView.onResume()
+        if (this::mapView.isInitialized) mapView.onResume()
     }
 
     override fun onPause() {
         super.onPause()
-        mapView.onPause()
+        if (this::mapView.isInitialized) mapView.onPause()
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        mapView.onDestroy()
+        if (this::mapView.isInitialized) mapView.onDestroy()
     }
 }

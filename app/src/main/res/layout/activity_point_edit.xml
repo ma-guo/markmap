@@ -4,6 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
     android:background="@color/background">
 
     <com.google.android.material.appbar.MaterialToolbar
@@ -15,7 +16,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:navigationIcon="@drawable/ic_arrow_back"
-        app:title="编辑点" />
+        app:title="编辑地点" />
 
     <androidx.core.widget.NestedScrollView
         android:layout_width="0dp"
@@ -138,28 +139,6 @@
 
             </com.google.android.material.textfield.TextInputLayout>
 
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/tilSortOrder"
-                style="@style/Widget.MarkMap.TextInputLayout"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_m"
-                android:hint="排序值"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/tilDescription">
-
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/etSortOrder"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="number"
-                    android:maxLines="1"
-                    android:text="0"
-                    android:textSize="@dimen/text_body" />
-
-            </com.google.android.material.textfield.TextInputLayout>
-
             <TextView
                 android:id="@+id/tvLineName"
                 style="@style/TextAppearance.MarkMap.BodySmall"
@@ -169,8 +148,8 @@
                 android:visibility="gone"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/tilSortOrder"
-                tools:text="所属路线：路线1" />
+                app:layout_constraintTop_toBottomOf="@id/tilDescription"
+                tools:text="所属路段：路段1" />
 
             <TextView
                 android:id="@+id/tvCreateTime"
@@ -184,6 +163,39 @@
                 app:layout_constraintTop_toBottomOf="@id/tvLineName"
                 tools:text="创建时间：2024-01-01 12:00:00" />
 
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilTags"
+                style="@style/Widget.MarkMap.TextInputLayout"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_m"
+                android:hint="标签（可选，逗号分隔）"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/tvCreateTime">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etTags"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="text"
+                    android:maxLines="1"
+                    android:textSize="@dimen/text_body" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.switchmaterial.SwitchMaterial
+                android:id="@+id/switchFavorite"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="@dimen/space_s"
+                android:minHeight="48dp"
+                android:text="收藏该地点"
+                android:textColor="@color/ink"
+                android:textSize="@dimen/text_body"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@id/tilTags" />
+
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnSelectOnMap"
                 style="@style/Widget.MarkMap.Button.Outlined"
@@ -194,7 +206,7 @@
                 app:icon="@drawable/map_search_24px"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/tvCreateTime" />
+                app:layout_constraintTop_toBottomOf="@id/switchFavorite" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnFetchFromBaidu"
@@ -208,19 +220,19 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/btnSelectOnMap" />
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnSave"
-                style="@style/Widget.MarkMap.Button"
-                android:layout_width="0dp"
-                android:layout_height="@dimen/button_height"
-                android:layout_marginTop="@dimen/space_xl"
-                android:text="保存"
-                android:textColor="@color/white"
-                app:icon="@drawable/save_24px"
-                app:iconTint="@color/white"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/btnFetchFromBaidu" />
+            <TextView
+        android:id="@+id/btnSave"
+        android:layout_width="0dp"
+        android:layout_height="@dimen/button_height"
+        android:background="@drawable/bg_btn_primary"
+        android:gravity="center"
+        android:text="保存"
+        android:textColor="@color/white"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/btnFetchFromBaidu" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 

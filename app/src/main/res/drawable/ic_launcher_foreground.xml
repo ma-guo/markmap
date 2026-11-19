@@ -4,11 +4,29 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- 地图定位标记 -->
+
+    <!-- 淡墨远山 -->
     <path
-        android:fillColor="#FFFFFFFF"
-        android:pathData="M54,24C40.75,24 30,34.75 30,48C30,65.5 54,86 54,86C54,86 78,65.5 78,48C78,34.75 67.25,24 54,24Z" />
+        android:pathData="M22,74 C36,56 46,68 56,58 C66,48 78,58 86,46 L86,84 L22,84 Z"
+        android:fillColor="#33FFFFFF" />
+
+    <!-- 轨迹线 -->
     <path
-        android:fillColor="#FF1F5B63"
-        android:pathData="M54,40m-8,0a8,8 0,1 0,16 0a8,8 0,1 0,-16 0" />
+        android:pathData="M30,72 C44,58 52,64 62,52 C70,42 78,46 86,38"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+
+    <!-- 起点 -->
+    <path
+        android:pathData="M25,72 a5,5 0 1,0 10,0 a5,5 0 1,0 -10,0"
+        android:fillColor="#FFFFFFFF" />
+
+    <!-- 终点（陶土） -->
+    <path
+        android:pathData="M81,38 a5.5,5.5 0 1,0 11,0 a5.5,5.5 0 1,0 -11,0"
+        android:fillColor="#FFB96A4B"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="2" />
 </vector>

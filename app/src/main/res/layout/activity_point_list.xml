@@ -4,6 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
     android:background="@color/background"
     tools:context=".PointListActivity">
 
@@ -16,7 +17,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:navigationIcon="@drawable/ic_arrow_back"
-        app:title="点列表" />
+        app:title="地点" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerView"
@@ -37,7 +38,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:gravity="center"
-        android:text="暂无数据\n点击右下角添加点"
+        android:text="暂无地点\n点击右下角 + 添加地点"
         android:textColor="@color/ink_secondary"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"

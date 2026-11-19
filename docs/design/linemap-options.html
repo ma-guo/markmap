@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>MarkMap · 行程地图重构方案</title>
+<style>
+  * { box-sizing: border-box; }
+  :root {
+    --ink:#1F2B2C; --ink2:#5F6F6D; --ink3:#98A4A0;
+    --paper:#F6F5EE; --paper2:#EFEEE6; --surface:#FFFFFF;
+    --dai:#2E5D5C; --daiDeep:#1F4241; --daiSoft:#E4EDE8;
+    --moss:#70897A; --clay:#B96A4B; --claySoft:#F4E7DE;
+    --gold:#BE9F66; --seal:#A64734;
+    --line:rgba(31,43,44,.09);
+    --shadow:0 12px 32px rgba(31,43,44,.07);
+  }
+  html,body{margin:0;padding:0;background:#E7E5DC;font-family:-apple-system,"PingFang SC","Helvetica Neue",Arial,sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased;}
+  .serif{font-family:"Songti SC","STSong","Noto Serif CJK SC",serif;}
+  .board{display:flex;gap:30px;padding:34px 40px 40px;align-items:flex-start;flex-wrap:wrap;}
+  h1{font-size:20px;margin:0 0 4px;}
+  .sub{font-size:12px;color:#5c5c5c;margin:0 0 22px;line-height:1.6;}
+  .col{display:flex;flex-direction:column;gap:12px;}
+  .cap{width:390px;}
+  .cap b{display:block;font-size:14px;letter-spacing:.04em;}
+  .cap b i{font-style:normal;color:var(--dai);}
+  .cap span{display:block;font-size:12px;color:#5c5c5c;margin-top:4px;line-height:1.65;}
+  .badge{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.14em;color:#fff;background:var(--dai);border-radius:20px;padding:3px 10px;margin-bottom:6px;}
+  .badge.alt{background:var(--clay);}
+  .phone{position:relative;width:390px;height:844px;border-radius:40px;overflow:hidden;background:var(--paper);border:1px solid rgba(0,0,0,.10);box-shadow:0 26px 70px rgba(20,30,30,.22);}
+  .island{position:absolute;top:10px;left:50%;transform:translateX(-50%);width:108px;height:27px;border-radius:16px;background:#101615;z-index:30;}
+  .status{height:44px;display:flex;justify-content:space-between;align-items:flex-end;padding:0 24px 5px;font-size:11px;font-weight:600;color:var(--ink);position:relative;z-index:20;}
+  .homebar{position:absolute;bottom:7px;left:50%;transform:translateX(-50%);width:126px;height:4px;border-radius:3px;background:rgba(31,43,44,.28);z-index:40;}
+  .roundbtn{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.72);backdrop-filter:blur(14px);border:1px solid var(--line);color:var(--ink);}
+  .roundbtn svg{width:20px;height:20px;}
+  .map{position:absolute;inset:0;}
+  .map svg{width:100%;height:100%;display:block;}
+  .navfloat{position:absolute;top:52px;left:16px;right:16px;display:flex;justify-content:space-between;align-items:center;z-index:5;}
+  .titlepill{font-size:14px;font-weight:700;background:rgba(255,255,255,.74);backdrop-filter:blur(12px);padding:8px 14px;border-radius:16px;border:1px solid var(--line);}
+  .fab{position:absolute;right:18px;width:46px;height:46px;border-radius:50%;background:var(--surface);border:1px solid var(--line);box-shadow:0 12px 26px rgba(31,43,44,.16);display:flex;align-items:center;justify-content:center;color:var(--dai);z-index:6;}
+  .fab svg{width:21px;height:21px;}
+  .chip{font-size:10.5px;padding:6px 12px;border-radius:20px;background:var(--daiSoft);color:var(--dai);font-weight:700;letter-spacing:.02em;display:inline-flex;gap:6px;align-items:center;}
+  .chip svg{width:13px;height:13px;}
+  .chip.ghost{background:rgba(255,255,255,.7);border:1px solid var(--line);color:var(--ink2);font-weight:600;}
+  .chip.clay{background:var(--claySoft);color:var(--clay);}
+  .grab{width:40px;height:4px;border-radius:2px;background:rgba(31,43,44,.16);margin:0 auto 14px;}
+  .sheet{position:absolute;left:0;right:0;bottom:0;background:var(--paper);border-radius:28px 28px 0 0;padding:16px 20px 26px;box-shadow:0 -14px 34px rgba(31,43,44,.14);z-index:10;}
+  .summary{display:flex;justify-content:space-between;align-items:baseline;}
+  .summary .name{font-size:17px;font-weight:700;}
+  .summary .stat{font-family:"Songti SC",serif;font-size:13px;color:var(--dai);font-weight:700;}
+  .controls{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
+  .seg{display:flex;background:var(--paper2);border:1px solid var(--line);border-radius:14px;padding:3px;}
+  .seg .it{padding:7px 11px;border-radius:11px;font-size:11px;color:var(--ink2);font-weight:600;}
+  .seg .it.on{background:var(--surface);color:var(--dai);box-shadow:0 2px 6px rgba(31,43,44,.08);}
+  .tl{position:relative;margin-top:14px;padding-left:6px;}
+  .row{display:flex;gap:11px;align-items:flex-start;padding:9px 0;position:relative;}
+  .node{width:16px;height:16px;border-radius:50%;border:2px solid var(--dai);background:#fff;flex:none;margin-top:2px;z-index:2;}
+  .node.start{background:var(--dai);}
+  .node.end{background:var(--clay);border-color:var(--clay);}
+  .row:not(:last-child)::before{content:"";position:absolute;left:7px;top:20px;bottom:-9px;width:2px;background:var(--line);z-index:1;}
+  .row .b{flex:1;min-width:0;}
+  .row .t{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .row .m{font-size:10.5px;color:var(--ink3);margin-top:3px;}
+  .row .km{font-family:"Songti SC",serif;font-size:12px;color:var(--ink2);font-weight:700;}
+  .rail{position:absolute;right:16px;top:180px;display:flex;flex-direction:column;gap:10px;z-index:6;}
+  .rail .rb{width:44px;height:44px;border-radius:14px;background:rgba(255,255,255,.86);backdrop-filter:blur(14px);border:1px solid var(--line);box-shadow:0 10px 22px rgba(31,43,44,.12);display:flex;align-items:center;justify-content:center;color:var(--ink2);}
+  .rail .rb.on{color:var(--dai);background:var(--daiSoft);border-color:transparent;}
+  .rail .rb svg{width:21px;height:21px;}
+  .hcards{position:absolute;left:0;right:0;bottom:22px;display:flex;gap:11px;padding:0 18px;overflow:hidden;z-index:10;}
+  .hcard{flex:none;width:206px;background:var(--surface);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:12px 14px;}
+  .hcard .no{font-family:"Songti SC",serif;font-weight:700;color:var(--dai);font-size:13px;}
+  .hcard .t{font-size:13px;font-weight:700;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .hcard .m{font-size:10px;color:var(--ink3);margin-top:3px;}
+  .infobar{position:absolute;top:52px;left:16px;right:16px;background:rgba(255,255,255,.86);backdrop-filter:blur(14px);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);padding:12px 14px;z-index:6;}
+  .infobar .top{display:flex;justify-content:space-between;align-items:center;}
+  .infobar .name{font-size:16px;font-weight:700;}
+  .infobar .stats{display:flex;gap:14px;margin-top:9px;}
+  .infobar .stats div{font-size:10px;color:var(--ink3);}
+  .infobar .stats b{display:block;font-family:"Songti SC",serif;font-size:15px;color:var(--ink);margin-top:2px;}
+  .dotleg{display:flex;gap:12px;font-size:10px;color:var(--ink2);margin-top:9px;align-items:center;}
+  .dotleg i{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:5px;}
+  .panel{position:absolute;left:0;right:0;top:300px;bottom:0;background:var(--paper);border-radius:28px 28px 0 0;box-shadow:0 -14px 34px rgba(31,43,44,.14);padding:14px 20px 26px;z-index:10;overflow:hidden;}
+  .panel .grab{margin-bottom:12px;}
+  .iconstrip{width:1180px;background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:22px 26px;box-shadow:var(--shadow);}
+  .iconstrip h3{margin:0 0 4px;font-size:14px;}
+  .iconstrip p{margin:0 0 16px;font-size:12px;color:#5c5c5c;}
+  .icons{display:flex;gap:26px;flex-wrap:wrap;}
+  .ic{width:74px;display:flex;flex-direction:column;align-items:center;gap:7px;color:var(--ink);}
+  .ic .box{width:50px;height:50px;border-radius:15px;background:var(--paper);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;}
+  .ic svg{width:24px;height:24px;}
+  .ic span{font-size:10px;color:var(--ink2);}
+  .fams{display:flex;gap:22px;margin-top:18px;}
+  .fam{flex:1;border:1px solid var(--line);border-radius:16px;padding:14px 16px;background:var(--paper);}
+  .fam b{font-size:12.5px;}
+  .fam small{display:block;color:#5c5c5c;font-size:11px;margin-top:4px;line-height:1.5;}
+  .fam .prev{display:flex;gap:12px;margin-top:10px;color:var(--ink);}
+  .fam .prev svg{width:22px;height:22px;}
+</style>
+</head>
+<body>
+<div style="padding:30px 40px 0">
+  <h1>行程地图（LineMap）重构 · 方案对比</h1>
+  <p class="sub">沿用新风格（米纸底 / 黛青主色 / 陶土点缀 / 宋体标题）。每套都保留：地图、点位列表、显示图标/信息开关、连线颜色。<br>请选：<b>①底部抽屉版 / ②右侧工具栏版 / ③信息条+全屏面板版</b>，以及下方<b>图标家族</b>（线性 / 实心 / 双色）。</p>
+</div>
+
+<div class="board">
+
+  <!-- 方案 A -->
+  <div class="col">
+    <div class="phone">
+      <div class="island"></div>
+      <div class="status"><span>9:41</span><span>●●● ⌁ ▮</span></div>
+      <div class="map">
+        <svg viewBox="0 0 390 844" preserveAspectRatio="none">
+          <defs><linearGradient id="ma" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#EFF3EE"/><stop offset="1" stop-color="#DCE6DF"/></linearGradient></defs>
+          <rect width="390" height="844" fill="url(#ma)"/>
+          <path d="M0,300 C80,270 150,320 240,286 S340,270 390,292" fill="none" stroke="#DCE6DF" stroke-width="1.4"/>
+          <path d="M0,420 C90,392 160,430 250,398 S350,384 390,404" fill="none" stroke="#DCE6DF" stroke-width="1.4"/>
+          <path d="M0,560 C90,532 160,570 250,540 S350,524 390,544" fill="none" stroke="#DCE6DF" stroke-width="1.4"/>
+          <path d="M28,360 C90,250 120,300 176,236 S250,168 286,150 S330,120 356,102" fill="none" stroke="#2E5D5C" stroke-width="3.4" stroke-linecap="round"/>
+          <circle cx="28" cy="360" r="5" fill="#fff" stroke="#2E5D5C" stroke-width="2.4"/>
+          <circle cx="130" cy="272" r="4" fill="#fff" stroke="#2E5D5C" stroke-width="2.2"/>
+          <circle cx="240" cy="180" r="4" fill="#fff" stroke="#2E5D5C" stroke-width="2.2"/>
+          <circle cx="356" cy="102" r="6" fill="#2E5D5C" stroke="#fff" stroke-width="2.6"/>
+        </svg>
+      </div>
+      <div class="navfloat">
+        <div class="roundbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></div>
+        <div class="titlepill">北京 → 上海</div>
+        <div class="roundbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.6" fill="currentColor" stroke="none"/></svg></div>
+      </div>
+      <div class="fab" style="bottom:392px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg></div>
+
+      <div class="sheet">
+        <div class="grab"></div>
+        <div class="summary">
+          <div class="name serif">京沪线</div>
+          <div class="stat">1,286 km</div>
+        </div>
+        <div class="controls">
+          <div class="seg">
+            <div class="it on"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s7-6.5 7-12a7 7 0 10-14 0c0 5.5 7 12 7 12z"/></svg> 标记</div>
+            <div class="it">信息</div>
+            <div class="it">编号</div>
+          </div>
+          <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a9 9 0 100 18 9 9 0 000-18z"/><path d="M12 8a4 4 0 100 8 4 4 0 000-8z" fill="currentColor" stroke="none"/></svg>黛青</span>
+        </div>
+        <div class="tl">
+          <div class="row"><div class="node start"></div><div class="b"><div class="t">北京首都机场</div><div class="m">05.12 08:30 · 起点</div></div><div class="km">0 km</div></div>
+          <div class="row"><div class="node"></div><div class="b"><div class="t">济南西</div><div class="m">05.12 10:42 · 途经</div></div><div class="km">419 km</div></div>
+          <div class="row"><div class="node"></div><div class="b"><div class="t">南京南</div><div class="m">05.12 13:05 · 途经</div></div><div class="km">1,020 km</div></div>
+          <div class="row"><div class="node end"></div><div class="b"><div class="t">上海虹桥</div><div class="m">05.12 14:20 · 终点</div></div><div class="km">1,286 km</div></div>
+        </div>
+      </div>
+      <div class="homebar"></div>
+    </div>
+    <div class="cap"><span class="badge">方案 A · 推荐</span><b><i>底部抽屉版</i></b><span>地图全屏、信息随需展开；抽屉顶部=线路摘要 + 分段开关（标记/信息/编号）+ 颜色胶囊，下面是起点/途经/终点时间轴；单指上拖看更多点位。左下保留「回正」圆钮。</span></div>
+  </div>
+
+  <!-- 方案 B -->
+  <div class="col">
+    <div class="phone">
+      <div class="island"></div>
+      <div class="status"><span>9:41</span><span>●●● ⌁ ▮</span></div>
+      <div class="map">
+        <svg viewBox="0 0 390 844" preserveAspectRatio="none">
+          <defs><linearGradient id="mb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#EFF3EE"/><stop offset="1" stop-color="#DCE6DF"/></linearGradient></defs>
+          <rect width="390" height="844" fill="url(#mb)"/>
+          <path d="M0,260 C90,232 170,272 260,240 S350,224 390,246" fill="none" stroke="#DCE6DF" stroke-width="1.4"/>
+          <path d="M0,430 C90,402 170,440 260,410 S350,394 390,414" fill="none" stroke="#DCE6DF" stroke-width="1.4"/>
+          <path d="M0,610 C90,582 170,620 260,590 S350,574 390,594" fill="none" stroke="#DCE6DF" stroke-width="1.4"/>
+          <path d="M24,300 C96,220 150,250 210,196 S290,150 340,120" fill="none" stroke="#B96A4B" stroke-width="3.4" stroke-linecap="round"/>
+          <circle cx="24" cy="300" r="6" fill="#B96A4B" stroke="#fff" stroke-width="2.6"/>
+          <circle cx="120" cy="250" r="4" fill="#fff" stroke="#B96A4B" stroke-width="2.2"/>
+          <circle cx="250" cy="170" r="4" fill="#fff" stroke="#B96A4B" stroke-width="2.2"/>
+          <circle cx="340" cy="120" r="6" fill="#B96A4B" stroke="#fff" stroke-width="2.6"/>
+        </svg>
+      </div>
+      <div class="navfloat">
+        <div class="roundbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></div>
+        <div class="titlepill">京广线</div>
+        <div class="roundbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.6" fill="currentColor" stroke="none"/></svg></div>
+      </div>
+
+      <div class="rail">
+        <div class="rb on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg></div>
+        <div class="rb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/></svg></div>
+        <div class="rb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 100 18 9 9 0 000-18z"/><path d="M12 8a4 4 0 100 8 4 4 0 000-8z" fill="currentColor" stroke="none"/></svg></div>
+        <div class="rb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg></div>
+      </div>
+
+      <div class="hcards">
+        <div class="hcard"><div class="no">起点</div><div class="t">北京西</div><div class="m">05.12 07:10 · 0 km</div></div>
+        <div class="hcard"><div class="no">途经</div><div class="t">郑州东</div><div class="m">05.12 09:50 · 693 km</div></div>
+        <div class="hcard"><div class="no">终点</div><div class="t">广州南</div><div class="m">05.12 15:30 · 2,298 km</div></div>
+      </div>
+      <div class="homebar"></div>
+    </div>
+    <div class="cap"><span class="badge alt">方案 B</span><b><i>右侧工具栏版</i></b><span>右侧一列圆角工具（回正 / 图层 / 颜色 / 列表）随手可点；底部横滑点位卡片，地图几乎不被遮挡。适合频繁切图层与快速浏览点位。</span></div>
+  </div>
+
+  <!-- 方案 C -->
+  <div class="col">
+    <div class="phone">
+      <div class="island"></div>
+      <div class="status"><span>9:41</span><span>●●● ⌁ ▮</span></div>
+      <div class="map">
+        <svg viewBox="0 0 390 520" preserveAspectRatio="none" style="height:520px">
+          <defs><linearGradient id="mc" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#EEF2ED"/><stop offset="1" stop-color="#D8E4DD"/></linearGradient></defs>
+          <rect width="390" height="520" fill="url(#mc)"/>
+          <path d="M0,300 C90,270 160,316 250,284 S350,268 390,290" fill="none" stroke="#CBDAD2" stroke-width="2"/>
+          <path d="M0,380 C90,352 160,390 250,360 S350,344 390,364" fill="none" stroke="#B8CCC3" stroke-width="2"/>
+          <path d="M34,300 C100,220 150,246 206,196 S286,150 336,120" fill="none" stroke="#2E5D5C" stroke-width="3.2" stroke-linecap="round"/>
+          <circle cx="34" cy="300" r="5.5" fill="#fff" stroke="#2E5D5C" stroke-width="2.4"/>
+          <circle cx="336" cy="120" r="6" fill="#2E5D5C" stroke="#fff" stroke-width="2.6"/>
+        </svg>
+      </div>
+      <div class="roundbtn" style="position:absolute;top:52px;left:16px;z-index:7"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></div>
+      <div class="roundbtn" style="position:absolute;top:52px;right:16px;z-index:7"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.6" fill="currentColor" stroke="none"/></svg></div>
+
+      <div class="infobar" style="top:104px">
+        <div class="top">
+          <div class="name serif">京沪线 · 行程地图</div>
+          <span class="chip clay" style="font-size:10px"><i style="width:10px;height:10px;border-radius:50%;background:var(--clay);display:inline-block"></i>高铁</span>
+        </div>
+        <div class="stats">
+          <div>里程<b>1,286 km</b></div>
+          <div>时长<b>5h20m</b></div>
+          <div>点位<b>32</b></div>
+          <div>平均<b>241 km/h</b></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="grab"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div style="font-size:16px;font-weight:700">行程点位</div>
+          <div class="seg"><div class="it on">全部</div><div class="it">起点</div><div class="it">途经</div><div class="it">终点</div></div>
+        </div>
+        <div class="tl" style="margin-top:8px">
+          <div class="row"><div class="node start"></div><div class="b"><div class="t">北京首都</div><div class="m">05.12 08:30 · 经度 116.603 · 纬度 40.080</div></div><div class="km">0 km</div></div>
+          <div class="row"><div class="node"></div><div class="b"><div class="t">济南西</div><div class="m">05.12 10:42 · 经度 117.130 · 纬度 36.680</div></div><div class="km">419 km</div></div>
+          <div class="row"><div class="node"></div><div class="b"><div class="t">南京南</div><div class="m">05.12 13:05 · 经度 118.796 · 纬度 31.968</div></div><div class="km">1,020 km</div></div>
+          <div class="row"><div class="node end"></div><div class="b"><div class="t">上海虹桥</div><div class="m">05.12 14:20 · 经度 121.336 · 纬度 31.198</div></div><div class="km">1,286 km</div></div>
+        </div>
+      </div>
+      <div class="homebar"></div>
+    </div>
+    <div class="cap"><span class="badge alt">方案 C</span><b><i>信息条 + 全屏面板版</i></b><span>顶部半透明信息条（线路名 + 里程/时长/点位/均速）；下方整屏点位面板，带「全部/起点/途经/终点」筛选。信息密度最高，适合“看数据/核点位”。</span></div>
+  </div>
+</div>
+
+<div style="padding:0 40px 10px">
+  <div class="iconstrip">
+    <h3>图标集（默认选线性描边；圆角端点 · 线宽 1.8–2）</h3>
+    <p>统一 24dp 网格、2dp 线宽、圆角端点，颜色跟随 黛青/墨灰，重要态用陶土点缀。下列为「行程地图」用到的图标。</p>
+    <div class="icons">
+      <div class="ic"><div class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg></div><span>回正</span></div>
+      <div class="ic"><div class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/></svg></div><span>图层</span></div>
+      <div class="ic"><div class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 100 18 9 9 0 000-18z"/><path d="M12 8a4 4 0 100 8 4 4 0 000-8z" fill="currentColor" stroke="none"/></svg></div><span>颜色</span></div>
+      <div class="ic"><div class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg></div><span>列表</span></div>
+      <div class="ic"><div class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.5 7-12a7 7 0 10-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="9" r="2.4"/></svg></div><span>标记</span></div>
+      <div class="ic"><div class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg></div><span>信息</span></div>
+      <div class="ic"><div class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v4a3 3 0 003 3h6a3 3 0 013 3v6"/><circle cx="6" cy="19" r="2"/></svg></div><span>起终点</span></div>
+      <div class="ic"><div class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h14"/><path d="M13 6l6 6-6 6"/></svg></div><span>方向</span></div>
+      <div class="ic"><div class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5l-7 7 7 7"/><path d="M20 5v14"/></svg></div><span>收缩</span></div>
+      <div class="ic"><div class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18M3 12h18"/></svg></div><span>放大</span></div>
+      <div class="ic"><div class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/></svg></div><span>缩小</span></div>
+      <div class="ic"><div class="box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7l8-4 8 4v10l-8 4-8-4z"/><path d="M4 7l8 4 8-4M12 11v10"/></svg></div><span>导出</span></div>
+    </div>
+
+    <div class="fams">
+      <div class="fam">
+        <b>① 线性描边（推荐）</b><small>轻、现代、和现有中文字排版最协调；主色黛青，关键态陶土。</small>
+        <div class="prev">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#2E5D5C" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="#2E5D5C" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="#B96A4B" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.5 7-12a7 7 0 10-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="9" r="2.4"/></svg>
+        </div>
+      </div>
+      <div class="fam">
+        <b>② 实心圆角</b><small>更有分量、点击目标更醒目；适合小尺寸与低视力场景。</small>
+        <div class="prev">
+          <svg viewBox="0 0 24 24" fill="#2E5D5C"><circle cx="12" cy="12" r="3"/><path d="M11 2h2v4h-2zM11 18h2v4h-2zM2 11h4v2H2zM18 11h4v2h-4z"/></svg>
+          <svg viewBox="0 0 24 24" fill="#2E5D5C"><rect x="4" y="5" width="16" height="2.4" rx="1.2"/><rect x="4" y="11" width="16" height="2.4" rx="1.2"/><rect x="4" y="17" width="10" height="2.4" rx="1.2"/></svg>
+          <svg viewBox="0 0 24 24" fill="#B96A4B"><path d="M12 2a7 7 0 00-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 00-7-7zm0 9.2a2.4 2.4 0 110-4.8 2.4 2.4 0 010 4.8z"/></svg>
+        </div>
+      </div>
+      <div class="fam">
+        <b>③ 双色点缀</b><small>黛青主体 + 陶土强调，最具品牌辨识度；细节更多。</small>
+        <div class="prev">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#2E5D5C" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/><circle cx="12" cy="3" r="1.6" fill="#B96A4B" stroke="none"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="#2E5D5C" stroke-width="1.9" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h10"/><circle cx="20" cy="18" r="2" fill="#B96A4B" stroke="none"/></svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="#2E5D5C" stroke-width="1.9" stroke-linecap="round"><path d="M12 21s7-6.5 7-12a7 7 0 10-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="9" r="2.4" fill="#B96A4B" stroke="none"/></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

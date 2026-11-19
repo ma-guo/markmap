@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background"
+    android:fitsSystemWindows="true"
+    tools:context=".ProfileActivity">
+
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/toolbar"
+        style="@style/Widget.MarkMap.Toolbar"
+        android:layout_width="0dp"
+        android:layout_height="?attr/actionBarSize"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:navigationIcon="@drawable/ic_arrow_back"
+        app:title="剖面" />
+
+    <LinearLayout
+        android:id="@+id/segTrack"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/space_s"
+        android:background="@drawable/bg_seg_track"
+        android:orientation="horizontal"
+        android:padding="3dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/toolbar">
+
+        <TextView
+            android:id="@+id/tvAlt"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_seg_on"
+            android:paddingStart="22dp"
+            android:paddingTop="7dp"
+            android:paddingEnd="22dp"
+            android:paddingBottom="7dp"
+            android:text="高度"
+            android:textColor="@color/primary"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvSpeed"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingStart="22dp"
+            android:paddingTop="7dp"
+            android:paddingEnd="22dp"
+            android:paddingBottom="7dp"
+            android:text="速度"
+            android:textColor="@color/ink_tertiary"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/chartCard"
+        style="@style/Widget.MarkMap.Card"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="@dimen/screen_padding"
+        android:layout_marginTop="@dimen/space_m"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/segTrack">
+
+        <com.zuxing.markmap.widget.ProfileChartView
+            android:id="@+id/chart"
+            android:layout_width="match_parent"
+            android:layout_height="220dp"
+            android:layout_margin="12dp" />
+    </com.google.android.material.card.MaterialCardView>
+
+    <LinearLayout
+        android:id="@+id/statRow"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="@dimen/screen_padding"
+        android:layout_marginTop="@dimen/space_m"
+        android:background="@drawable/bg_stats_card"
+        android:baselineAligned="false"
+        android:orientation="horizontal"
+        android:paddingTop="13dp"
+        android:paddingBottom="13dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/chartCard">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical">
+            <TextView android:id="@+id/tvStatA" style="@style/TextAppearance.MarkMap.StatValue" android:layout_width="wrap_content" android:layout_height="wrap_content" tools:text="1,286" />
+            <TextView android:id="@+id/tvLabelA" style="@style/TextAppearance.MarkMap.StatLabel" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="公里" />
+        </LinearLayout>
+        <View android:layout_width="1dp" android:layout_height="match_parent" android:layout_marginVertical="4dp" android:background="@color/divider" />
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical">
+            <TextView android:id="@+id/tvStatB" style="@style/TextAppearance.MarkMap.StatValue" android:layout_width="wrap_content" android:layout_height="wrap_content" tools:text="5h20m" />
+            <TextView android:id="@+id/tvLabelB" style="@style/TextAppearance.MarkMap.StatLabel" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="时长" />
+        </LinearLayout>
+        <View android:layout_width="1dp" android:layout_height="match_parent" android:layout_marginVertical="4dp" android:background="@color/divider" />
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:orientation="vertical">
+            <TextView android:id="@+id/tvStatC" style="@style/TextAppearance.MarkMap.StatValue" android:layout_width="wrap_content" android:layout_height="wrap_content" tools:text="—" />
+            <TextView android:id="@+id/tvLabelC" style="@style/TextAppearance.MarkMap.StatLabel" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="3dp" android:text="爬升" />
+        </LinearLayout>
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

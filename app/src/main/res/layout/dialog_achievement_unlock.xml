@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="32dp">
+
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/card"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        style="@style/Widget.MarkMap.Card"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:cardCornerRadius="24dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
+            android:orientation="vertical"
+            android:padding="26dp">
+
+            <TextView
+                style="@style/TextAppearance.MarkMap.Eyebrow"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="ACHIEVEMENT UNLOCKED" />
+
+            <TextView
+                android:id="@+id/tvIcon"
+                android:layout_width="72dp"
+                android:layout_height="72dp"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/bg_mode_dai"
+                android:fontFamily="serif"
+                android:gravity="center"
+                android:textColor="@color/primary"
+                android:textSize="30sp"
+                android:textStyle="bold"
+                tools:text="✦" />
+
+            <TextView
+                android:id="@+id/tvTitle"
+                style="@style/TextAppearance.MarkMap.Headline"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                tools:text="初见山河" />
+
+            <TextView
+                android:id="@+id/tvDesc"
+                style="@style/TextAppearance.MarkMap.BodySmall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                tools:text="点亮第 1 个省份" />
+
+            <TextView
+                android:id="@+id/btnOk"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:layout_marginTop="20dp"
+                android:background="@drawable/bg_btn_primary"
+                android:gravity="center"
+                android:text="收下"
+                android:textColor="@color/white"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+</FrameLayout>

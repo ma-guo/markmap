@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>MarkMap · M2/M3 UX+UI 设计</title>
+<style>
+  *{box-sizing:border-box;}
+  :root{
+    --ink:#1F2B2C;--ink2:#5F6F6D;--ink3:#98A4A0;
+    --paper:#F6F5EE;--paper2:#EFEEE6;--surface:#FFF;
+    --dai:#2E5D5C;--daiDeep:#1F4241;--daiSoft:#E4EDE8;
+    --moss:#70897A;--clay:#B96A4B;--claySoft:#F4E7DE;
+    --gold:#BE9F66;--seal:#A64734;--line:rgba(31,43,44,.09);
+    --shadow:0 12px 32px rgba(31,43,44,.07);
+  }
+  html,body{margin:0;background:#E7E5DC;font-family:-apple-system,"PingFang SC",Arial,sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased;}
+  .serif{font-family:"Songti SC","STSong","Noto Serif CJK SC",serif;}
+  wrap{display:block;}
+  .sec{padding:26px 40px 0;}
+  h1{font-size:20px;margin:0;}
+  h2{font-size:15px;margin:26px 0 12px;letter-spacing:.04em;}
+  .sub{font-size:12px;color:#5c5c5c;margin:6px 0 0;line-height:1.6;}
+  .flow{display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:12px;}
+  .box{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:9px 12px;box-shadow:var(--shadow);}
+  .box b{color:var(--dai);}
+  .arrow{color:var(--ink3);}
+  .board{display:flex;gap:26px;padding:16px 40px 40px;flex-wrap:wrap;align-items:flex-start;}
+  .col{display:flex;flex-direction:column;gap:10px;}
+  .cap{width:320px;}
+  .cap b{display:block;font-size:13px;}
+  .cap span{display:block;font-size:11px;color:#5c5c5c;margin-top:4px;line-height:1.6;}
+  .phone{position:relative;width:320px;height:692px;border-radius:34px;overflow:hidden;background:var(--paper);border:1px solid rgba(0,0,0,.1);box-shadow:0 22px 60px rgba(20,30,30,.2);}
+  .island{position:absolute;top:8px;left:50%;transform:translateX(-50%);width:90px;height:22px;border-radius:13px;background:#101615;z-index:30;}
+  .status{height:38px;display:flex;justify-content:space-between;align-items:flex-end;padding:0 20px 4px;font-size:9.5px;font-weight:600;z-index:20;position:relative;}
+  .homebar{position:absolute;bottom:6px;left:50%;transform:translateX(-50%);width:104px;height:4px;border-radius:3px;background:rgba(31,43,44,.28);z-index:40;}
+  .bar{height:44px;display:flex;align-items:center;padding:0 14px;gap:10px;}
+  .rbtn{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.75);border:1px solid var(--line);}
+  .ttl{font-size:14px;font-weight:700;}
+  .pad{padding:0 16px;}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);}
+  .row{display:flex;justify-content:space-between;align-items:baseline;}
+  .lbl{font-size:10px;color:var(--ink3);letter-spacing:.06em;}
+  .big{font-family:"Songti SC",serif;font-size:24px;font-weight:700;}
+  .chip{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;padding:5px 10px;border-radius:20px;background:var(--daiSoft);color:var(--dai);}
+  .chip.clay{background:var(--claySoft);color:var(--clay);}
+  .chip.ghost{background:rgba(255,255,255,.7);border:1px solid var(--line);color:var(--ink2);font-weight:600;}
+  .btn{height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;}
+  .btn.p{background:linear-gradient(150deg,#376C69,var(--daiDeep));color:#fff;}
+  .btn.g{background:rgba(255,255,255,.8);border:1px solid var(--line);color:var(--ink);}
+  .grid{display:flex;flex-wrap:wrap;gap:5px;}
+  .pchip{flex:0 0 calc(25% - 5px);text-align:center;font-size:10px;font-weight:700;padding:8px 0;border-radius:10px;background:var(--daiSoft);color:var(--dai);}
+  .pchip.off{background:var(--paper2);color:var(--ink3);font-weight:500;}
+  .prog{height:6px;border-radius:3px;background:#E7E5DC;overflow:hidden;margin-top:8px;}
+  .prog i{display:block;height:100%;border-radius:3px;background:var(--dai);}
+  .prog i.clay{background:var(--clay);}
+  .badge{width:46px;height:46px;border-radius:14px;background:var(--daiSoft);display:flex;align-items:center;justify-content:center;font-family:"Songti SC",serif;font-weight:700;color:var(--dai);}
+  .badge.off{background:var(--paper2);color:var(--ink3);}
+  .cell{flex:0 0 calc(50% - 5px);padding:12px 10px;text-align:center;}
+  .mini{font-size:9px;color:var(--ink3);}
+  .map{position:absolute;inset:0;}
+  .map svg{width:100%;height:100%;display:block;}
+  .full{position:absolute;left:0;right:0;top:38px;bottom:0;}
+  .sheet{position:absolute;left:0;right:0;bottom:0;background:var(--paper);border-radius:24px 24px 0 0;box-shadow:0 -12px 30px rgba(31,43,44,.14);padding:12px 16px 22px;z-index:10;}
+  .grab{width:34px;height:4px;border-radius:2px;background:rgba(31,43,44,.16);margin:0 auto 12px;}
+  .seg{display:flex;background:var(--paper2);border:1px solid var(--line);border-radius:13px;padding:3px;}
+  .seg .it{flex:1;text-align:center;padding:6px 0;border-radius:10px;font-size:10.5px;color:var(--ink2);font-weight:600;}
+  .seg .it.on{background:var(--surface);color:var(--dai);box-shadow:0 2px 6px rgba(31,43,44,.08);}
+  .stat3{display:flex;}
+  .stat3>div{flex:1;text-align:center;}
+  .stat3 b{display:block;font-family:"Songti SC",serif;font-size:16px;}
+  .stat3 span{font-size:9px;color:var(--ink3);}
+  .timeline .r{display:flex;gap:9px;padding:6px 0;}
+  .node{width:12px;height:12px;border-radius:50%;border:2px solid var(--dai);background:#fff;margin-top:2px;flex:none;}
+  .node.s{background:var(--dai);} .node.e{background:var(--clay);border-color:var(--clay);}
+</style>
+</head>
+<body>
+
+<div class="sec">
+  <h1>MarkMap · M2 / M3 UX + UI 设计</h1>
+  <p class="sub">统一沿用新风格：米纸底 / 黛青主色 / 陶土点缀 / 宋体标题 / 线性描边图标。先 UX（信息架构与流程），再 UI（页面视觉），最后程序设计落地。</p>
+
+  <h2>① UX · 信息架构（在现有导航上扩展）</h2>
+  <div class="flow">
+    <span class="box"><b>首页</b> 行程 / 足迹 / 我的</span><span class="arrow">→</span>
+    <span class="box"><b>我的</b> 成长：足迹 · 成就 · 里程 · 报告</span><span class="arrow">→</span>
+    <span class="box"><b>行程详情</b> 路段 / 合并 / <b>剖面</b> / <b>回放</b> / 分享</span><span class="arrow">→</span>
+    <span class="box"><b>工具</b> 车次落库 · <b>航班参考</b></span><span class="arrow">→</span>
+    <span class="box"><b>搜索</b> 名称 · 地址 · 描述</span><span class="arrow">→</span>
+    <span class="box"><b>点位</b> 多选批量 · 收藏 · 标签 · 序号</span>
+  </div>
+
+  <h2>② UX · 关键流程</h2>
+  <div class="flow">
+    <span class="box">剖面：行程详情 → 剖面 → 高度/速度切换 → 看统计</span><span class="arrow">→</span>
+    <span class="box">回放：行程详情 → 回放 → 播放/暂停 · 1x/2x/4x → 同步速度/海拔</span>
+  </div>
+  <div class="flow" style="margin-top:8px">
+    <span class="box">车次：运行图 → 保存为路段 → 选择行程 → 落库（TRAIN）</span><span class="arrow">→</span>
+    <span class="box">航班：航班参考 → 选起降机场/航班号 → 生成大圆参考段（虚线）</span>
+  </div>
+  <div class="flow" style="margin-top:8px">
+    <span class="box">批量：地点列表 → 多选 → 删除/移动/复制</span><span class="arrow">→</span>
+    <span class="box">点增强：地点编辑 → 收藏/标签；地图 marker 显示序号</span>
+  </div>
+</div>
+
+<div class="board">
+
+  <!-- 足迹 -->
+  <div class="col">
+    <div class="phone"><div class="island"></div><div class="status"><span>9:41</span><span>●●● ⌁ ▮</span></div>
+      <div class="bar"><div class="rbtn">‹</div><div class="ttl">足迹</div></div>
+      <div class="pad">
+        <div class="card" style="padding:14px">
+          <div class="big serif">7<span style="font-size:14px">/34 省</span> · 9<span style="font-size:14px">/71 市</span></div>
+          <div class="mini" style="margin-top:6px">仅点亮每段行程端点城市</div>
+          <div class="prog"><i style="width:21%"></i></div>
+          <div class="prog"><i class="clay" style="width:13%"></i></div>
+          <div class="btn p" style="margin-top:12px">分享足迹</div>
+        </div>
+        <div class="lbl" style="margin:14px 0 8px">省级行政区</div>
+        <div class="grid">
+          <div class="pchip">北京</div><div class="pchip">上海</div><div class="pchip">广东</div><div class="pchip">四川</div>
+          <div class="pchip off">天津</div><div class="pchip off">河北</div><div class="pchip off">山西</div><div class="pchip off">浙江</div>
+          <div class="pchip off">江苏</div><div class="pchip off">山东</div><div class="pchip off">河南</div><div class="pchip off">湖北</div>
+        </div>
+      </div><div class="homebar"></div>
+    </div>
+    <div class="cap"><b>UI · 足迹</b><span>覆盖率大字 + 双进度（省/市）+ 分享；未点亮用浅色块，已点亮黛青/陶土。</span></div>
+  </div>
+
+  <!-- 成就 -->
+  <div class="col">
+    <div class="phone"><div class="island"></div><div class="status"><span>9:41</span><span>●●● ⌁ ▮</span></div>
+      <div class="bar"><div class="rbtn">‹</div><div class="ttl">成就徽章</div></div>
+      <div class="pad">
+        <div class="mini">已解锁 3 / 17</div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px 6px;margin-top:8px">
+          <div class="cell card"><div class="badge" style="margin:0 auto">⛰</div><div style="font-size:12px;font-weight:700;margin-top:8px">初见山河</div><div class="mini" style="margin-top:3px">已解锁</div></div>
+          <div class="cell card"><div class="badge" style="margin:0 auto">✦</div><div style="font-size:12px;font-weight:700;margin-top:8px">凌云</div><div class="mini" style="margin-top:3px">已解锁</div></div>
+          <div class="cell card"><div class="badge off" style="margin:0 auto">km</div><div style="font-size:12px;font-weight:700;margin-top:8px">千里之行</div><div class="mini" style="margin-top:3px">进度 34%</div></div>
+          <div class="cell card"><div class="badge off" style="margin:0 auto">★</div><div style="font-size:12px;font-weight:700;margin-top:8px">夜航</div><div class="mini" style="margin-top:3px">未解锁</div></div>
+        </div>
+      </div><div class="homebar"></div>
+    </div>
+    <div class="cap"><b>UI · 成就</b><span>两列徽章墙；解锁=黛青底，未解锁=浅灰+半透明；解锁时弹「ACHIEVEMENT UNLOCKED」动效卡。</span></div>
+  </div>
+
+  <!-- 里程 -->
+  <div class="col">
+    <div class="phone"><div class="island"></div><div class="status"><span>9:41</span><span>●●● ⌁ ▮</span></div>
+      <div class="bar"><div class="rbtn">‹</div><div class="ttl">里程等级</div></div>
+      <div class="pad">
+        <div class="card" style="padding:14px;margin-top:6px">
+          <div class="row"><span class="lbl">飞行里程</span><span class="serif" style="color:var(--dai);font-weight:700">青铜</span></div>
+          <div class="big serif" style="margin-top:6px">2,340 km</div>
+          <div class="prog"><i style="width:47%"></i></div>
+          <div class="mini" style="margin-top:6px">距白银还需 2,660 km</div>
+        </div>
+        <div class="card" style="padding:14px;margin-top:10px">
+          <div class="row"><span class="lbl">铁路里程</span><span class="serif" style="color:var(--dai);font-weight:700">白银</span></div>
+          <div class="big serif" style="margin-top:6px">3,120 km</div>
+          <div class="prog"><i style="width:62%"></i></div>
+          <div class="mini" style="margin-top:6px">距黄金还需 4,880 km</div>
+        </div>
+      </div><div class="homebar"></div>
+    </div>
+    <div class="cap"><b>UI · 里程</b><span>飞行/铁路/总里程各一张卡：等级（宋体）+ 累计 + 进度条 + 距下一级。</span></div>
+  </div>
+
+  <!-- 报告 -->
+  <div class="col">
+    <div class="phone"><div class="island"></div><div class="status"><span>9:41</span><span>●●● ⌁ ▮</span></div>
+      <div class="bar"><div class="rbtn">‹</div><div class="ttl">足迹报告</div></div>
+      <div class="pad">
+        <div class="flow"><span class="chip">本月</span><span class="chip ghost">今年</span></div>
+        <div class="mini" style="margin-top:10px">总里程 1,286 km · 3 段 · 3 城市</div>
+        <div class="card" style="margin-top:10px;padding:0;overflow:hidden">
+          <div style="height:150px;background:linear-gradient(160deg,#EEF2ED,#D8E4DD);position:relative">
+            <svg viewBox="0 0 300 150" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%"><path d="M0,110 C50,80 90,104 140,80 S230,58 300,84 L300,150 L0,150Z" fill="#C7D8CF" opacity=".7"/><path d="M24,108 C80,60 130,92 190,54 S250,40 286,30" fill="none" stroke="#2E5D5C" stroke-width="2.4" stroke-linecap="round"/></svg>
+          </div>
+          <div style="padding:12px 14px">
+            <div class="serif" style="font-size:16px;font-weight:700">月度足迹</div>
+            <div class="stat3" style="margin-top:10px">
+              <div><b>1,286</b><span>公里</span></div><div><b>3</b><span>段</span></div><div><b>3</b><span>城市</span></div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:12px"><div class="btn g" style="flex:1">生成图片</div><div class="btn p" style="flex:1">分享</div></div>
+      </div><div class="homebar"></div>
+    </div>
+    <div class="cap"><b>UI · 报告</b><span>本月/今年切换；报告卡=淡墨远山 + 宋体标题 + 三项统计；底部生成/分享长图。</span></div>
+  </div>
+
+  <!-- 剖面 -->
+  <div class="col">
+    <div class="phone"><div class="island"></div><div class="status"><span>9:41</span><span>●●● ⌁ ▮</span></div>
+      <div class="bar"><div class="rbtn">‹</div><div class="ttl">剖面</div></div>
+      <div class="pad">
+        <div class="seg"><div class="it on">高度</div><div class="it">速度</div></div>
+        <div class="card" style="margin-top:12px;padding:14px">
+          <svg viewBox="0 0 288 150" preserveAspectRatio="none" style="width:100%;height:150px">
+            <defs><linearGradient id="pg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2E5D5C" stop-opacity=".22"/><stop offset="1" stop-color="#2E5D5C" stop-opacity="0"/></linearGradient></defs>
+            <path d="M8,130 L40,60 L72,40 L104,52 L136,30 L168,44 L200,34 L232,60 L264,120 L280,132 L280,140 L8,140Z" fill="url(#pg)"/>
+            <path d="M8,130 L40,60 L72,40 L104,52 L136,30 L168,44 L200,34 L232,60 L264,120 L280,132" fill="none" stroke="#2E5D5C" stroke-width="2" stroke-linejoin="round"/>
+          </svg>
+          <div class="mini" style="margin-top:6px">横轴：里程　纵轴：海拔(m)</div>
+        </div>
+        <div class="stat3" style="margin-top:14px">
+          <div><b>1,286</b><span>公里</span></div><div><b>5h20m</b><span>时长</span></div><div><b>&#8593;820</b><span>累计爬升</span></div>
+        </div>
+      </div><div class="homebar"></div>
+    </div>
+    <div class="cap"><b>UI · 剖面</b><span>分段控件切高度/速度；曲线=黛青描边+渐变面积；下方统计三项。</span></div>
+  </div>
+
+  <!-- 回放 -->
+  <div class="col">
+    <div class="phone"><div class="island"></div><div class="status"><span>9:41</span><span>●●● ⌁ ▮</span></div>
+      <div class="map"><svg viewBox="0 0 320 692" preserveAspectRatio="none"><defs><linearGradient id="pb2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#EFF3EE"/><stop offset="1" stop-color="#DCE6DF"/></linearGradient></defs><rect width="320" height="692" fill="url(#pb2)"/><path d="M24,540 C80,420 130,470 180,360 S250,240 290,180" fill="none" stroke="#2E5D5C" stroke-width="3" stroke-linecap="round"/><circle cx="24" cy="540" r="5" fill="#fff" stroke="#2E5D5C" stroke-width="2.4"/><circle cx="290" cy="180" r="6" fill="#2E5D5C" stroke="#fff" stroke-width="2.4"/><circle cx="168" cy="372" r="9" fill="#2E5D5C" opacity=".18"/><circle cx="168" cy="372" r="5" fill="#2E5D5C" stroke="#fff" stroke-width="2"/></svg></div>
+      <div class="bar" style="position:relative;z-index:5"><div class="rbtn">‹</div><div class="ttl" style="background:rgba(255,255,255,.75);padding:6px 12px;border-radius:14px;border:1px solid var(--line)">回放</div><div class="rbtn">⋮</div></div>
+      <div class="sheet">
+        <div class="grab"></div>
+        <div class="stat3"><div><b>82</b><span>km/h</span></div><div><b>9,860</b><span>海拔 m</span></div><div><b>3:12</b><span>进行</span></div></div>
+        <div class="prog" style="margin-top:12px"><i style="width:46%"></i></div>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:14px">
+          <div class="btn g" style="width:56px">1x</div>
+          <div class="btn p" style="flex:1">▶ 播放</div>
+          <div class="btn g" style="width:56px">4x</div>
+        </div>
+      </div><div class="homebar"></div>
+    </div>
+    <div class="cap"><b>UI · 回放</b><span>地图 + 移动光标；底部显示实时速度/海拔/耗时、进度条、播放/暂停与倍速。</span></div>
+  </div>
+
+  <!-- 航班参考 -->
+  <div class="col">
+    <div class="phone"><div class="island"></div><div class="status"><span>9:41</span><span>●●● ⌁ ▮</span></div>
+      <div class="map"><svg viewBox="0 0 320 692" preserveAspectRatio="none"><rect width="320" height="692" fill="#EAF0F4"/><path d="M40,520 C120,360 200,260 280,140" fill="none" stroke="#4A6FA5" stroke-width="3" stroke-dasharray="8 6" stroke-linecap="round"/><circle cx="40" cy="520" r="5" fill="#fff" stroke="#4A6FA5" stroke-width="2.4"/><circle cx="280" cy="140" r="6" fill="#4A6FA5" stroke="#fff" stroke-width="2.4"/></svg></div>
+      <div class="bar" style="position:relative;z-index:5"><div class="rbtn">‹</div><div class="ttl" style="background:rgba(255,255,255,.75);padding:6px 12px;border-radius:14px;border:1px solid var(--line)">航班参考</div><div class="rbtn">⋮</div></div>
+      <div class="sheet">
+        <div class="grab"></div>
+        <div class="row"><span class="ttl">CA1501</span><span class="chip clay">虚线·参考航线</span></div>
+        <div class="mini" style="margin-top:8px">PEK 北京首都 → SHA 上海虹桥 · 1,080 km</div>
+        <div class="btn p" style="margin-top:14px">保存为路段（飞行）</div>
+      </div><div class="homebar"></div>
+    </div>
+    <div class="cap"><b>UI · 航班参考</b><span>大圆航线以蓝色虚线绘制，与真实轨迹（实线）区分；一键保存为 FLIGHT 路段。</span></div>
+  </div>
+
+  <!-- 搜索 -->
+  <div class="col">
+    <div class="phone"><div class="island"></div><div class="status"><span>9:41</span><span>●●● ⌁ ▮</span></div>
+      <div class="bar"><div class="rbtn">‹</div><div class="ttl">搜索</div></div>
+      <div class="pad">
+        <div style="height:40px;border-radius:20px;background:var(--surface);border:1px solid var(--line);display:flex;align-items:center;padding:0 14px;font-size:12px;color:var(--ink3)">🔍 名称 / 地址 / 描述</div>
+        <div class="lbl" style="margin:14px 0 6px">地点</div>
+        <div class="card" style="padding:12px 14px"><div style="font-size:13px;font-weight:700">北京首都机场</div><div class="mini" style="margin-top:3px">北京市朝阳区 · 行程「北京 → 上海」</div></div>
+        <div class="card" style="padding:12px 14px;margin-top:8px"><div style="font-size:13px;font-weight:700">上海虹桥</div><div class="mini" style="margin-top:3px">上海市闵行区 · 行程「北京 → 上海」</div></div>
+      </div><div class="homebar"></div>
+    </div>
+    <div class="cap"><b>UI · 搜索</b><span>全局搜索：地点优先，带所属行程；空态沿用空状态样式。</span></div>
+  </div>
+
+  <!-- 点多选/增强 -->
+  <div class="col">
+    <div class="phone"><div class="island"></div><div class="status"><span>9:41</span><span>●●● ⌁ ▮</span></div>
+      <div class="bar"><div class="rbtn">‹</div><div class="ttl">地点（已选 2）</div><div class="chip">取消</div></div>
+      <div class="pad timeline">
+        <div class="card" style="padding:11px 12px;display:flex;gap:10px;align-items:center"><div class="node s"></div><div style="flex:1"><div style="font-size:12.5px;font-weight:700">北京首都机场</div><div class="mini">收藏 · 标签：机场</div></div><span style="color:var(--dai)">☑</span></div>
+        <div class="card" style="padding:11px 12px;display:flex;gap:10px;align-items:center;margin-top:8px"><div class="node"></div><div style="flex:1"><div style="font-size:12.5px;font-weight:700">济南西</div><div class="mini">标签：途经</div></div><span style="color:var(--dai)">☑</span></div>
+        <div class="card" style="padding:11px 12px;display:flex;gap:10px;align-items:center;margin-top:8px"><div class="node e"></div><div style="flex:1"><div style="font-size:12.5px;font-weight:700">上海虹桥</div><div class="mini">收藏</div></div><span style="color:var(--ink3)">☐</span></div>
+      </div>
+      <div class="sheet" style="padding-top:12px">
+        <div style="display:flex;gap:8px"><div class="btn g" style="flex:1">复制</div><div class="btn g" style="flex:1">移动</div><div class="btn p" style="flex:1">删除</div></div>
+      </div><div class="homebar"></div>
+    </div>
+    <div class="cap"><b>UI · 批量/点增强</b><span>长按进入多选；选中显示操作条（复制/移动/删除）。点可收藏、打标签，地图 marker 带序号。</span></div>
+  </div>
+
+</div>
+</body>
+</html>

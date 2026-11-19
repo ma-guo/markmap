@@ -8,8 +8,11 @@ import android.view.MenuItem
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.android.material.snackbar.Snackbar
 import com.zuxing.markmap.data.adapter.LineAdapter
+import com.zuxing.markmap.widget.SwipeToDeleteCallback
 import com.zuxing.markmap.databinding.ActivityLineListBinding
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -33,7 +36,16 @@ class LineListActivity : AppCompatActivity() {
 
         setupToolbar()
         setupRecyclerView()
+        loadGroupTitle()
         loadLines()
+    }
+
+    private fun loadGroupTitle() {
+        lifecycleScope.launch {
+            app.repository.getGroupById(groupId)?.let { group ->
+                supportActionBar?.title = group.name.ifBlank { "路段" }
+            }
+        }
     }
 
     private fun setupToolbar() {
@@ -53,6 +65,10 @@ class LineListActivity : AppCompatActivity() {
         return when (item.itemId) {
             R.id.action_map -> {
                 navigateToLineMap()
+                true
+            }
+            R.id.action_merge -> {
+                navigateToMerge()
                 true
             }
             else -> super.onOptionsItemSelected(item)
@@ -86,6 +102,34 @@ class LineListActivity : AppCompatActivity() {
         binding.recyclerView.layoutManager = LinearLayoutManager(this)
         binding.recyclerView.adapter = adapter
 
+        ItemTouchHelper(SwipeToDeleteCallback(this) { position ->
+            adapter.currentList.getOrNull(position)?.let { deleteLine(it) }
+        }).attachToRecyclerView(binding.recyclerView)
+
+        ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(
+            ItemTouchHelper.UP or ItemTouchHelper.DOWN, 0
+        ) {
+            override fun onMove(
+                rv: androidx.recyclerview.widget.RecyclerView,
+                vh: androidx.recyclerview.widget.RecyclerView.ViewHolder,
+                target: androidx.recyclerview.widget.RecyclerView.ViewHolder
+            ): Boolean {
+                val from = vh.adapterPosition
+                val to = target.adapterPosition
+                if (from == androidx.recyclerview.widget.RecyclerView.NO_POSITION ||
+                    to == androidx.recyclerview.widget.RecyclerView.NO_POSITION
+                ) return false
+                val list = adapter.currentList.toMutableList()
+                val item = list.removeAt(from)
+                list.add(to, item)
+                adapter.submitList(list)
+                persistOrder(list)
+                return true
+            }
+
+            override fun onSwiped(vh: androidx.recyclerview.widget.RecyclerView.ViewHolder, direction: Int) {}
+        }).attachToRecyclerView(binding.recyclerView)
+
         binding.fabAdd.setIcon(R.drawable.add_24px)
         binding.fabAdd.setOnClickListener {
             navigateToEdit(null)
@@ -115,6 +159,25 @@ class LineListActivity : AppCompatActivity() {
         }
     }
 
+    private fun persistOrder(list: List<com.zuxing.markmap.data.entity.LineEntity>) {
+        lifecycleScope.launch {
+            list.forEachIndexed { index, line ->
+                if (line.sortOrder != index) app.repository.updateLine(line.copy(sortOrder = index))
+            }
+        }
+    }
+
+    private fun deleteLine(line: com.zuxing.markmap.data.entity.LineEntity) {
+        lifecycleScope.launch {
+            app.repository.softDeleteLine(line.id)
+            Snackbar.make(binding.root, "已删除「${line.name}」", Snackbar.LENGTH_LONG)
+                .setAction("撤销") {
+                    lifecycleScope.launch { app.repository.restoreLine(line.id) }
+                }
+                .show()
+        }
+    }
+
     private fun navigateToEdit(lineId: Long?) {
         val intent = Intent(this, LineEditActivity::class.java).apply {
             putExtra("groupId", groupId)
@@ -126,6 +189,13 @@ class LineListActivity : AppCompatActivity() {
     private fun navigateToPointList(lineId: Long) {
         val intent = Intent(this, PointListActivity::class.java).apply {
             putExtra("lineId", lineId)
+        }
+        startActivity(intent)
+    }
+
+    private fun navigateToMerge() {
+        val intent = Intent(this, MergeTrackActivity::class.java).apply {
+            putExtra("groupId", groupId)
         }
         startActivity(intent)
     }

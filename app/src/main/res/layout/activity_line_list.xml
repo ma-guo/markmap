@@ -4,6 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
     android:background="@color/background"
     tools:context=".LineListActivity">
 
@@ -16,7 +17,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:navigationIcon="@drawable/ic_arrow_back"
-        app:title="路线列表" />
+        app:title="路段" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerView"
@@ -37,7 +38,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:gravity="center"
-        android:text="暂无数据\n点击右上角菜单添加"
+        android:text="暂无路段\n点击右下角 + 添加"
         android:textColor="@color/ink_secondary"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"

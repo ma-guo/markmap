@@ -44,6 +44,16 @@ class PickLocationActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        if (!(application as MarkMapApplication).baiduReady) {
+            android.widget.Toast.makeText(
+                this,
+                "地图组件不可用：百度地图 SDK 在当前设备初始化失败",
+                android.widget.Toast.LENGTH_LONG
+            ).show()
+            finish()
+            return
+        }
         setContentView(R.layout.activity_pick_location)
 
         lineId = intent.getLongExtra("lineId", -1L)
@@ -267,16 +277,16 @@ class PickLocationActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        mapView.onResume()
+        if (this::mapView.isInitialized) mapView.onResume()
     }
 
     override fun onPause() {
         super.onPause()
-        mapView.onPause()
+        if (this::mapView.isInitialized) mapView.onPause()
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        mapView.onDestroy()
+        if (this::mapView.isInitialized) mapView.onDestroy()
     }
 }

@@ -1,7 +1,10 @@
 package com.zuxing.markmap
 
 import android.os.Bundle
+import android.view.Menu
+import android.view.MenuItem
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.addTextChangedListener
 import androidx.lifecycle.lifecycleScope
@@ -27,10 +30,51 @@ class GroupEditActivity : AppCompatActivity() {
         groupId = intent.getLongExtra("groupId", -1L)
         isEditMode = groupId != -1L
 
+        setupToolbar()
         setupViews()
 
         if (isEditMode) {
             loadGroup()
+        }
+    }
+
+    private fun setupToolbar() {
+        setSupportActionBar(binding.toolbar)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        binding.toolbar.setNavigationOnClickListener { finish() }
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        if (isEditMode) {
+            menuInflater.inflate(R.menu.menu_group_edit, menu)
+        }
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.action_delete -> {
+                showDeleteConfirmDialog()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
+        }
+    }
+
+    private fun showDeleteConfirmDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("删除行程")
+            .setMessage("确定要删除行程 \"${currentGroup?.name}\" 吗？删除后可在回收站恢复。")
+            .setPositiveButton("删除") { _, _ -> deleteGroup() }
+            .setNegativeButton("取消", null)
+            .show()
+    }
+
+    private fun deleteGroup() {
+        lifecycleScope.launch {
+            app.repository.softDeleteGroup(groupId)
+            Toast.makeText(this@GroupEditActivity, "行程已删除", Toast.LENGTH_SHORT).show()
+            finish()
         }
     }
 
@@ -69,7 +113,7 @@ class GroupEditActivity : AppCompatActivity() {
     private fun saveGroup() {
         val name = binding.etName.text.toString().trim()
         if (name.isBlank()) {
-            Toast.makeText(this, "请输入组名", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "请输入行程名称", Toast.LENGTH_SHORT).show()
             return
         }
 

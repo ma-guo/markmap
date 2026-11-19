@@ -12,6 +12,7 @@ import androidx.lifecycle.lifecycleScope
 import com.zuxing.markmap.data.entity.GroupEntity
 import com.zuxing.markmap.data.entity.LineEntity
 import com.zuxing.markmap.databinding.ActivityLineEditBinding
+import com.zuxing.markmap.domain.TransportMode
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -27,6 +28,7 @@ class LineEditActivity : AppCompatActivity() {
     private var groupItems: List<GroupItem> = emptyList()
     private var selectedGroupId: Long = -1L
     private var selectedGroupName: String = ""
+    private var selectedMode: TransportMode = TransportMode.OTHER
 
     data class GroupItem(val id: Long, val name: String)
 
@@ -43,6 +45,7 @@ class LineEditActivity : AppCompatActivity() {
 
         setupToolbar()
         setupViews()
+        setupModeDropdown()
         loadGroups()
 
         if (isEditMode) {
@@ -75,8 +78,8 @@ class LineEditActivity : AppCompatActivity() {
 
     private fun showDeleteConfirmDialog() {
         AlertDialog.Builder(this)
-            .setTitle("删除路线")
-            .setMessage("确定要删除路线 \"${currentLine?.name}\" 吗？删除后可在回收站恢复。")
+            .setTitle("删除路段")
+            .setMessage("确定要删除路段 \"${currentLine?.name}\" 吗？删除后可在回收站恢复。")
             .setPositiveButton("删除") { _, _ ->
                 deleteLine()
             }
@@ -88,7 +91,7 @@ class LineEditActivity : AppCompatActivity() {
         currentLine?.let { line ->
             lifecycleScope.launch {
                 app.repository.softDeleteLine(line.id)
-                Toast.makeText(this@LineEditActivity, "路线已删除", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@LineEditActivity, "路段已删除", Toast.LENGTH_SHORT).show()
                 finish()
             }
         }
@@ -96,10 +99,6 @@ class LineEditActivity : AppCompatActivity() {
 
     private fun setupViews() {
         binding.etName.addTextChangedListener {
-            updateSaveButtonState()
-        }
-
-        binding.etSortOrder.addTextChangedListener {
             updateSaveButtonState()
         }
 
@@ -112,6 +111,17 @@ class LineEditActivity : AppCompatActivity() {
 
         binding.btnSave.setOnClickListener {
             saveLine()
+        }
+    }
+
+    private fun setupModeDropdown() {
+        val labels = TransportMode.values().map { it.label }
+        val adapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, labels)
+        binding.actvMode.setAdapter(adapter)
+        binding.actvMode.setText(selectedMode.label, false)
+        binding.actvMode.setOnItemClickListener { _, _, position, _ ->
+            selectedMode = TransportMode.values()[position]
+            updateSaveButtonState()
         }
     }
 
@@ -143,17 +153,17 @@ class LineEditActivity : AppCompatActivity() {
                 binding.actvGroup.setText(it.name, false)
             }
         }
+        updateSaveButtonState()
     }
 
     private fun updateSaveButtonState() {
         if (isEditMode && currentLine != null) {
             val name = binding.etName.text.toString().trim()
-            val sortOrder = binding.etSortOrder.text.toString().toIntOrNull() ?: 0
             val hasChanges = name.isNotBlank() &&
                     selectedGroupId != -1L &&
                     (name != currentLine!!.name ||
                             selectedGroupId != currentLine!!.groupId ||
-                            sortOrder != currentLine!!.sortOrder)
+                            selectedMode.name != currentLine!!.transportMode)
             binding.btnSave.isEnabled = hasChanges
         } else {
             binding.btnSave.isEnabled = binding.etName.text!!.isNotBlank() && selectedGroupId != -1L
@@ -165,9 +175,11 @@ class LineEditActivity : AppCompatActivity() {
             currentLine = app.repository.getLineById(lineId)
             currentLine?.let { line ->
                 binding.etName.setText(line.name)
-                binding.etSortOrder.setText(line.sortOrder.toString())
                 binding.tvCreateTime.text = "创建时间: ${formatTime(line.createTime)}"
                 binding.tvCreateTime.visibility = android.view.View.VISIBLE
+
+                selectedMode = TransportMode.from(line.transportMode)
+                binding.actvMode.setText(selectedMode.label, false)
 
                 selectedGroupId = line.groupId
                 val group = groupList.find { it.id == line.groupId }
@@ -183,22 +195,20 @@ class LineEditActivity : AppCompatActivity() {
     private fun saveLine() {
         val name = binding.etName.text.toString().trim()
         if (name.isBlank()) {
-            Toast.makeText(this, "请输入线名", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "请输入路段名称", Toast.LENGTH_SHORT).show()
             return
         }
 
         if (selectedGroupId == -1L) {
-            Toast.makeText(this, "请选择所属组", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "请选择所属行程", Toast.LENGTH_SHORT).show()
             return
         }
-
-        val sortOrder = binding.etSortOrder.text.toString().toIntOrNull() ?: 0
 
         lifecycleScope.launch {
             if (isEditMode && currentLine != null) {
                 val hasChanges = name != currentLine!!.name ||
                         selectedGroupId != currentLine!!.groupId ||
-                        sortOrder != currentLine!!.sortOrder
+                        selectedMode.name != currentLine!!.transportMode
 
                 if (!hasChanges) {
                     Toast.makeText(this@LineEditActivity, "未有任何变化", Toast.LENGTH_SHORT).show()
@@ -208,25 +218,22 @@ class LineEditActivity : AppCompatActivity() {
                 val line = currentLine!!.copy(
                     name = name,
                     groupId = selectedGroupId,
-                    sortOrder = sortOrder
+                    transportMode = selectedMode.name
                 )
                 app.repository.updateLine(line)
             } else {
                 val line = LineEntity(
-                    id = if (isEditMode) lineId else 0,
+                    id = 0,
                     name = name,
                     groupId = selectedGroupId,
-                    sortOrder = sortOrder,
-                    createTime = currentLine?.createTime ?: System.currentTimeMillis()
+                    sortOrder = 0,
+                    transportMode = selectedMode.name,
+                    createTime = System.currentTimeMillis()
                 )
-                if (isEditMode) {
-                    app.repository.updateLine(line)
-                } else {
-                    app.repository.insertLine(line)
-                }
+                app.repository.insertLine(line)
             }
 
-            Toast.makeText(this@LineEditActivity, "保存成功", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this@LineEditActivity, "已保存", Toast.LENGTH_SHORT).show()
             finish()
         }
     }

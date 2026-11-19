@@ -1,9 +1,12 @@
 package com.zuxing.markmap.data.dao
 
 import androidx.room.*
+import com.zuxing.markmap.data.entity.AchievementEntity
 import com.zuxing.markmap.data.entity.GroupEntity
 import com.zuxing.markmap.data.entity.LineEntity
+import com.zuxing.markmap.data.entity.MergedTrackPlanEntity
 import com.zuxing.markmap.data.entity.PointEntity
+import com.zuxing.markmap.data.entity.VisitedPlaceEntity
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -53,6 +56,9 @@ interface LineDao {
     @Query("SELECT * FROM lines WHERE isDeleted = 0 ORDER BY sortOrder ASC")
     fun getAllLines(): Flow<List<LineEntity>>
 
+    @Query("SELECT * FROM lines WHERE groupId = :groupId AND isDeleted = 0 ORDER BY sortOrder ASC")
+    suspend fun getLinesByGroupIdOnce(groupId: Long): List<LineEntity>
+
     @Query("SELECT * FROM lines WHERE isDeleted = 1 ORDER BY deleteTime DESC")
     fun getDeletedLines(): Flow<List<LineEntity>>
 
@@ -86,6 +92,9 @@ interface PointDao {
     @Query("SELECT * FROM points WHERE lineId = :lineId AND isDeleted = 0 ORDER BY sortOrder ASC")
     fun getPointsByLineId(lineId: Long): Flow<List<PointEntity>>
 
+    @Query("SELECT * FROM points WHERE lineId = :lineId AND isDeleted = 0 ORDER BY sortOrder ASC")
+    suspend fun getPointsByLineIdOnce(lineId: Long): List<PointEntity>
+
     @Query("SELECT * FROM points WHERE isDeleted = 0 ORDER BY createTime DESC")
     fun getAllPoints(): Flow<List<PointEntity>>
 
@@ -115,4 +124,63 @@ interface PointDao {
 
     @Query("SELECT COUNT(*) FROM points WHERE lineId = :lineId AND isDeleted = 0")
     suspend fun getPointCountByLine(lineId: Long): Int
+}
+/**
+ * 合并轨迹方案 DAO
+ */
+@Dao
+interface MergedTrackPlanDao {
+    @Query("SELECT * FROM merged_track_plans WHERE groupId = :groupId ORDER BY modifyTime DESC")
+    fun getPlansByGroupId(groupId: Long): Flow<List<MergedTrackPlanEntity>>
+
+    @Query("SELECT * FROM merged_track_plans WHERE id = :id")
+    suspend fun getPlanById(id: Long): MergedTrackPlanEntity?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insert(plan: MergedTrackPlanEntity): Long
+
+    @Update
+    suspend fun update(plan: MergedTrackPlanEntity)
+
+    @Query("DELETE FROM merged_track_plans WHERE id = :id")
+    suspend fun deleteById(id: Long)
+}
+
+/**
+ * 成就 DAO
+ */
+@Dao
+interface AchievementDao {
+    @Query("SELECT * FROM achievements")
+    fun getAll(): Flow<List<AchievementEntity>>
+
+    @Query("SELECT * FROM achievements")
+    suspend fun getAllOnce(): List<AchievementEntity>
+
+    @Query("SELECT * FROM achievements WHERE code = :code")
+    suspend fun getByCode(code: String): AchievementEntity?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(entity: AchievementEntity): Long
+}
+
+/**
+ * 足迹点亮 DAO
+ */
+@Dao
+interface VisitedPlaceDao {
+    @Query("SELECT * FROM visited_places ORDER BY level ASC, lastVisit DESC")
+    fun getAll(): Flow<List<VisitedPlaceEntity>>
+
+    @Query("SELECT * FROM visited_places ORDER BY level ASC, lastVisit DESC")
+    suspend fun getAllOnce(): List<VisitedPlaceEntity>
+
+    @Query("SELECT * FROM visited_places WHERE code = :code AND level = :level")
+    suspend fun get(code: String, level: Int): VisitedPlaceEntity?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(entity: VisitedPlaceEntity): Long
+
+    @Query("DELETE FROM visited_places")
+    suspend fun clear()
 }

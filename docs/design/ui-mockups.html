@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>MarkMap · UI 高保真</title>
+<style>
+  * { box-sizing: border-box; }
+  :root {
+    --ink: #1F2B2C; --ink2: #5F6F6D; --ink3: #98A4A0;
+    --paper: #F6F5EE; --paper2: #EFEEE6; --surface: #FFFFFF;
+    --dai: #2E5D5C; --daiDeep: #1F4241; --daiSoft: #E4EDE8;
+    --moss: #70897A; --clay: #B96A4B; --claySoft: #F4E7DE;
+    --gold: #BE9F66; --seal: #A64734;
+    --line: rgba(31,43,44,.09);
+    --shadow: 0 12px 32px rgba(31,43,44,.07);
+  }
+  html, body { margin: 0; padding: 0; background: #E7E5DC; font-family: -apple-system, "PingFang SC", "Helvetica Neue", Arial, sans-serif; color: var(--ink); -webkit-font-smoothing: antialiased; }
+  .serif { font-family: "Songti SC", "STSong", "Noto Serif CJK SC", serif; }
+  .board { display: flex; gap: 34px; padding: 40px 44px 30px; align-items: flex-start; }
+  .col { display: flex; flex-direction: column; gap: 14px; }
+  .cap { width: 390px; }
+  .cap b { display: block; font-size: 15px; letter-spacing: .04em; }
+  .cap span { display: block; font-size: 12px; color: #5c5c5c; margin-top: 4px; line-height: 1.6; }
+  .phone { position: relative; width: 390px; height: 844px; border-radius: 40px; overflow: hidden; background: var(--paper); border: 1px solid rgba(0,0,0,.10); box-shadow: 0 26px 70px rgba(20,30,30,.22); }
+  .island { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 108px; height: 27px; border-radius: 16px; background: #101615; z-index: 20; }
+  .status { height: 44px; display: flex; justify-content: space-between; align-items: flex-end; padding: 0 24px 5px; font-size: 11px; font-weight: 600; color: var(--ink); position: relative; z-index: 10; }
+  .status .right { letter-spacing: 1px; }
+  .homebar { position: absolute; bottom: 7px; left: 50%; transform: translateX(-50%); width: 126px; height: 4px; border-radius: 3px; background: rgba(31,43,44,.28); z-index: 30; }
+
+  /* ---------- 通用 ---------- */
+  .eyebrow { font-size: 9px; letter-spacing: .38em; color: var(--gold); font-weight: 600; }
+  .h1 { font-size: 31px; line-height: 1.18; font-weight: 700; letter-spacing: .01em; }
+  .h2 { font-size: 22px; font-weight: 700; letter-spacing: .01em; }
+  .body { font-size: 13px; color: var(--ink2); line-height: 1.55; }
+  .caption { font-size: 10.5px; color: var(--ink3); letter-spacing: .02em; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 22px; box-shadow: var(--shadow); }
+  .thumb { position: relative; overflow: hidden; border-radius: 22px 22px 0 0; }
+  .thumb svg { display: block; width: 100%; height: 100%; }
+  .chiprow { display: flex; gap: 7px; flex-wrap: wrap; }
+  .chip { font-size: 10px; padding: 5px 10px; border-radius: 20px; background: var(--daiSoft); color: var(--dai); font-weight: 600; letter-spacing: .02em; }
+  .chip.clay { background: var(--claySoft); color: var(--clay); }
+  .chip.ghost { background: transparent; border: 1px solid var(--line); color: var(--ink2); font-weight: 500; }
+  .modedot { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex: none; font-family: "Songti SC", serif; }
+  .modedot.air { background: var(--daiSoft); color: var(--dai); }
+  .modedot.rail { background: var(--claySoft); color: var(--clay); }
+  .divider { height: 1px; background: var(--line); }
+
+  /* ---------- 首页 ---------- */
+  .home-head { padding: 8px 24px 0; }
+  .home-head .top { display: flex; justify-content: space-between; align-items: center; }
+  .roundbtn { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,.72); border: 1px solid var(--line); color: var(--ink); font-size: 17px; }
+  .search { margin: 16px 0 18px; height: 44px; border-radius: 22px; background: rgba(255,255,255,.78); border: 1px solid var(--line); display: flex; align-items: center; gap: 9px; padding: 0 16px; font-size: 13px; color: var(--ink3); }
+  .search .ic { width: 15px; height: 15px; border: 1.6px solid var(--ink3); border-radius: 50%; position: relative; }
+  .search .ic::after { content: ""; position: absolute; width: 6px; height: 1.6px; background: var(--ink3); right: -4px; bottom: -1px; transform: rotate(45deg); border-radius: 2px; }
+  .triplist { padding: 0 18px; display: flex; flex-direction: column; gap: 14px; }
+  .trip { overflow: hidden; }
+  .trip .thumb { height: 132px; }
+  .trip .info { padding: 14px 16px 15px; }
+  .trip .titleline { display: flex; justify-content: space-between; align-items: baseline; }
+  .trip .title { font-size: 17px; font-weight: 700; letter-spacing: .01em; }
+  .trip .km { font-family: "Songti SC", serif; font-size: 15px; color: var(--dai); font-weight: 700; }
+  .trip .meta { margin-top: 4px; font-size: 10.5px; color: var(--ink3); }
+  .trip .chiprow { margin-top: 10px; }
+  .tabbar { position: absolute; left: 14px; right: 14px; bottom: 14px; height: 62px; border-radius: 24px; background: rgba(255,255,255,.82); backdrop-filter: blur(18px); border: 1px solid var(--line); display: flex; align-items: center; box-shadow: 0 10px 26px rgba(31,43,44,.10); }
+  .tab { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 9.5px; color: var(--ink3); }
+  .tab.on { color: var(--dai); font-weight: 700; }
+  .tab .g { width: 19px; height: 19px; border-radius: 7px; border: 1.6px solid currentColor; }
+  .tab.on .g { background: var(--daiSoft); border-color: var(--dai); }
+  .fab { position: absolute; right: 22px; bottom: 92px; width: 58px; height: 58px; border-radius: 50%; background: linear-gradient(150deg, #376C69, var(--daiDeep)); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 27px; font-weight: 300; box-shadow: 0 14px 30px rgba(31,66,65,.34); border: 1px solid rgba(255,255,255,.18); }
+  .greeting { font-size: 12px; color: var(--ink2); margin-top: 8px; }
+
+  /* ---------- 行程详情 ---------- */
+  .hero { position: absolute; top: 0; left: 0; right: 0; height: 300px; overflow: hidden; }
+  .hero svg { width: 100%; height: 100%; display: block; }
+  .hero .navfloat { position: absolute; top: 52px; left: 18px; right: 18px; display: flex; justify-content: space-between; z-index: 5; }
+  .hero .navfloat .roundbtn { background: rgba(255,255,255,.66); backdrop-filter: blur(14px); }
+  .detail { position: absolute; left: 0; right: 0; top: 272px; bottom: 0; background: var(--paper); border-radius: 28px 28px 0 0; padding: 22px 22px 118px; box-shadow: 0 -10px 30px rgba(31,43,44,.10); overflow: hidden; }
+  .detail .grab { width: 38px; height: 4px; border-radius: 2px; background: rgba(31,43,44,.16); margin: -6px auto 16px; }
+  .detail .titleline { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .stats { display: flex; margin-top: 18px; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 13px 0; box-shadow: var(--shadow); }
+  .stat { flex: 1; text-align: center; position: relative; }
+  .stat + .stat::before { content: ""; position: absolute; left: 0; top: 4px; bottom: 4px; width: 1px; background: var(--line); }
+  .stat b { display: block; font-family: "Songti SC", serif; font-size: 19px; font-weight: 700; }
+  .stat span { display: block; font-size: 9.5px; color: var(--ink3); margin-top: 3px; letter-spacing: .08em; }
+  .sectionhead { display: flex; justify-content: space-between; align-items: center; margin: 20px 2px 10px; }
+  .sectionhead .t { font-size: 12px; font-weight: 700; letter-spacing: .14em; color: var(--ink2); }
+  .sectionhead .a { font-size: 11px; color: var(--dai); font-weight: 600; }
+  .seg { display: flex; align-items: center; gap: 11px; padding: 12px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 17px; margin-bottom: 9px; position: relative; overflow: hidden; }
+  .seg::before { content: ""; position: absolute; left: 0; top: 12px; bottom: 12px; width: 3px; border-radius: 0 3px 3px 0; background: var(--dai); }
+  .seg.rail::before { background: var(--clay); }
+  .seg .body2 { flex: 1; min-width: 0; }
+  .seg .t2 { font-size: 13.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .seg .m2 { font-size: 10px; color: var(--ink3); margin-top: 3px; }
+  .chev { color: var(--ink3); font-size: 16px; }
+  .dock { position: absolute; left: 0; right: 0; bottom: 0; padding: 12px 18px 22px; display: flex; gap: 10px; background: linear-gradient(180deg, rgba(246,245,238,0), rgba(246,245,238,.94) 36%); }
+  .btn { height: 50px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 14.5px; font-weight: 700; letter-spacing: .03em; }
+  .btn.ghost { flex: none; width: 106px; background: rgba(255,255,255,.8); border: 1px solid var(--line); color: var(--ink); }
+  .btn.primary { flex: 1; background: linear-gradient(150deg, #376C69, var(--daiDeep)); color: #fff; box-shadow: 0 12px 26px rgba(31,66,65,.26); }
+
+  /* ---------- 记录 ---------- */
+  .mapfull { position: absolute; inset: 0; }
+  .mapfull svg { width: 100%; height: 100%; display: block; }
+  .recpill { position: absolute; top: 58px; left: 50%; transform: translateX(-50%); height: 40px; padding: 0 16px; border-radius: 20px; background: rgba(255,255,255,.82); backdrop-filter: blur(16px); border: 1px solid var(--line); display: flex; align-items: center; gap: 9px; font-size: 11.5px; font-weight: 600; white-space: nowrap; box-shadow: 0 8px 20px rgba(31,43,44,.08); }
+  .recdot { width: 7px; height: 7px; border-radius: 50%; background: var(--seal); box-shadow: 0 0 0 4px rgba(166,71,52,.12); }
+  .recpill .sep { width: 1px; height: 12px; background: var(--line); }
+  .recpill .dim { color: var(--ink2); font-weight: 500; }
+  .recnav { position: absolute; top: 56px; left: 16px; right: 16px; display: flex; justify-content: space-between; z-index: 4; }
+  .sheet { position: absolute; left: 0; right: 0; bottom: 0; background: var(--paper); border-radius: 30px 30px 0 0; padding: 14px 22px 30px; box-shadow: 0 -18px 40px rgba(31,43,44,.14); }
+  .sheet .grab { width: 40px; height: 4px; border-radius: 2px; background: rgba(31,43,44,.16); margin: 0 auto 16px; }
+  .addrline { display: flex; justify-content: space-between; align-items: baseline; }
+  .addrline .a { font-size: 17px; font-weight: 700; }
+  .addrline .g { font-size: 10px; color: var(--ink3); }
+  .metrics { display: flex; margin-top: 15px; }
+  .metric { flex: 1; }
+  .metric + .metric { padding-left: 18px; border-left: 1px solid var(--line); }
+  .metric > span { display: block; font-size: 9.5px; color: var(--ink3); letter-spacing: .08em; }
+  .metric b { display: block; font-family: "Songti SC", serif; font-size: 17px; margin-top: 4px; white-space: nowrap; }
+  .metric b span { font-size: 10px !important; color: var(--ink2); font-family: -apple-system, "PingFang SC", sans-serif; }
+  .recwrap { display: flex; align-items: center; justify-content: center; margin: 20px 0 16px; position: relative; }
+  .recbtn { width: 84px; height: 84px; border-radius: 50%; background: var(--surface); border: 1px solid var(--line); box-shadow: 0 16px 36px rgba(31,66,65,.18); display: flex; align-items: center; justify-content: center; position: relative; }
+  .recbtn::before { content: ""; position: absolute; inset: 6px; border-radius: 50%; border: 1px solid rgba(46,93,92,.18); }
+  .recbtn .core { width: 34px; height: 34px; border-radius: 10px; background: linear-gradient(150deg, #376C69, var(--daiDeep)); }
+  .recwrap .sidetext { position: absolute; font-size: 9.5px; color: var(--ink3); letter-spacing: .1em; }
+  .recwrap .l { left: 44px; } .recwrap .r { right: 44px; }
+  .actions { display: flex; justify-content: space-around; }
+  .action { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 10px; color: var(--ink2); }
+  .action .circle { width: 42px; height: 42px; border-radius: 50%; background: var(--surface); border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; color: var(--dai); font-size: 16px; }
+
+  /* ---------- 合并 ---------- */
+  .mmap { position: absolute; top: 0; left: 0; right: 0; height: 250px; overflow: hidden; }
+  .mmap svg { width: 100%; height: 100%; display: block; }
+  .mmap .navfloat { position: absolute; top: 52px; left: 18px; right: 18px; display: flex; justify-content: space-between; align-items: center; }
+  .mmap .navfloat .title { font-size: 15px; font-weight: 700; background: rgba(255,255,255,.72); backdrop-filter: blur(12px); padding: 8px 14px; border-radius: 16px; border: 1px solid var(--line); }
+  .mlist { position: absolute; left: 0; right: 0; top: 226px; bottom: 0; background: var(--paper); border-radius: 28px 28px 0 0; padding: 20px 20px 118px; box-shadow: 0 -10px 30px rgba(31,43,44,.10); }
+  .mlist .grab { width: 38px; height: 4px; border-radius: 2px; background: rgba(31,43,44,.16); margin: -6px auto 14px; }
+  .mhead { display: flex; justify-content: space-between; align-items: baseline; }
+  .mhead .t { font-size: 17px; font-weight: 700; }
+  .mhead .a { font-size: 11px; color: var(--dai); font-weight: 700; }
+  .hint { font-size: 10.5px; color: var(--ink3); margin-top: 5px; line-height: 1.5; }
+  .mrow { display: flex; align-items: center; gap: 9px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 10px 12px; margin-top: 9px; }
+  .drag { color: var(--ink3); font-size: 13px; letter-spacing: -1px; width: 12px; }
+  .check { width: 21px; height: 21px; border-radius: 7px; border: 1.5px solid var(--dai); display: flex; align-items: center; justify-content: center; font-size: 11px; flex: none; background: var(--dai); color: #fff; }
+  .check.off { background: transparent; border-color: var(--line); color: transparent; }
+  .mrow .b { flex: 1; min-width: 0; }
+  .mrow .t2 { font-size: 12.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mrow .m2 { font-size: 9.5px; color: var(--ink3); margin-top: 3px; }
+  .dirbtn { width: 30px; height: 30px; border-radius: 10px; border: 1px solid var(--line); background: var(--paper2); color: var(--ink2); display: flex; align-items: center; justify-content: center; font-size: 12px; flex: none; }
+  .togglerow { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; padding-top: 13px; border-top: 1px solid var(--line); font-size: 12px; color: var(--ink2); }
+  .switch { width: 42px; height: 24px; border-radius: 12px; background: var(--dai); position: relative; }
+  .switch::after { content: ""; position: absolute; top: 2px; right: 2px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+
+  /* ---------- 分享 ---------- */
+  .sharebg { position: absolute; inset: 0; background: linear-gradient(180deg, #F8F7F1 0%, #F1EFE6 62%, #E7E8DE 100%); }
+  .sharebg svg { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 300px; opacity: .7; }
+  .sharehead { position: relative; padding: 6px 22px 0; }
+  .sharehead .nav { display: flex; justify-content: space-between; align-items: center; }
+  .sharehead .h { font-size: 22px; font-weight: 700; margin-top: 18px; }
+  .sharehead .s { font-size: 11px; color: var(--ink2); margin-top: 5px; }
+  .sharecard { position: relative; margin: 20px 22px 0; background: var(--surface); border-radius: 24px; overflow: hidden; box-shadow: 0 26px 60px rgba(31,43,44,.16); border: 1px solid rgba(255,255,255,.6); }
+  .sharecard .art { height: 268px; position: relative; overflow: hidden; }
+  .sharecard .art svg { width: 100%; height: 100%; display: block; }
+  .seal { position: absolute; right: 16px; bottom: 16px; width: 46px; height: 46px; border-radius: 8px; border: 1.5px solid var(--seal); color: var(--seal); display: flex; align-items: center; justify-content: center; font-family: "Songti SC", serif; font-size: 20px; font-weight: 700; background: rgba(255,255,255,.35); }
+  .sharecard .info { padding: 18px 20px 20px; }
+  .sharecard .title { font-size: 25px; font-weight: 700; letter-spacing: .01em; }
+  .sharecard .meta { font-size: 10.5px; color: var(--ink3); margin-top: 5px; letter-spacing: .06em; }
+  .sharecard .stats { margin-top: 15px; padding: 12px 0; box-shadow: none; background: var(--paper); }
+  .tplrow { display: flex; justify-content: center; gap: 8px; margin-top: 16px; }
+  .tpl { font-size: 10px; padding: 6px 13px; border-radius: 18px; border: 1px solid var(--line); color: var(--ink2); background: rgba(255,255,255,.6); }
+  .tpl.on { background: var(--dai); color: #fff; border-color: var(--dai); font-weight: 600; }
+  .sharefoot { position: absolute; left: 18px; right: 18px; bottom: 22px; display: flex; gap: 10px; }
+</style>
+</head>
+<body>
+<div class="board">
+
+  <!-- 1. 首页 -->
+  <div class="col">
+    <div class="phone">
+      <div class="island"></div>
+      <div class="status"><span>9:41</span><span class="right">●●●  ⌁  ▮</span></div>
+      <div class="home-head">
+        <div class="top"><div class="eyebrow">MARKMAP · 行迹</div><div class="roundbtn">⋯</div></div>
+        <div class="h1 serif" style="margin-top:14px">我的行程</div>
+        <div class="greeting">记录每一段旅程，随时回看与分享。</div>
+        <div class="search"><div class="ic"></div><span>搜索行程、城市或路段</span></div>
+      </div>
+
+      <div class="triplist">
+        <div class="card trip">
+          <div class="thumb">
+            <svg viewBox="0 0 354 132" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="h1" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stop-color="#EAF0EB"/><stop offset="1" stop-color="#DCE7E1"/>
+                </linearGradient>
+                <linearGradient id="h1b" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0" stop-color="#2E5D5C"/><stop offset="1" stop-color="#5D8B7F"/>
+                </linearGradient>
+              </defs>
+              <rect width="354" height="132" fill="url(#h1)"/>
+              <path d="M0,96 C50,70 92,98 140,76 S220,48 280,66 S330,54 354,62 L354,132 L0,132Z" fill="#CBDAD2" opacity=".75"/>
+              <path d="M0,112 C60,92 120,118 180,98 S270,84 354,104 L354,132 L0,132Z" fill="#B8CCC3" opacity=".7"/>
+              <path d="M28,98 C86,58 128,92 176,66 S254,44 300,60 S334,50 342,38" fill="none" stroke="url(#h1b)" stroke-width="2" stroke-linecap="round"/>
+              <circle cx="28" cy="98" r="4" fill="#fff" stroke="#2E5D5C" stroke-width="2"/>
+              <circle cx="342" cy="38" r="4.5" fill="#2E5D5C" stroke="#fff" stroke-width="2"/>
+            </svg>
+          </div>
+          <div class="info">
+            <div class="titleline"><div class="title serif">北京 → 上海</div><div class="km">1,286 km</div></div>
+            <div class="meta">2026.05.12 – 05.13　·　3 段　·　5 小时 20 分</div>
+            <div class="chiprow"><div class="chip">✈　飞行 ×2</div><div class="chip clay">铁　高铁 ×1</div></div>
+          </div>
+        </div>
+
+        <div class="card trip">
+          <div class="thumb" style="height:108px">
+            <svg viewBox="0 0 354 108" preserveAspectRatio="none">
+              <defs><linearGradient id="h2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#EFEDE4"/><stop offset="1" stop-color="#E4E5D9"/></linearGradient></defs>
+              <rect width="354" height="108" fill="url(#h2)"/>
+              <path d="M0,84 C70,64 120,88 178,70 S266,52 318,68 S344,60 354,52 L354,108 L0,108Z" fill="#D3D6C6" opacity=".8"/>
+              <path d="M26,78 C84,44 140,74 196,48 S272,38 332,52" fill="none" stroke="#70897A" stroke-width="2" stroke-linecap="round"/>
+              <circle cx="26" cy="78" r="4" fill="#fff" stroke="#70897A" stroke-width="2"/>
+              <circle cx="332" cy="52" r="4" fill="#fff" stroke="#70897A" stroke-width="2"/>
+            </svg>
+          </div>
+          <div class="info">
+            <div class="titleline"><div class="title serif">成都 → 拉萨</div><div class="km" style="color:var(--moss)">1,540 km</div></div>
+            <div class="meta">2026.04.02 – 04.03　·　1 段</div>
+            <div class="chiprow"><div class="chip">✈　飞行</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="fab">＋</div>
+      <div class="tabbar">
+        <div class="tab on"><div class="g"></div>行程</div>
+        <div class="tab"><div class="g"></div>足迹</div>
+        <div class="tab"><div class="g"></div>我的</div>
+      </div>
+      <div class="homebar"></div>
+    </div>
+    <div class="cap"><b>UI · 行程列表</b><span>米纸底、黛青主色、宋体标题；缩略图用淡墨远山 + 轨迹线，卡片阴影极轻。</span></div>
+  </div>
+
+  <!-- 2. 行程详情 -->
+  <div class="col">
+    <div class="phone">
+      <div class="island"></div>
+      <div class="status"><span>9:41</span><span class="right">●●●  ⌁  ▮</span></div>
+      <div class="hero">
+        <svg viewBox="0 0 390 300" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="d1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#EEF2ED"/><stop offset="1" stop-color="#D8E4DD"/></linearGradient>
+            <linearGradient id="d2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2E5D5C"/><stop offset="1" stop-color="#6E9A8C"/></linearGradient>
+          </defs>
+          <rect width="390" height="300" fill="url(#d1)"/>
+          <path d="M0,196 C56,148 96,182 142,146 S230,108 292,140 S350,118 390,132 L390,300 L0,300Z" fill="#C7D8CF" opacity=".72"/>
+          <path d="M0,238 C70,202 118,238 180,204 S280,176 390,214 L390,300 L0,300Z" fill="#B3C8BE" opacity=".72"/>
+          <path d="M0,272 C84,250 150,276 226,252 S330,232 390,254 L390,300 L0,300Z" fill="#A2B9AE" opacity=".55"/>
+          <path d="M42,214 C110,140 168,196 222,142 S312,96 356,74" fill="none" stroke="url(#d2)" stroke-width="2.6" stroke-linecap="round"/>
+          <path d="M42,214 C110,140 168,196 222,142" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="6" stroke-linecap="round"/>
+          <circle cx="42" cy="214" r="5" fill="#fff" stroke="#2E5D5C" stroke-width="2.4"/>
+          <circle cx="356" cy="74" r="5.5" fill="#2E5D5C" stroke="#fff" stroke-width="2.4"/>
+        </svg>
+        <div class="navfloat"><div class="roundbtn">‹</div><div class="roundbtn">⋯</div></div>
+      </div>
+
+      <div class="detail">
+        <div class="grab"></div>
+        <div class="titleline">
+          <div>
+            <div class="h2 serif">北京 → 上海</div>
+            <div class="caption" style="margin-top:5px">2026.05.12 – 05.13　·　3 段</div>
+          </div>
+          <div class="chiprow" style="margin-top:2px"><div class="chip">飞行</div><div class="chip clay">高铁</div></div>
+        </div>
+
+        <div class="stats">
+          <div class="stat"><b>1,286</b><span>公里</span></div>
+          <div class="stat"><b>5h20m</b><span>时长</span></div>
+          <div class="stat"><b>3</b><span>城市</span></div>
+        </div>
+
+        <div class="sectionhead"><div class="t">行程路段</div><div class="a">全部 ›</div></div>
+        <div class="seg">
+          <div class="modedot air">飞</div>
+          <div class="body2"><div class="t2">北京首都 → 上海虹桥</div><div class="m2">05.12 08:30　·　1,180 km</div></div>
+          <div class="chev">›</div>
+        </div>
+        <div class="seg rail">
+          <div class="modedot rail">铁</div>
+          <div class="body2"><div class="t2">上海虹桥 → 杭州东</div><div class="m2">05.12 18:10　·　169 km</div></div>
+          <div class="chev">›</div>
+        </div>
+        <div class="seg rail">
+          <div class="modedot rail">铁</div>
+          <div class="body2"><div class="t2">杭州东 → 上海虹桥</div><div class="m2">05.13 09:00　·　169 km</div></div>
+          <div class="chev">›</div>
+        </div>
+      </div>
+
+      <div class="dock">
+        <div class="btn ghost">分享</div>
+        <div class="btn primary">合并查看</div>
+      </div>
+      <div class="homebar"></div>
+    </div>
+    <div class="cap"><b>UI · 行程详情</b><span>沉浸式地图头图 + 上浮信息卡；统计三项、路段用交通方式色条区分；底部固定主操作。</span></div>
+  </div>
+
+  <!-- 3. 记录 -->
+  <div class="col">
+    <div class="phone">
+      <div class="island"></div>
+      <div class="status" style="color:#22302f"><span>9:41</span><span class="right">●●●  ⌁  ▮</span></div>
+      <div class="mapfull">
+        <svg viewBox="0 0 390 844" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="r1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#EFF3EE"/><stop offset=".5" stop-color="#E3EAE4"/><stop offset="1" stop-color="#DCE6DF"/></linearGradient>
+          </defs>
+          <rect width="390" height="844" fill="url(#r1)"/>
+          <path d="M0,540 C60,500 110,548 170,508 S260,474 330,510 S380,500 390,520 L390,844 L0,844Z" fill="#C7D8CF" opacity=".55"/>
+          <path d="M0,640 C80,610 140,650 220,616 S320,590 390,626 L390,844 L0,844Z" fill="#B3C8BE" opacity=".5"/>
+          <path d="M0,730 C80,706 160,742 250,710 S340,690 390,712 L390,844 L0,844Z" fill="#A2B9AE" opacity=".4"/>
+          <path d="M28,628 C86,512 118,560 176,470 S236,360 278,318 S336,250 366,196" fill="none" stroke="#2E5D5C" stroke-width="3" stroke-linecap="round"/>
+          <path d="M28,628 C86,512 118,560 176,470 S236,360 278,318 S336,250 366,196" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="7" stroke-linecap="round"/>
+          <circle cx="28" cy="628" r="5" fill="#fff" stroke="#2E5D5C" stroke-width="2.4"/>
+          <circle cx="366" cy="196" r="7" fill="#2E5D5C" stroke="#fff" stroke-width="3"/>
+          <circle cx="366" cy="196" r="18" fill="#2E5D5C" opacity=".12"/>
+        </svg>
+      </div>
+      <div class="recnav"><div class="roundbtn">‹</div><div class="roundbtn">⋯</div></div>
+      <div class="recpill"><span class="recdot"></span><span>正在记录</span><span class="sep"></span><span class="dim">00:42:18</span><span class="sep"></span><span class="dim">18.6 km</span></div>
+
+      <div class="sheet">
+        <div class="grab"></div>
+        <div class="addrline"><div class="a">杭州市 · 西湖区</div><div class="g">GPS ±8 m</div></div>
+        <div class="metrics">
+          <div class="metric"><span>距上一点</span><b>126<span style="font-size:12px"> m</span></b></div>
+          <div class="metric"><span>当前速度</span><b>82<span style="font-size:12px"> km/h</span></b></div>
+          <div class="metric"><span>已记录</span><b>18.6<span style="font-size:12px"> km</span></b></div>
+        </div>
+        <div class="recwrap">
+          <span class="sidetext l">暂停</span>
+          <div class="recbtn"><div class="core"></div></div>
+          <span class="sidetext r">结束</span>
+        </div>
+        <div class="actions">
+          <div class="action"><div class="circle">＋</div>标记</div>
+          <div class="action"><div class="circle">⟋</div>路线</div>
+          <div class="action"><div class="circle">⇅</div>后台</div>
+        </div>
+      </div>
+      <div class="homebar"></div>
+    </div>
+    <div class="cap"><b>UI · 记录地图</b><span>底部抽屉 + 单一主按钮；状态胶囊显示时长与里程，次要操作收进圆形图标。淡墨等高线使地图更安静。</span></div>
+  </div>
+
+  <!-- 4. 合并 -->
+  <div class="col">
+    <div class="phone">
+      <div class="island"></div>
+      <div class="status"><span>9:41</span><span class="right">●●●  ⌁  ▮</span></div>
+      <div class="mmap">
+        <svg viewBox="0 0 390 250" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="m1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#EEF2ED"/><stop offset="1" stop-color="#DDE7E1"/></linearGradient>
+          </defs>
+          <rect width="390" height="250" fill="url(#m1)"/>
+          <path d="M0,170 C60,140 110,176 170,144 S260,112 330,140 S380,130 390,146 L390,250 L0,250Z" fill="#C7D8CF" opacity=".6"/>
+          <path d="M38,176 C92,120 130,150 178,106" fill="none" stroke="#2E5D5C" stroke-width="3" stroke-linecap="round"/>
+          <path d="M178,106 C226,64 262,104 302,74" fill="none" stroke="#B96A4B" stroke-width="2" stroke-dasharray="6 5" stroke-linecap="round"/>
+          <path d="M302,74 C332,52 352,72 368,44" fill="none" stroke="#70897A" stroke-width="3" stroke-linecap="round"/>
+          <circle cx="38" cy="176" r="4.5" fill="#fff" stroke="#2E5D5C" stroke-width="2"/>
+          <circle cx="178" cy="106" r="4.5" fill="#fff" stroke="#2E5D5C" stroke-width="2"/>
+          <circle cx="302" cy="74" r="4.5" fill="#fff" stroke="#70897A" stroke-width="2"/>
+          <circle cx="368" cy="44" r="4.5" fill="#70897A" stroke="#fff" stroke-width="2"/>
+        </svg>
+        <div class="navfloat"><div class="roundbtn">‹</div><div class="title">合并轨迹</div><div class="roundbtn">◉</div></div>
+      </div>
+
+      <div class="mlist">
+        <div class="grab"></div>
+        <div class="mhead"><div class="t">选择路段</div><div class="a">全选</div></div>
+        <div class="hint">拖动调整顺序，点 ⇄ 切换方向；勾选参与合并的路段。</div>
+
+        <div class="mrow">
+          <div class="drag">⋮⋮</div><div class="check">✓</div>
+          <div class="modedot air" style="width:28px;height:28px;font-size:10px">飞</div>
+          <div class="b"><div class="t2">北京 → 上海</div><div class="m2">05.12 08:30　·　1,180 km</div></div>
+          <div class="dirbtn">⇄</div>
+        </div>
+        <div class="mrow">
+          <div class="drag">⋮⋮</div><div class="check">✓</div>
+          <div class="modedot rail" style="width:28px;height:28px;font-size:10px">铁</div>
+          <div class="b"><div class="t2">上海 → 杭州</div><div class="m2">05.12 18:10　·　169 km</div></div>
+          <div class="dirbtn">⇄</div>
+        </div>
+        <div class="mrow">
+          <div class="drag">⋮⋮</div><div class="check off"></div>
+          <div class="modedot rail" style="width:28px;height:28px;font-size:10px">铁</div>
+          <div class="b"><div class="t2">杭州 → 上海</div><div class="m2">05.13 09:00　·　169 km</div></div>
+          <div class="dirbtn">⇄</div>
+        </div>
+
+        <div class="togglerow"><span>显示连接线（虚线）</span><div class="switch"></div></div>
+      </div>
+
+      <div class="dock" style="background:linear-gradient(180deg, rgba(246,245,238,0), rgba(246,245,238,.96) 38%)">
+        <div class="btn ghost" style="width:92px">取消</div>
+        <div class="btn primary">生成合并轨迹</div>
+      </div>
+      <div class="homebar"></div>
+    </div>
+    <div class="cap"><b>UI · 合并轨迹</b><span>三段不同色（黛青/陶土/苔绿），连接线为陶土虚线；手动勾选、拖拽、切方向，无任何自动阈值。</span></div>
+  </div>
+
+  <!-- 5. 分享 -->
+  <div class="col">
+    <div class="phone">
+      <div class="island"></div>
+      <div class="status"><span>9:41</span><span class="right">●●●  ⌁  ▮</span></div>
+      <div class="sharebg">
+        <svg viewBox="0 0 390 300" preserveAspectRatio="none">
+          <path d="M0,220 C70,180 120,214 180,182 S280,150 390,190 L390,300 L0,300Z" fill="#CBDAD2" opacity=".55"/>
+          <path d="M0,258 C80,230 150,266 230,238 S330,220 390,246 L390,300 L0,300Z" fill="#B3C8BE" opacity=".5"/>
+        </svg>
+      </div>
+      <div class="sharehead">
+        <div class="nav"><div class="roundbtn">‹</div><div class="roundbtn">⋯</div></div>
+        <div class="h serif">分享行程</div>
+        <div class="s">选择模板，生成一张可保存的行程卡片。</div>
+      </div>
+
+      <div class="sharecard">
+        <div class="art">
+          <svg viewBox="0 0 346 268" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="s1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#F2F4EE"/><stop offset="1" stop-color="#DFE9E2"/></linearGradient>
+              <linearGradient id="s2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2E5D5C"/><stop offset="1" stop-color="#6E9A8C"/></linearGradient>
+            </defs>
+            <rect width="346" height="268" fill="url(#s1)"/>
+            <path d="M0,172 C50,132 92,166 138,130 S226,96 286,126 S332,110 346,120 L346,268 L0,268Z" fill="#C7D8CF" opacity=".7"/>
+            <path d="M0,212 C66,182 118,214 178,186 S280,160 346,194 L346,268 L0,268Z" fill="#B3C8BE" opacity=".65"/>
+            <path d="M0,244 C78,222 146,252 222,226 S320,210 346,232 L346,268 L0,268Z" fill="#A2B9AE" opacity=".45"/>
+            <path d="M28,206 C96,140 148,188 202,132 S286,92 318,66" fill="none" stroke="url(#s2)" stroke-width="2.4" stroke-linecap="round"/>
+            <circle cx="28" cy="206" r="4.5" fill="#fff" stroke="#2E5D5C" stroke-width="2.2"/>
+            <circle cx="318" cy="66" r="5" fill="#2E5D5C" stroke="#fff" stroke-width="2.2"/>
+          </svg>
+          <div class="seal">行</div>
+        </div>
+        <div class="info">
+          <div class="title serif">北京 → 上海</div>
+          <div class="meta">2026.05.12 – 05.13　·　北京 · 上海 · 杭州</div>
+          <div class="stats">
+            <div class="stat"><b>1,286</b><span>公里</span></div>
+            <div class="stat"><b>5h20m</b><span>时长</span></div>
+            <div class="stat"><b>3</b><span>城市</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tplrow"><div class="tpl on">山水</div><div class="tpl">极简</div><div class="tpl">航空</div></div>
+      <div class="sharefoot">
+        <div class="btn ghost" style="width:118px;background:rgba(255,255,255,.7)">保存图片</div>
+        <div class="btn primary">分享</div>
+      </div>
+      <div class="homebar"></div>
+    </div>
+    <div class="cap"><b>UI · 分享卡</b><span>淡墨远山 + 轨迹 + 印章「行」；宋体标题与米纸底色，模板可切换，弱化边框、强调留白。</span></div>
+  </div>
+
+</div>
+</body>
+</html>

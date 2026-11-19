@@ -1,5 +1,6 @@
 package com.zuxing.markmap
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
@@ -69,6 +70,18 @@ class SettingsActivity : AppCompatActivity() {
         setupDistanceDropdown()
         loadSettings()
         setupListeners()
+        binding.rowRecycleBin.setOnClickListener {
+            startActivity(Intent(this, RecycleBinActivity::class.java))
+        }
+        binding.rowAchievements.setOnClickListener {
+            startActivity(Intent(this, AchievementsActivity::class.java))
+        }
+        binding.rowMileage.setOnClickListener {
+            startActivity(Intent(this, MileageActivity::class.java))
+        }
+        binding.rowReport.setOnClickListener {
+            startActivity(Intent(this, ReportActivity::class.java))
+        }
     }
 
     private fun setupToolbar() {

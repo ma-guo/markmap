@@ -1,33 +1,44 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- ============ 基础色板：黛青 + 米白 + 陶土 ============ -->
+    <!-- ============ 基础色板：黛青 + 米纸 + 陶土 ============ -->
     <!-- 文字 -->
-    <color name="ink">#FF1C2328</color>
-    <color name="ink_secondary">#FF6E7780</color>
-    <color name="ink_tertiary">#FF9EA6AD</color>
+    <color name="ink">#FF1F2B2C</color>
+    <color name="ink_secondary">#FF5F6F6D</color>
+    <color name="ink_tertiary">#FF98A4A0</color>
 
     <!-- 主色：黛青 -->
-    <color name="primary">#FF1F5B63</color>
-    <color name="primary_dark">#FF153F45</color>
-    <color name="primary_container">#FFE4EFEF</color>
+    <color name="primary">#FF2E5D5C</color>
+    <color name="primary_dark">#FF1F4241</color>
+    <color name="primary_container">#FFE4EDE8</color>
+    <color name="moss">#FF70897A</color>
 
     <!-- 强调色：陶土 -->
-    <color name="accent">#FFB5653C</color>
-    <color name="accent_container">#FFF7ECE4</color>
+    <color name="accent">#FFB96A4B</color>
+    <color name="accent_container">#FFF4E7DE</color>
+    <color name="gold">#FFBE9F66</color>
+    <color name="seal">#FFA64734</color>
 
     <!-- 背景与表面 -->
-    <color name="background">#FFF6F5F1</color>
+    <color name="background">#FFF6F5EE</color>
+    <color name="paper_alt">#FFEFEEE6</color>
     <color name="surface">#FFFFFFFF</color>
     <color name="surface_alt">#FFFBFAF7</color>
 
     <!-- 描边与分割 -->
-    <color name="outline">#FFE7E3DB</color>
-    <color name="divider">#FFEDEAE3</color>
+    <color name="outline">#FFE9E7DE</color>
+    <color name="divider">#FFE9E7DE</color>
 
     <!-- 状态色 -->
     <color name="success">#FF2F7D5D</color>
-    <color name="error">#FFB3453A</color>
-    <color name="warning">#FFB07A2A</color>
+    <color name="error">#FFA64734</color>
+    <color name="warning">#FFBE9F66</color>
+
+    <!-- 交通方式 -->
+    <color name="transport_flight">#FF2E5D5C</color>
+    <color name="transport_train">#FFB96A4B</color>
+    <color name="transport_drive">#FF70897A</color>
+    <color name="transport_walk">#FF5F6F6D</color>
+    <color name="transport_ferry">#FF7E9AA1</color>
 
     <!-- ============ 兼容旧资源名（避免遗漏引用） ============ -->
     <color name="black">@color/ink</color>

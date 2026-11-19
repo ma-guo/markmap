@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>MarkMap · UX 线框图</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #ececec; font-family: -apple-system, "PingFang SC", "Helvetica Neue", Arial, sans-serif; color: #222; }
+  .board { display: flex; gap: 30px; padding: 34px 38px 26px; align-items: flex-start; }
+  .col { display: flex; flex-direction: column; gap: 12px; }
+  .cap { width: 390px; }
+  .cap b { display: block; font-size: 15px; letter-spacing: .04em; }
+  .cap span { display: block; font-size: 12px; color: #666; margin-top: 4px; line-height: 1.55; }
+  .phone { position: relative; width: 390px; height: 844px; background: #fff; border: 2px solid #2b2b2b; border-radius: 26px; overflow: hidden; }
+  .status { height: 30px; display: flex; justify-content: space-between; align-items: center; padding: 0 18px; font-size: 11px; color: #555; }
+  .nav { height: 46px; display: flex; align-items: center; padding: 0 14px; border-bottom: 1px solid #ddd; font-size: 15px; font-weight: 600; }
+  .nav .left { width: 40px; font-size: 18px; color: #444; }
+  .nav .mid { flex: 1; text-align: center; }
+  .nav .right { width: 40px; text-align: right; color: #444; }
+  .content { padding: 16px; }
+  .big { font-size: 24px; font-weight: 700; letter-spacing: .02em; }
+  .sub { font-size: 12px; color: #777; margin-top: 4px; }
+  .search { height: 38px; border-radius: 19px; background: #f0f0f0; border: 1px solid #ddd; margin: 14px 0; display: flex; align-items: center; padding: 0 14px; font-size: 13px; color: #888; }
+  .card { border: 1px solid #d8d8d8; border-radius: 16px; padding: 13px; margin-bottom: 12px; background: #fff; }
+  .thumb { height: 92px; border-radius: 11px; background: #f2f2f2; border: 1px dashed #c4c4c4; position: relative; overflow: hidden; }
+  .thumb svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .row { display: flex; align-items: center; gap: 8px; }
+  .between { display: flex; align-items: center; justify-content: space-between; }
+  .ttl { font-size: 15px; font-weight: 700; }
+  .meta { font-size: 11px; color: #777; }
+  .chips { display: flex; gap: 6px; margin-top: 7px; }
+  .chip { font-size: 10px; padding: 3px 8px; border-radius: 9px; background: #f1f1f1; border: 1px solid #ddd; color: #555; }
+  .stat { font-size: 11px; color: #555; }
+  .fab { position: absolute; right: 18px; bottom: 86px; width: 54px; height: 54px; border-radius: 50%; border: 2px solid #2b2b2b; background: #fff; display: flex; align-items: center; justify-content: center; font-size: 26px; color: #222; }
+  .tabbar { position: absolute; left: 0; right: 0; bottom: 0; height: 64px; border-top: 1px solid #ddd; display: flex; }
+  .tab { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 10px; color: #999; }
+  .tab.on { color: #222; font-weight: 600; }
+  .tab .ic { width: 20px; height: 20px; border: 1.5px solid currentColor; border-radius: 6px; }
+  .mapwrap { position: relative; height: 230px; background: #f2f2f2; border-bottom: 1px solid #ddd; overflow: hidden; }
+  .mapwrap svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .mapwrap .maplabel { position: absolute; left: 12px; bottom: 10px; font-size: 10px; color: #888; background: #fff; border: 1px solid #ddd; border-radius: 6px; padding: 2px 7px; }
+  .pin { position: absolute; width: 14px; height: 14px; border-radius: 50%; background: #fff; border: 2px solid #2b2b2b; }
+  .sec { font-size: 12px; font-weight: 700; color: #444; margin: 14px 0 8px; letter-spacing: .06em; }
+  .seg { border: 1px solid #d8d8d8; border-radius: 12px; padding: 11px 12px; margin-bottom: 9px; display: flex; align-items: center; gap: 10px; }
+  .seg .dot { width: 26px; height: 26px; border-radius: 50%; border: 1.5px solid #2b2b2b; display: flex; align-items: center; justify-content: center; font-size: 11px; flex: none; }
+  .seg .body { flex: 1; }
+  .seg .t { font-size: 13px; font-weight: 600; }
+  .seg .m { font-size: 10px; color: #777; margin-top: 2px; }
+  .chev { color: #999; font-size: 16px; }
+  .bottom { position: absolute; left: 0; right: 0; bottom: 0; padding: 12px 16px 22px; border-top: 1px solid #ddd; background: #fff; display: flex; gap: 10px; }
+  .btn { flex: 1; height: 46px; border-radius: 12px; border: 1.5px solid #2b2b2b; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; background: #fff; }
+  .btn.dark { background: #2b2b2b; color: #fff; }
+  .btn.small { flex: none; width: 92px; }
+  .recstat { position: absolute; top: 84px; left: 50%; transform: translateX(-50%); background: #fff; border: 1px solid #ddd; border-radius: 18px; padding: 6px 13px; font-size: 11px; display: flex; gap: 8px; align-items: center; white-space: nowrap; }
+  .recstat .rec { width: 8px; height: 8px; border-radius: 50%; background: #c0392b; }
+  .sheet { position: absolute; left: 8px; right: 8px; bottom: 8px; background: #fff; border: 1.5px solid #2b2b2b; border-radius: 20px; padding: 14px; }
+  .grab { width: 38px; height: 4px; background: #ccc; border-radius: 2px; margin: 0 auto 12px; }
+  .addr { font-size: 15px; font-weight: 700; }
+  .smallrow { display: flex; justify-content: space-between; font-size: 11px; color: #666; margin-top: 5px; }
+  .bigrec { width: 66px; height: 66px; border-radius: 50%; border: 2px solid #2b2b2b; display: flex; align-items: center; justify-content: center; margin: 14px auto 10px; }
+  .bigrec .inner { width: 26px; height: 26px; border-radius: 7px; background: #2b2b2b; }
+  .actions3 { display: flex; justify-content: space-around; }
+  .act { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 10px; color: #666; }
+  .act .i { width: 36px; height: 36px; border-radius: 50%; border: 1px solid #ccc; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+  .check { width: 20px; height: 20px; border-radius: 6px; border: 1.5px solid #2b2b2b; display: flex; align-items: center; justify-content: center; font-size: 12px; flex: none; background: #2b2b2b; color: #fff; }
+  .check.off { background: #fff; color: transparent; }
+  .drag { width: 18px; font-size: 14px; color: #888; text-align: center; letter-spacing: -2px; }
+  .dir { width: 30px; height: 26px; border: 1px solid #ccc; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #555; }
+  .listhint { font-size: 10px; color: #888; margin-top: 6px; line-height: 1.5; }
+  .toggle { display: flex; align-items: center; justify-content: space-between; font-size: 12px; color: #444; padding: 9px 2px; border-top: 1px solid #eee; margin-top: 4px; }
+  .switch { width: 38px; height: 22px; border-radius: 11px; background: #2b2b2b; position: relative; }
+  .switch::after { content: ""; position: absolute; right: 2px; top: 2px; width: 18px; height: 18px; border-radius: 50%; background: #fff; }
+  .previewcard { border: 1.5px solid #2b2b2b; border-radius: 18px; overflow: hidden; }
+  .pv-map { height: 250px; background: #f2f2f2; position: relative; overflow: hidden; }
+  .pv-map svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .pv-info { padding: 14px; }
+  .pv-title { font-size: 20px; font-weight: 800; letter-spacing: .02em; }
+  .pv-meta { font-size: 11px; color: #777; margin-top: 5px; }
+  .pv-stats { display: flex; gap: 18px; margin-top: 12px; }
+  .pv-stat b { display: block; font-size: 16px; }
+  .pv-stat span { font-size: 10px; color: #777; }
+  .seal { position: absolute; right: 14px; bottom: 14px; width: 42px; height: 42px; border: 2px solid #a8422f; color: #a8422f; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700; }
+  .anno { position: absolute; font-size: 9px; color: #c0392b; }
+  .anno .n { display: inline-flex; width: 14px; height: 14px; border-radius: 50%; background: #c0392b; color: #fff; align-items: center; justify-content: center; font-size: 8px; margin-right: 3px; }
+  .redline { border-color: #c0392b !important; border-style: dashed !important; }
+</style>
+</head>
+<body>
+<div class="board">
+
+  <!-- 1. 行程列表 -->
+  <div class="col">
+    <div class="phone">
+      <div class="status"><span>9:41</span><span>●●●  ▮</span></div>
+      <div class="nav"><div class="left"></div><div class="mid">我的行程</div><div class="right">⋯</div></div>
+      <div class="content">
+        <div class="big">我的行程</div>
+        <div class="sub">记录每一段旅程，随时回看与分享</div>
+        <div class="search">⌕　搜索行程、城市或路段</div>
+
+        <div class="card">
+          <div class="thumb">
+            <svg viewBox="0 0 340 92" preserveAspectRatio="none">
+              <path d="M20,70 C80,18 140,80 200,30 S300,40 320,16" fill="none" stroke="#2b2b2b" stroke-width="1.5" stroke-dasharray="4 4"/>
+              <circle cx="20" cy="70" r="3.5" fill="#fff" stroke="#2b2b2b" stroke-width="1.5"/>
+              <circle cx="320" cy="16" r="3.5" fill="#fff" stroke="#2b2b2b" stroke-width="1.5"/>
+            </svg>
+          </div>
+          <div class="between" style="margin-top:10px">
+            <div class="ttl">北京 → 上海</div><div class="stat">1,286 km</div>
+          </div>
+          <div class="meta">2026.05.12 – 05.13 · 2 段</div>
+          <div class="chips"><div class="chip">✈ 飞行</div><div class="chip">🚄 火车</div></div>
+        </div>
+
+        <div class="card">
+          <div class="thumb">
+            <svg viewBox="0 0 340 92" preserveAspectRatio="none">
+              <path d="M24,24 C90,60 160,20 230,64 S310,52 322,74" fill="none" stroke="#2b2b2b" stroke-width="1.5" stroke-dasharray="4 4"/>
+              <circle cx="24" cy="24" r="3.5" fill="#fff" stroke="#2b2b2b" stroke-width="1.5"/>
+              <circle cx="322" cy="74" r="3.5" fill="#fff" stroke="#2b2b2b" stroke-width="1.5"/>
+            </svg>
+          </div>
+          <div class="between" style="margin-top:10px">
+            <div class="ttl">成都 → 拉萨</div><div class="stat">1,540 km</div>
+          </div>
+          <div class="meta">2026.04.02 – 04.03 · 1 段</div>
+          <div class="chips"><div class="chip">✈ 飞行</div></div>
+        </div>
+
+        <div class="card redline">
+          <div class="meta" style="color:#c0392b">
+            <span class="n">1</span>卡片：缩略轨迹 + 标题 + 距离 + 交通方式<br>
+            <span class="n">2</span>空状态改为插画 + 主按钮，不再只有一行灰字
+          </div>
+        </div>
+      </div>
+      <div class="fab">＋</div>
+      <div class="tabbar">
+        <div class="tab on"><div class="ic"></div>行程</div>
+        <div class="tab"><div class="ic"></div>足迹</div>
+        <div class="tab"><div class="ic"></div>我的</div>
+      </div>
+    </div>
+    <div class="cap">
+      <b>① 行程列表（首页）</b>
+      <span>大标题 + 搜索 + 行程卡片。点击卡片进入详情；右上角「⋯」放回收站、设置、列车、余票。底部 Tab 为 M2 足迹/成就预留。</span>
+    </div>
+  </div>
+
+  <!-- 2. 行程详情 -->
+  <div class="col">
+    <div class="phone">
+      <div class="status"><span>9:41</span><span>●●●  ▮</span></div>
+      <div class="nav"><div class="left">‹</div><div class="mid">行程详情</div><div class="right">⋯</div></div>
+      <div class="mapwrap">
+        <svg viewBox="0 0 390 230" preserveAspectRatio="none">
+          <rect width="390" height="230" fill="#f4f4f4"/>
+          <path d="M40,180 C110,80 190,200 260,90 S350,90 370,50" fill="none" stroke="#2b2b2b" stroke-width="2" stroke-dasharray="5 4"/>
+          <circle cx="40" cy="180" r="5" fill="#fff" stroke="#2b2b2b" stroke-width="2"/>
+          <circle cx="370" cy="50" r="5" fill="#fff" stroke="#2b2b2b" stroke-width="2"/>
+        </svg>
+        <div class="maplabel">合并轨迹预览</div>
+      </div>
+      <div class="content" style="padding-bottom:110px">
+        <div class="between">
+          <div class="big" style="font-size:22px">北京 → 上海</div>
+          <div class="stat">1,286 km</div>
+        </div>
+        <div class="sub">2026.05.12 – 05.13 · 3 段 · 5 小时 20 分</div>
+        <div class="chips" style="margin-top:8px"><div class="chip">✈ 飞行 ×2</div><div class="chip">🚄 高铁 ×1</div></div>
+
+        <div class="sec">行程路段</div>
+        <div class="seg"><div class="dot">✈</div><div class="body"><div class="t">北京首都 → 上海虹桥</div><div class="m">05.12 08:30 · 1,180 km</div></div><div class="chev">›</div></div>
+        <div class="seg"><div class="dot">🚄</div><div class="body"><div class="t">上海虹桥 → 杭州东</div><div class="m">05.12 18:10 · 169 km</div></div><div class="chev">›</div></div>
+        <div class="seg"><div class="dot">🚄</div><div class="body"><div class="t">杭州东 → 上海虹桥</div><div class="m">05.13 09:00 · 169 km</div></div><div class="chev">›</div></div>
+
+        <div class="card redline" style="margin-top:12px">
+          <div class="meta" style="color:#c0392b">
+            <span class="n">3</span>路段左滑编辑 / 删除，点击进入路段详情；不再依赖长按<br>
+            <span class="n">4</span>合并入口升级为底部主按钮
+          </div>
+        </div>
+      </div>
+      <div class="bottom">
+        <div class="btn small">分享</div>
+        <div class="btn dark">合并查看</div>
+      </div>
+    </div>
+    <div class="cap">
+      <b>② 行程详情</b>
+      <span>「行程」是主体：顶部地图预览、统计摘要、路段卡片；底部固定「合并查看 / 分享」。长按编辑改为左滑操作，符合国内列表习惯。</span>
+    </div>
+  </div>
+
+  <!-- 3. 记录地图 -->
+  <div class="col">
+    <div class="phone">
+      <div class="status"><span>9:41</span><span>●●●  ▮</span></div>
+      <div class="nav" style="border-bottom:none;background:transparent;position:absolute;left:0;right:0;top:30px;z-index:3"><div class="left">‹</div><div class="mid">记录中</div><div class="right">⋯</div></div>
+      <div style="position:absolute;inset:0;background:#f2f2f2">
+        <svg viewBox="0 0 390 844" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%">
+          <rect width="390" height="844" fill="#f2f2f2"/>
+          <path d="M20,700 C90,560 120,640 180,480 S260,340 300,260 S350,180 372,120" fill="none" stroke="#2b2b2b" stroke-width="2.5" stroke-dasharray="6 5"/>
+          <circle cx="20" cy="700" r="5" fill="#fff" stroke="#2b2b2b" stroke-width="2"/>
+          <circle cx="372" cy="120" r="6" fill="#2b2b2b"/>
+        </svg>
+      </div>
+      <div class="recstat"><span class="rec"></span>正在记录　00:42:18　·　18.6 km</div>
+
+      <div class="sheet">
+        <div class="grab"></div>
+        <div class="between"><div class="addr">杭州市 · 西湖区</div><div class="stat">GPS ±8m</div></div>
+        <div class="smallrow"><span>距上一个点</span><span>126 m</span></div>
+        <div class="smallrow"><span>当前速度</span><span>82 km/h</span></div>
+
+        <div class="bigrec"><div class="inner"></div></div>
+        <div class="actions3">
+          <div class="act"><div class="i">＋</div>标记</div>
+          <div class="act"><div class="i">⟋</div>路线</div>
+          <div class="act"><div class="i">⇅</div>后台</div>
+        </div>
+      </div>
+    </div>
+    <div class="cap">
+      <b>③ 记录地图</b>
+      <span>底部抽屉承载状态与主操作，中央大按钮「开始/暂停」；标记、路线、后台收进次级操作。替代原版右侧堆叠 3 个悬浮按钮 + 长按上锁的隐藏交互。</span>
+    </div>
+  </div>
+
+  <!-- 4. 合并编辑 -->
+  <div class="col">
+    <div class="phone">
+      <div class="status"><span>9:41</span><span>●●●  ▮</span></div>
+      <div class="nav"><div class="left">‹</div><div class="mid">合并轨迹</div><div class="right">预览</div></div>
+      <div class="mapwrap" style="height:200px">
+        <svg viewBox="0 0 390 200" preserveAspectRatio="none">
+          <rect width="390" height="200" fill="#f4f4f4"/>
+          <path d="M30,150 C80,90 120,120 170,70" fill="none" stroke="#2b2b2b" stroke-width="3"/>
+          <path d="M170,70 C220,30 260,80 300,50" fill="none" stroke="#8a8a8a" stroke-width="3" stroke-dasharray="7 5"/>
+          <path d="M300,50 C330,35 350,60 366,30" fill="none" stroke="#2b2b2b" stroke-width="3"/>
+          <circle cx="30" cy="150" r="4.5" fill="#fff" stroke="#2b2b2b" stroke-width="2"/>
+          <circle cx="170" cy="70" r="4.5" fill="#fff" stroke="#2b2b2b" stroke-width="2"/>
+          <circle cx="300" cy="50" r="4.5" fill="#fff" stroke="#2b2b2b" stroke-width="2"/>
+          <circle cx="366" cy="30" r="4.5" fill="#fff" stroke="#2b2b2b" stroke-width="2"/>
+        </svg>
+        <div class="maplabel">虚线 = 用户可关闭的连接线</div>
+      </div>
+      <div class="content" style="padding-bottom:100px">
+        <div class="between"><div class="sec" style="margin:2px 0">选择路段（按顺序）</div><div class="meta">全选</div></div>
+        <div class="listhint">拖动右侧手柄调整顺序，点「⇄」切换方向；勾选参与合并的段。</div>
+
+        <div class="seg" style="margin-top:9px"><div class="drag">⋮⋮</div><div class="check">✓</div><div class="body"><div class="t">北京 → 上海</div><div class="m">05.12 08:30 · 1,180 km</div></div><div class="dir">⇄</div></div>
+        <div class="seg"><div class="drag">⋮⋮</div><div class="check">✓</div><div class="body"><div class="t">上海 → 杭州</div><div class="m">05.12 18:10 · 169 km</div></div><div class="dir">⇄</div></div>
+        <div class="seg"><div class="drag">⋮⋮</div><div class="check off"></div><div class="body"><div class="t">杭州 → 上海</div><div class="m">05.13 09:00 · 169 km</div></div><div class="dir">⇄</div></div>
+
+        <div class="toggle"><span>显示连接线（虚线）</span><div class="switch"></div></div>
+
+        <div class="card redline" style="margin-top:12px">
+          <div class="meta" style="color:#c0392b">
+            <span class="n">5</span>不设任何阈值：顺序、方向、是否连接全部由用户决定
+          </div>
+        </div>
+      </div>
+      <div class="bottom"><div class="btn small">取消</div><div class="btn dark">生成合并轨迹</div></div>
+    </div>
+    <div class="cap">
+      <b>④ 合并轨迹编辑器</b>
+      <span>勾选 → 拖拽排序 → 逐段切方向 → 预览；完全手动、零阈值。保留原始段，合并结果可保存为方案。</span>
+    </div>
+  </div>
+
+  <!-- 5. 分享 -->
+  <div class="col">
+    <div class="phone">
+      <div class="status"><span>9:41</span><span>●●●  ▮</span></div>
+      <div class="nav"><div class="left">‹</div><div class="mid">分享行程</div><div class="right"></div></div>
+      <div class="content" style="padding-bottom:100px">
+        <div class="previewcard">
+          <div class="pv-map">
+            <svg viewBox="0 0 358 250" preserveAspectRatio="none">
+              <rect width="358" height="250" fill="#f4f4f4"/>
+              <path d="M20,210 C80,120 150,190 210,110 S310,90 338,40" fill="none" stroke="#2b2b2b" stroke-width="2.5" stroke-dasharray="6 5"/>
+              <circle cx="20" cy="210" r="5" fill="#fff" stroke="#2b2b2b" stroke-width="2"/>
+              <circle cx="338" cy="40" r="5" fill="#fff" stroke="#2b2b2b" stroke-width="2"/>
+            </svg>
+            <div class="seal">行</div>
+          </div>
+          <div class="pv-info">
+            <div class="pv-title">北京 → 上海</div>
+            <div class="pv-meta">2026.05.12 – 05.13　·　3 段</div>
+            <div class="pv-stats">
+              <div class="pv-stat"><b>1,286</b><span>公里</span></div>
+              <div class="pv-stat"><b>5h20m</b><span>时长</span></div>
+              <div class="pv-stat"><b>3</b><span>城市</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="chips" style="margin-top:12px;justify-content:center"><div class="chip">极简</div><div class="chip">山水</div><div class="chip">航空</div></div>
+        <div class="card redline" style="margin-top:12px">
+          <div class="meta" style="color:#c0392b">
+            <span class="n">6</span>分享卡：地图 + 统计 + 日期 + 印章，可换模板
+          </div>
+        </div>
+      </div>
+      <div class="bottom"><div class="btn small">保存图片</div><div class="btn dark">分享</div></div>
+    </div>
+    <div class="cap">
+      <b>⑤ 分享卡</b>
+      <span>地图截图 + 行程名 + 统计 + 日期 + 印章，模板可切换。作为 M1「合并轨迹 + 分享卡」的最终出口。</span>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

@@ -2,11 +2,14 @@ package com.zuxing.markmap.data.adapter
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.zuxing.markmap.R
 import com.zuxing.markmap.data.entity.LineEntity
 import com.zuxing.markmap.databinding.ItemLineBinding
+import com.zuxing.markmap.domain.TransportMode
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -52,8 +55,27 @@ class LineAdapter(
         }
 
         fun bind(line: LineEntity) {
+            val mode = TransportMode.from(line.transportMode)
+            val isClay = mode == TransportMode.TRAIN
+            binding.tvModeDot.text = when (mode) {
+                TransportMode.FLIGHT -> "飞"
+                TransportMode.TRAIN -> "铁"
+                TransportMode.DRIVE -> "车"
+                TransportMode.WALK -> "步"
+                TransportMode.FERRY -> "船"
+                TransportMode.OTHER -> "迹"
+            }
+            binding.tvModeDot.setBackgroundResource(
+                if (isClay) R.drawable.bg_mode_clay else R.drawable.bg_mode_dai
+            )
+            binding.tvModeDot.setTextColor(
+                ContextCompat.getColor(
+                    binding.root.context,
+                    if (isClay) R.color.accent else R.color.primary
+                )
+            )
             binding.tvName.text = line.name
-            binding.tvCreateTime.text = dateFormat.format(Date(line.createTime))
+            binding.tvMeta.text = "${mode.label} · ${dateFormat.format(Date(line.createTime))}"
         }
     }
 

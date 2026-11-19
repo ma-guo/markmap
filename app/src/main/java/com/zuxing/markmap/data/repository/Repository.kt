@@ -1,11 +1,17 @@
 package com.zuxing.markmap.data.repository
 
+import com.zuxing.markmap.data.dao.AchievementDao
 import com.zuxing.markmap.data.dao.GroupDao
 import com.zuxing.markmap.data.dao.LineDao
+import com.zuxing.markmap.data.dao.MergedTrackPlanDao
 import com.zuxing.markmap.data.dao.PointDao
+import com.zuxing.markmap.data.dao.VisitedPlaceDao
+import com.zuxing.markmap.data.entity.AchievementEntity
 import com.zuxing.markmap.data.entity.GroupEntity
 import com.zuxing.markmap.data.entity.LineEntity
+import com.zuxing.markmap.data.entity.MergedTrackPlanEntity
 import com.zuxing.markmap.data.entity.PointEntity
+import com.zuxing.markmap.data.entity.VisitedPlaceEntity
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -14,7 +20,10 @@ import kotlinx.coroutines.flow.Flow
 class Repository(
     private val groupDao: GroupDao,
     private val lineDao: LineDao,
-    private val pointDao: PointDao
+    private val pointDao: PointDao,
+    private val mergedTrackPlanDao: MergedTrackPlanDao,
+    private val achievementDao: AchievementDao,
+    private val visitedPlaceDao: VisitedPlaceDao
 ) {
     // ===== 组操作 =====
 
@@ -49,6 +58,9 @@ class Repository(
 
     fun getDeletedLines(): Flow<List<LineEntity>> = lineDao.getDeletedLines()
 
+    suspend fun getLinesByGroupIdOnce(groupId: Long): List<LineEntity> =
+        lineDao.getLinesByGroupIdOnce(groupId)
+
     suspend fun getLineById(id: Long): LineEntity? = lineDao.getLineById(id)
 
     suspend fun insertLine(line: LineEntity): Long = lineDao.insert(line)
@@ -74,6 +86,9 @@ class Repository(
 
     fun getDeletedPoints(): Flow<List<PointEntity>> = pointDao.getDeletedPoints()
 
+    suspend fun getPointsByLineIdOnce(lineId: Long): List<PointEntity> =
+        pointDao.getPointsByLineIdOnce(lineId)
+
     suspend fun getPointById(id: Long): PointEntity? = pointDao.getPointById(id)
 
     suspend fun insertPoint(point: PointEntity): Long = pointDao.insert(point)
@@ -91,4 +106,42 @@ class Repository(
     suspend fun deletePointById(id: Long) = pointDao.deleteById(id)
 
     suspend fun getPointCountByLine(lineId: Long): Int = pointDao.getPointCountByLine(lineId)
+
+    // ===== 合并轨迹方案 =====
+
+    fun getMergedPlansByGroupId(groupId: Long): Flow<List<MergedTrackPlanEntity>> =
+        mergedTrackPlanDao.getPlansByGroupId(groupId)
+
+    suspend fun getMergedPlanById(id: Long): MergedTrackPlanEntity? =
+        mergedTrackPlanDao.getPlanById(id)
+
+    suspend fun saveMergedPlan(plan: MergedTrackPlanEntity): Long =
+        if (plan.id == 0L) mergedTrackPlanDao.insert(plan)
+        else {
+            mergedTrackPlanDao.update(plan)
+            plan.id
+        }
+
+    suspend fun deleteMergedPlan(id: Long) = mergedTrackPlanDao.deleteById(id)
+
+    // ===== 成就与足迹 =====
+
+    fun getAchievements(): Flow<List<AchievementEntity>> = achievementDao.getAll()
+
+    suspend fun getAchievementsOnce(): List<AchievementEntity> = achievementDao.getAllOnce()
+
+    suspend fun getAchievement(code: String): AchievementEntity? = achievementDao.getByCode(code)
+
+    suspend fun upsertAchievement(entity: AchievementEntity): Long = achievementDao.upsert(entity)
+
+    fun getVisitedPlaces(): Flow<List<VisitedPlaceEntity>> = visitedPlaceDao.getAll()
+
+    suspend fun getVisitedPlacesOnce(): List<VisitedPlaceEntity> = visitedPlaceDao.getAllOnce()
+
+    suspend fun getVisitedPlace(code: String, level: Int): VisitedPlaceEntity? =
+        visitedPlaceDao.get(code, level)
+
+    suspend fun upsertVisitedPlace(entity: VisitedPlaceEntity): Long = visitedPlaceDao.upsert(entity)
+
+    suspend fun clearVisitedPlaces() = visitedPlaceDao.clear()
 }

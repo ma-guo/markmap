@@ -7,17 +7,6 @@
     android:background="@color/background"
     tools:context=".TrainMapActivity">
 
-    <com.google.android.material.appbar.MaterialToolbar
-        android:id="@+id/toolbar"
-        style="@style/Widget.MarkMap.Toolbar"
-        android:layout_width="0dp"
-        android:layout_height="?attr/actionBarSize"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:navigationIcon="@drawable/ic_arrow_back"
-        app:title="列车运行图" />
-
     <com.baidu.mapapi.map.MapView
         android:id="@+id/mapView"
         android:layout_width="0dp"
@@ -27,88 +16,124 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/toolbar" />
+        app:layout_constraintTop_toTopOf="parent" />
 
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/cardToggleList"
-        style="@style/Widget.MarkMap.Card"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:id="@+id/navBar"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="@dimen/space_m"
-        android:clickable="true"
-        android:focusable="true"
-        app:cardBackgroundColor="@color/primary_container"
-        app:cardCornerRadius="@dimen/radius_pill"
-        app:layout_constraintBottom_toTopOf="@id/cardStationList"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:strokeWidth="0dp">
+        app:layout_constraintTop_toTopOf="parent">
 
-        <LinearLayout
+        <ImageButton
+            android:id="@+id/btnBack"
+            android:layout_width="38dp"
+            android:layout_height="38dp"
+            android:background="@drawable/bg_round_btn"
+            android:contentDescription="返回"
+            android:padding="9dp"
+            android:src="@drawable/ic_arrow_back"
+            app:tint="@color/ink" />
+
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <TextView
+            android:id="@+id/tvTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:minHeight="40dp"
-            android:orientation="horizontal"
-            android:paddingHorizontal="@dimen/space_m">
+            android:background="@drawable/bg_pill"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:maxWidth="240dp"
+            android:paddingStart="14dp"
+            android:paddingTop="8dp"
+            android:paddingEnd="14dp"
+            android:paddingBottom="8dp"
+            android:text="列车运行图"
+            android:textColor="@color/ink"
+            android:textSize="14sp"
+            android:textStyle="bold" />
 
-            <TextView
-                style="@style/TextAppearance.MarkMap.Label"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="站点"
-                android:textColor="@color/primary" />
+        <Space
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
 
-            <ImageView
-                android:id="@+id/ivToggleIcon"
-                android:layout_width="20dp"
-                android:layout_height="20dp"
-                android:layout_marginStart="2dp"
-                android:contentDescription="切换列表"
-                android:src="@drawable/arrow_drop_up_24px"
-                android:tint="@color/primary" />
+        <ImageButton
+            android:id="@+id/btnMore"
+            android:layout_width="38dp"
+            android:layout_height="38dp"
+            android:background="@drawable/bg_round_btn"
+            android:contentDescription="更多"
+            android:padding="9dp"
+            android:src="@drawable/ic_more_horiz_24"
+            app:tint="@color/ink" />
+    </LinearLayout>
 
-        </LinearLayout>
+    <ImageButton
+        android:id="@+id/btnRecenter"
+        android:layout_width="46dp"
+        android:layout_height="46dp"
+        android:layout_marginEnd="18dp"
+        android:layout_marginBottom="14dp"
+        android:background="@drawable/bg_round_btn"
+        android:contentDescription="回到全览"
+        android:elevation="6dp"
+        android:padding="12dp"
+        android:src="@drawable/ic_recenter_24"
+        app:layout_constraintBottom_toTopOf="@id/sheet"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:tint="@color/primary" />
 
-    </com.google.android.material.card.MaterialCardView>
-
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/cardStationList"
-        style="@style/Widget.MarkMap.Card"
+    <LinearLayout
+        android:id="@+id/sheet"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_marginHorizontal="@dimen/space_m"
-        android:layout_marginBottom="@dimen/space_m"
-        android:visibility="gone"
-        app:cardCornerRadius="20dp"
+        android:background="@drawable/bg_sheet"
+        android:elevation="12dp"
+        android:orientation="vertical"
+        android:paddingStart="20dp"
+        android:paddingTop="14dp"
+        android:paddingEnd="20dp"
+        android:paddingBottom="18dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHeight_percent="0.33"
+        app:layout_constraintHeight_percent="0.40"
         app:layout_constraintStart_toStartOf="parent">
 
-        <LinearLayout
+        <View
+            android:layout_width="40dp"
+            android:layout_height="4dp"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginBottom="14dp"
+            android:background="@drawable/bg_grab" />
+
+        <TextView
+            android:id="@+id/tvStationCount"
+            style="@style/TextAppearance.MarkMap.BodySmall"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical"
-            android:padding="@dimen/space_m">
+            android:layout_height="wrap_content"
+            android:textColor="@color/ink"
+            tools:text="共 12 站 · 北京南 → 上海虹桥" />
 
-            <TextView
-                android:id="@+id/tvStationCount"
-                style="@style/TextAppearance.MarkMap.BodySmall"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textColor="@color/ink" />
-
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvStations"
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_marginTop="@dimen/space_xs"
-                android:layout_weight="1" />
-
-        </LinearLayout>
-
-    </com.google.android.material.card.MaterialCardView>
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvStations"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_marginTop="6dp"
+            android:layout_weight="1"
+            android:clipToPadding="false"
+            android:paddingBottom="4dp"
+            tools:listitem="@layout/item_point_simple" />
+    </LinearLayout>
 
     <ProgressBar
         android:id="@+id/progressBar"
@@ -119,6 +144,6 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/toolbar" />
+        app:layout_constraintTop_toTopOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
