@@ -6,6 +6,8 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RectF
 import android.graphics.Typeface
+import android.text.TextPaint
+import android.text.TextUtils
 import java.util.Locale
 
 /**
@@ -47,8 +49,19 @@ object ReportGenerator {
         }
         c.drawText("MARKMAP · 行迹", 80f, 110f, brand)
 
-        val title = paint(INK, 66f, Typeface.create("serif", Typeface.BOLD))
-        c.drawText(data.title, 80f, 210f, title)
+        val titlePaint = paint(INK, 66f, Typeface.create("serif", Typeface.BOLD))
+        val maxW = (WIDTH - 160).toFloat()
+        val fullTitle = data.title
+        if (titlePaint.measureText(fullTitle) <= maxW) {
+            c.drawText(fullTitle, 80f, 210f, titlePaint)
+        } else {
+            var line1 = fullTitle
+            while (line1.length > 1 && titlePaint.measureText(line1) > maxW) line1 = line1.dropLast(1)
+            val line2 = fullTitle.substring(line1.length)
+            c.drawText(line1, 80f, 192f, titlePaint)
+            val safe2 = TextUtils.ellipsize(line2, TextPaint(titlePaint), maxW, TextUtils.TruncateAt.END).toString()
+            c.drawText(safe2, 80f, 192f + 66f, titlePaint)
+        }
 
         val period = paint(INK2, 30f, Typeface.create("sans-serif", Typeface.NORMAL))
         c.drawText(data.periodLabel, 80f, 260f, period)
@@ -97,7 +110,8 @@ object ReportGenerator {
     private fun drawRow(c: Canvas, label: String, value: String, y: Float): Float {
         c.drawText(label, 80f, y, paint(INK2, 28f, Typeface.create("sans-serif", Typeface.NORMAL)))
         val vp = paint(INK, 32f, Typeface.create("serif", Typeface.BOLD)).apply { textAlign = Paint.Align.RIGHT }
-        c.drawText(value, (WIDTH - 80).toFloat(), y, vp)
+        val safe = TextUtils.ellipsize(value, TextPaint(vp), (WIDTH - 80 - 200).toFloat(), TextUtils.TruncateAt.START).toString()
+        c.drawText(safe, (WIDTH - 80).toFloat(), y, vp)
         c.drawLine(80f, y + 24f, (WIDTH - 80).toFloat(), y + 24f, paintStroke("#E9E7DE", 2f))
         return y + 90f
     }

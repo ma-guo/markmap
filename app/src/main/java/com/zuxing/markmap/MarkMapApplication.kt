@@ -3,6 +3,7 @@ package com.zuxing.markmap
 import android.app.Application
 import android.content.pm.PackageManager
 import com.baidu.location.LocationClient
+import com.amap.api.maps.MapsInitializer
 import com.baidu.mapapi.SDKInitializer
 import com.zuxing.markmap.data.database.AppDatabase
 import com.zuxing.markmap.data.repository.Repository
@@ -20,6 +21,10 @@ class MarkMapApplication : Application() {
 
     /** 百度 SDK 初始化失败时置为 false，相关页面降级处理。 */
     var baiduReady: Boolean = false
+        private set
+
+    /** 高德 SDK 是否可用（足迹地图使用）。 */
+    var amapReady: Boolean = false
         private set
 
     override fun onCreate() {
@@ -49,6 +54,16 @@ class MarkMapApplication : Application() {
             baiduReady = false
             Logger.e("百度地图 SDK 初始化失败: ${e.message}")
             e.printStackTrace()
+        }
+
+        // 高德 SDK：隐私合规后再使用地图。
+        try {
+            MapsInitializer.updatePrivacyShow(this, true, true)
+            MapsInitializer.updatePrivacyAgree(this, true)
+            amapReady = true
+        } catch (e: Throwable) {
+            amapReady = false
+            Logger.e("高德地图 SDK 初始化失败: ${e.message}")
         }
     }
 }

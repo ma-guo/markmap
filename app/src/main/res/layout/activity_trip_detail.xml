@@ -53,8 +53,10 @@
                     <TextView
                         android:id="@+id/tvName"
                         style="@style/TextAppearance.MarkMap.Headline"
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:ellipsize="end"
+                        android:maxLines="2"
                         tools:text="北京 → 上海" />
 
                     <TextView

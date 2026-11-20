@@ -92,6 +92,19 @@ object ChinaRegions {
         CityInfo("澳门", "澳门", 22.1987, 113.5439)
     )
 
+    /** 简称 -> 全称（用于行政区边界查询）。 */
+    val fullProvinceName: Map<String, String> = mapOf(
+        "北京" to "北京市", "天津" to "天津市", "河北" to "河北省", "山西" to "山西省",
+        "内蒙古" to "内蒙古自治区", "辽宁" to "辽宁省", "吉林" to "吉林省", "黑龙江" to "黑龙江省",
+        "上海" to "上海市", "江苏" to "江苏省", "浙江" to "浙江省", "安徽" to "安徽省",
+        "福建" to "福建省", "江西" to "江西省", "山东" to "山东省", "河南" to "河南省",
+        "湖北" to "湖北省", "湖南" to "湖南省", "广东" to "广东省", "广西" to "广西壮族自治区",
+        "海南" to "海南省", "重庆" to "重庆市", "四川" to "四川省", "贵州" to "贵州省",
+        "云南" to "云南省", "西藏" to "西藏自治区", "陕西" to "陕西省", "甘肃" to "甘肃省",
+        "青海" to "青海省", "宁夏" to "宁夏回族自治区", "新疆" to "新疆维吾尔自治区",
+        "台湾" to "台湾省", "香港" to "香港特别行政区", "澳门" to "澳门特别行政区"
+    )
+
     val provinceOfCity: Map<String, String> = cities.associate { it.name to it.province }
     val provinceCount: Int = provinces.size
     val cityCount: Int = cities.size

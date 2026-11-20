@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>MarkMap · 悬浮加载动效（无卡片）</title>
+<style>
+  *{box-sizing:border-box;}
+  :root{--dai:#2E5D5C;--daiDeep:#1F4241;--daiSoft:#E4EDE8;--clay:#B96A4B;--gold:#BE9F66;--ink2:#5F6F6D;}
+  html,body{margin:0;background:#E7E5DC;font-family:-apple-system,"PingFang SC",Arial;color:#1F2B2C;-webkit-font-smoothing:antialiased;}
+  .sec{padding:26px 40px 0;color:#1F2B2C;} h1{font-size:20px;margin:0;}
+  .sub{font-size:12px;color:#5c5c5c;margin:6px 0 0;line-height:1.6;}
+  .board{display:flex;gap:26px;padding:16px 40px 36px;flex-wrap:wrap;}
+  .col{display:flex;flex-direction:column;gap:10px;} .cap{width:280px}
+  .cap b{display:block;font-size:13px;} .cap b i{font-style:normal;color:var(--dai);}
+  .cap span{display:block;font-size:11.5px;color:#5c5c5c;margin-top:5px;line-height:1.6;}
+  .tag{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.12em;color:#fff;background:var(--dai);border-radius:20px;padding:3px 10px;margin-bottom:6px;}
+  .phone{position:relative;width:300px;height:560px;border-radius:30px;overflow:hidden;border:1px solid rgba(0,0,0,.1);box-shadow:0 22px 60px rgba(20,30,30,.2);background:#EAF0EE}
+  .map{position:absolute;inset:0}.map svg{width:100%;height:100%;display:block}
+  .float{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center}
+  /* A 涟漪 */
+  .ripple{position:relative;width:90px;height:90px}
+  .ripple .core{position:absolute;left:50%;top:50%;width:16px;height:16px;margin:-8px;border-radius:50%;background:var(--dai);box-shadow:0 6px 18px rgba(46,93,92,.35)}
+  .ripple .w{position:absolute;left:50%;top:50%;width:16px;height:16px;margin:-8px;border-radius:50%;border:2px solid var(--dai);opacity:.6;animation:rp 2s infinite}
+  .ripple .w:nth-child(2){animation-delay:.66s}.ripple .w:nth-child(3){animation-delay:1.33s}
+  @keyframes rp{0%{transform:scale(.3);opacity:.75}100%{transform:scale(5);opacity:0}}
+  /* B 环形旋转 */
+  .arc{width:64px;height:64px;border-radius:50%;border:4px solid rgba(46,93,92,.18);border-top-color:var(--dai);animation:rot 1s linear infinite}
+  @keyframes rot{to{transform:rotate(360deg)}}
+  /* C 墨点扩散 */
+  .ink{position:relative;width:80px;height:80px}
+  .ink i{position:absolute;left:50%;top:50%;width:22px;height:22px;margin:-11px;border-radius:50%;background:radial-gradient(circle at 35% 35%, #3E726E, #1F4241);box-shadow:0 8px 22px rgba(31,66,65,.4)}
+  .ink .d{position:absolute;left:50%;top:50%;width:22px;height:22px;margin:-11px;border-radius:50%;background:rgba(46,93,92,.18);animation:ik 2.2s ease-out infinite}
+  .ink .d:nth-child(2){animation-delay:1.1s}
+  @keyframes ik{0%{transform:scale(.6);opacity:.6}100%{transform:scale(4.2);opacity:0}}
+  /* D 轨道小球 */
+  .orbit{position:relative;width:70px;height:70px;border-radius:50%}
+  .orbit .ring{position:absolute;inset:0;border-radius:50%;animation:rot 1.4s linear infinite}
+  .orbit .ring b{position:absolute;top:-5px;left:50%;width:12px;height:12px;margin-left:-6px;border-radius:50%;background:var(--dai)}
+  .orbit .ring.r2{animation-duration:1.9s}
+  .orbit .ring.r2 b{background:var(--clay)}
+  .orbit .ring.r3{animation-duration:2.4s;animation-direction:reverse}
+  .orbit .ring.r3 b{background:var(--gold)}
+  /* E 足迹点 */
+  .dots{display:flex;gap:10px}
+  .dots i{width:12px;height:12px;border-radius:50%;background:var(--daiSoft);animation:bl 1.5s infinite}
+  .dots i:nth-child(2){animation-delay:.15s}.dots i:nth-child(3){animation-delay:.3s}.dots i:nth-child(4){animation-delay:.45s}.dots i:nth-child(5){animation-delay:.6s}
+  @keyframes bl{0%,100%{opacity:.3;transform:scale(.9)}50%{opacity:1;transform:scale(1.15);background:var(--dai)}}
+  /* F 绘制轨迹线 */
+  .draw{width:120px;height:60px}
+  .draw path{fill:none;stroke:var(--dai);stroke-width:3.5;stroke-linecap:round;stroke-dasharray:160;stroke-dashoffset:160;animation:dr 2.2s ease-in-out infinite}
+  @keyframes dr{0%{stroke-dashoffset:160}60%{stroke-dashoffset:0}100%{stroke-dashoffset:0;opacity:0}}
+</style></head>
+<body>
+<div class="sec"><h1>悬浮加载动效（无卡片 / 无文字 / 无进度条）</h1>
+<p class="sub">只保留悬浮动效本身，直接覆在地图上。请选一个（A–F）。</p></div>
+<div class="board">
+
+  <div class="col"><div class="phone"><div class="map"><svg viewBox="0 0 300 560" preserveAspectRatio="none"><rect width="300" height="560" fill="#EAF0EE"/><path d="M30,150 L120,110 L180,160 L240,120 L290,170 L270,300 L300,420 L220,500 L130,530 L70,450 L50,330 L20,260 Z" fill="#DDE7E1" stroke="#C7D8CF"/><path d="M120,110 L180,160 L205,250 L140,235 L115,175 Z" fill="#2E5D5C" opacity=".7"/></svg></div>
+  <div class="float"><div class="ripple"><div class="core"></div><div class="w"></div><div class="w"></div><div class="w"></div></div></div></div>
+  <div class="cap"><span class="tag">A</span><b><i>涟漪脉冲</i></b><span>中心点 + 同心涟漪扩散；最轻、最百搭。</span></div></div>
+
+  <div class="col"><div class="phone"><div class="map"><svg viewBox="0 0 300 560" preserveAspectRatio="none"><rect width="300" height="560" fill="#EAF0EE"/><path d="M30,150 L120,110 L180,160 L240,120 L290,170 L270,300 L300,420 L220,500 L130,530 L70,450 L50,330 L20,260 Z" fill="#DDE7E1" stroke="#C7D8CF"/><path d="M120,110 L180,160 L205,250 L140,235 L115,175 Z" fill="#2E5D5C" opacity=".7"/></svg></div>
+  <div class="float"><div class="arc"></div></div></div>
+  <div class="cap"><span class="tag">B</span><b><i>环形弧线</i></b><span>细弧旋转，干净、经典的“加载”语义。</span></div></div>
+
+  <div class="col"><div class="phone"><div class="map"><svg viewBox="0 0 300 560" preserveAspectRatio="none"><rect width="300" height="560" fill="#EAF0EE"/><path d="M30,150 L120,110 L180,160 L240,120 L290,170 L270,300 L300,420 L220,500 L130,530 L70,450 L50,330 L20,260 Z" fill="#DDE7E1" stroke="#C7D8CF"/><path d="M120,110 L180,160 L205,250 L140,235 L115,175 Z" fill="#2E5D5C" opacity=".7"/></svg></div>
+  <div class="float"><div class="ink"><i></i><div class="d"></div><div class="d"></div></div></div></div>
+  <div class="cap"><span class="tag">C</span><b><i>墨点扩散</i></b><span>水墨滴落扩散，最贴合“山水”意境。</span></div></div>
+
+  <div class="col"><div class="phone"><div class="map"><svg viewBox="0 0 300 560" preserveAspectRatio="none"><rect width="300" height="560" fill="#EAF0EE"/><path d="M30,150 L120,110 L180,160 L240,120 L290,170 L270,300 L300,420 L220,500 L130,530 L70,450 L50,330 L20,260 Z" fill="#DDE7E1" stroke="#C7D8CF"/><path d="M120,110 L180,160 L205,250 L140,235 L115,175 Z" fill="#2E5D5C" opacity=".7"/></svg></div>
+  <div class="float"><div class="orbit"><div class="ring r1"><b></b></div><div class="ring r2"><b></b></div><div class="ring r3"><b></b></div></div></div></div>
+  <div class="cap"><span class="tag">D</span><b><i>轨道小球</i></b><span>三色小球绕轨，活泼、有动势（可调成双球更稳重）。</span></div></div>
+
+  <div class="col"><div class="phone"><div class="map"><svg viewBox="0 0 300 560" preserveAspectRatio="none"><rect width="300" height="560" fill="#EAF0EE"/><path d="M30,150 L120,110 L180,160 L240,120 L290,170 L270,300 L300,420 L220,500 L130,530 L70,450 L50,330 L20,260 Z" fill="#DDE7E1" stroke="#C7D8CF"/><path d="M120,110 L180,160 L205,250 L140,235 L115,175 Z" fill="#2E5D5C" opacity=".7"/></svg></div>
+  <div class="float"><div class="dots"><i></i><i></i><i></i><i></i><i></i></div></div></div>
+  <div class="cap"><span class="tag">E</span><b><i>足迹点</i></b><span>一排点依次点亮呼吸，呼应“点亮足迹”。</span></div></div>
+
+  <div class="col"><div class="phone"><div class="map"><svg viewBox="0 0 300 560" preserveAspectRatio="none"><rect width="300" height="560" fill="#EAF0EE"/><path d="M30,150 L120,110 L180,160 L240,120 L290,170 L270,300 L300,420 L220,500 L130,530 L70,450 L50,330 L20,260 Z" fill="#DDE7E1" stroke="#C7D8CF"/><path d="M120,110 L180,160 L205,250 L140,235 L115,175 Z" fill="#2E5D5C" opacity=".7"/></svg></div>
+  <div class="float"><div class="draw"><svg viewBox="0 0 120 60" style="width:100%;height:100%"><path d="M6,52 C30,20 46,44 66,24 C84,6 100,20 114,10"/></svg></div></div></div>
+  <div class="cap"><span class="tag">F</span><b><i>绘制轨迹线</i></b><span>一条轨迹“生长/流动”，用于表达“正在绘制边界”。</span></div></div>
+
+</div>
+</body></html>

@@ -52,6 +52,9 @@ object FootprintEngine {
                 )
                 place.province?.let { visit(it, 0, it, point.createTime) }
                 place.city?.let { city -> visit(city, 1, city, point.createTime) }
+                point.district?.takeIf { it.isNotBlank() }?.let { d ->
+                    visit(d.trim(), 2, d.trim(), point.createTime)
+                }
             }
         }
 

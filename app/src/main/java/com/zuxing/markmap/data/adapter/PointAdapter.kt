@@ -13,7 +13,8 @@ import java.util.Date
 import java.util.Locale
 
 class PointAdapter(
-    private val onItemClick: (PointEntity) -> Unit
+    private val onItemClick: (PointEntity) -> Unit,
+    private val onItemLongClick: (PointEntity) -> Unit = {}
 ) : ListAdapter<PointEntity, PointAdapter.ViewHolder>(DiffCallback()) {
 
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
@@ -42,12 +43,22 @@ class PointAdapter(
                     onItemClick(getItem(position))
                 }
             }
+            binding.root.setOnLongClickListener {
+                val position = adapterPosition
+                if (position != RecyclerView.NO_POSITION) {
+                    onItemLongClick(getItem(position))
+                }
+                true
+            }
         }
 
         @SuppressLint("DefaultLocale", "SetTextI18n")
         fun bind(point: PointEntity) {
-            binding.tvName.text = point.description ?: "未命名点"
-            binding.tvAddress.text = point.address ?: ""
+            val split = com.zuxing.markmap.domain.PlaceText.split(
+                point.description, point.address, point.province, point.city, point.district
+            )
+            binding.tvName.text = split.main
+            binding.tvAddress.text = split.admin.ifBlank { point.address ?: "" }
             binding.tvCoords.text = "经度: ${String.format("%.6f", point.longitude)}, 纬度: ${String.format("%.6f", point.latitude)}"
             binding.tvCreateTime.text = dateFormat.format(Date(point.createTime))
         }

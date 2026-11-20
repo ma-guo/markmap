@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>MarkMap · 长地名展示方案</title>
+<style>
+  *{box-sizing:border-box;}
+  :root{--ink:#1F2B2C;--ink2:#5F6F6D;--ink3:#98A4A0;--paper:#F6F5EE;--paper2:#EFEEE6;--surface:#FFF;
+    --dai:#2E5D5C;--daiDeep:#1F4241;--daiSoft:#E4EDE8;--clay:#B96A4B;--claySoft:#F4E7DE;--gold:#BE9F66;
+    --line:rgba(31,43,44,.09);--shadow:0 12px 32px rgba(31,43,44,.07);}
+  html,body{margin:0;background:#E7E5DC;font-family:-apple-system,"PingFang SC",Arial,sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased;}
+  .serif{font-family:"Songti SC","STSong","Noto Serif CJK SC",serif;}
+  .sec{padding:26px 40px 0;}
+  h1{font-size:20px;margin:0;} h2{font-size:15px;margin:24px 0 10px;}
+  .sub{font-size:12px;color:#5c5c5c;margin:6px 0 0;line-height:1.6;}
+  .board{display:flex;gap:24px;padding:16px 40px 34px;flex-wrap:wrap;align-items:flex-start;}
+  .col{display:flex;flex-direction:column;gap:10px;}
+  .cap{width:320px;}
+  .cap b{display:block;font-size:13px;} .cap b i{font-style:normal;color:var(--dai);}
+  .cap span{display:block;font-size:11.5px;color:#5c5c5c;margin-top:5px;line-height:1.6;}
+  .tag{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.12em;color:#fff;background:var(--dai);border-radius:20px;padding:3px 10px;margin-bottom:6px;}
+  .tag.alt{background:var(--clay);} .tag.g{background:var(--gold);}
+  .phone{position:relative;width:320px;height:600px;border-radius:32px;overflow:hidden;background:var(--paper);border:1px solid rgba(0,0,0,.1);box-shadow:0 22px 60px rgba(20,30,30,.2);}
+  .island{position:absolute;top:8px;left:50%;transform:translateX(-50%);width:88px;height:22px;border-radius:13px;background:#101615;z-index:30;}
+  .status{height:36px;display:flex;justify-content:space-between;align-items:flex-end;padding:0 20px 4px;font-size:9px;font-weight:600;}
+  .bar{height:42px;display:flex;align-items:center;padding:0 14px;gap:10px;}
+  .rbtn{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.75);border:1px solid var(--line);font-size:13px;}
+  .pad{padding:0 14px;}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:12px 13px;}
+  .t1{font-size:13.5px;font-weight:700;line-height:1.35;}
+  .t2{font-size:11px;color:var(--ink3);margin-top:4px;line-height:1.4;}
+  .more{font-size:11px;color:var(--dai);font-weight:700;}
+  .pill{background:rgba(255,255,255,.8);border:1px solid var(--line);border-radius:14px;padding:6px 12px;font-size:12px;font-weight:700;}
+  .sheet{position:absolute;left:0;right:0;bottom:0;background:var(--paper);border-radius:22px 22px 0 0;box-shadow:0 -12px 30px rgba(31,43,44,.14);padding:12px 16px 20px;z-index:10;}
+  .grab{width:34px;height:4px;border-radius:2px;background:rgba(31,43,44,.16);margin:0 auto 12px;}
+  .btn{height:40px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;}
+  .btn.p{background:linear-gradient(150deg,#376C69,var(--daiDeep));color:#fff;}
+  .btn.g{background:rgba(255,255,255,.85);border:1px solid var(--line);color:var(--ink);}
+  .chip{display:inline-flex;font-size:10px;font-weight:700;padding:4px 9px;border-radius:20px;background:var(--daiSoft);color:var(--dai);}
+  .marquee{position:relative;overflow:hidden;white-space:nowrap;}
+  .marquee span{display:inline-block;animation:mv 8s linear infinite;}
+  @keyframes mv{0%{transform:translateX(0)}100%{transform:translateX(-48%)}}
+  .matrix{width:1180px;background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:6px 18px 14px;box-shadow:var(--shadow);margin:0 40px 40px;}
+  table{border-collapse:collapse;width:100%;font-size:12px;}
+  th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line);}
+  th{color:var(--ink2);font-weight:700;} td b{color:var(--dai);}
+</style>
+</head>
+<body>
+<div class="sec">
+  <h1>长地名展示方案（UX）</h1>
+  <p class="sub">问题：列表/标题/时间轴对长地名只做「行末省略」，看不到完整名称。目标：<b>任何地方都能看到完整长地名</b>，且不破坏现有版式与操作。</p>
+</div>
+
+<div class="board">
+  <!-- 方案 A -->
+  <div class="col">
+    <div class="phone"><div class="island"></div><div class="status"><span>9:41</span><span>●●● ⌁ ▮</span></div>
+      <div class="bar"><div class="rbtn">‹</div><div class="ttl" style="font-weight:700">地点</div></div>
+      <div class="pad">
+        <div class="card">
+          <div class="t1">喀什地区塔什库尔干塔吉克自治县红其拉甫口岸</div>
+          <div class="t2">新疆维吾尔自治区 · 07.20 18:00 · 264.7km</div>
+        </div>
+        <div class="card" style="margin-top:10px">
+          <div class="t1">巴音郭楞蒙古自治州和静县巴音布鲁克九曲十八弯观景台</div>
+          <div class="t2">新疆维吾尔自治区 · 07.19 09:00</div>
+          <div class="more" style="margin-top:6px">收起 ▲</div>
+        </div>
+        <div class="card" style="margin-top:10px">
+          <div class="t1" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">克孜勒苏柯尔克孜自治州阿克陶县喀拉库勒湖景区… </div>
+          <div class="t2">新疆维吾尔自治区 · 07.20 12:00</div>
+          <div class="more" style="margin-top:6px">展开完整名称 ▼</div>
+        </div>
+      </div><div class="homebar"></div>
+    </div>
+    <div class="cap"><span class="tag">方案 A</span><b><i>两行自适应 + 就地展开</i></b><span>默认最多 2 行自动换行；仍显示不完则给一个「展开完整名称 ▼」入口，点击就地展开为完整多行（可再收起）。不打断浏览，长名可读全。</span></div>
+  </div>
+
+  <!-- 方案 B -->
+  <div class="col">
+    <div class="phone"><div class="island"></div><div class="status"><span>9:41</span><span>●●● ⌁ ▮</span></div>
+      <div class="bar"><div class="rbtn">‹</div><div class="ttl" style="font-weight:700">地点</div></div>
+      <div class="pad">
+        <div class="card">
+          <div class="t1" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">喀什地区塔什库尔干塔吉克自治县红其拉甫口岸</div>
+          <div class="t2">新疆维吾尔自治区 · 07.20 18:00</div>
+        </div>
+        <div class="card" style="margin-top:8px">
+          <div class="t1" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">巴音郭楞蒙古自治州和静县巴音布鲁克九曲十八弯观景台</div>
+          <div class="t2">新疆维吾尔自治区 · 07.19 09:00</div>
+        </div>
+      </div>
+      <div class="sheet">
+        <div class="grab"></div>
+        <div class="t2">地点名称</div>
+        <div class="serif" style="font-size:16px;font-weight:700;line-height:1.4;margin-top:6px">巴音郭楞蒙古自治州和静县巴音布鲁克九曲十八弯观景台</div>
+        <div class="t2" style="margin-top:6px">新疆维吾尔自治区 · 巴音郭楞蒙古自治州 · 07.19 09:00</div>
+        <div style="display:flex;gap:8px;margin-top:14px"><div class="btn g" style="flex:1">复制名称</div><div class="btn p" style="flex:1">在地图查看</div></div>
+      </div><div class="homebar"></div>
+    </div>
+    <div class="cap"><span class="tag alt">方案 B</span><b><i>轻触看全名（详情气泡）</i></b><span>列表保持紧凑单行；点按任意地点弹出底部气泡，<b>完整名称 + 行政区 + 时间</b>，并提供「复制名称 / 在地图查看」。适合名字极长、列表需高密度时。</span></div>
+  </div>
+
+  <!-- 方案 C -->
+  <div class="col">
+    <div class="phone"><div class="island"></div><div class="status"><span>9:41</span><span>●●● ⌁ ▮</span></div>
+      <div class="bar"><div class="rbtn">‹</div><div class="ttl" style="font-weight:700">地点</div></div>
+      <div class="pad">
+        <div class="card">
+          <div class="t1">红其拉甫口岸</div>
+          <div class="t2">喀什地区塔什库尔干塔吉克自治县 · 新疆维吾尔自治区</div>
+          <div class="t2" style="margin-top:2px">07.20 18:00 · 264.7km</div>
+        </div>
+        <div class="card" style="margin-top:10px">
+          <div class="t1">巴音布鲁克九曲十八弯观景台</div>
+          <div class="t2">巴音郭楞蒙古自治州和静县 · 新疆维吾尔自治区</div>
+          <div class="t2" style="margin-top:2px">07.19 09:00</div>
+        </div>
+        <div class="card" style="margin-top:10px">
+          <div class="t1">喀拉库勒湖景区</div>
+          <div class="t2">克孜勒苏柯尔克孜自治州阿克陶县 · 新疆维吾尔自治区</div>
+        </div>
+      </div><div class="homebar"></div>
+    </div>
+    <div class="cap"><span class="tag g">方案 C · 推荐</span><b><i>结构化「主名 + 副名」</i></b><span>把名称拆成<b>主名（场所/景区）</b>用大字号、换行至 2 行；<b>行政区（省·市/县）</b>作为副名整行完整展示。信息更清晰、长地名天然分行不挤，优于纯省略。</span></div>
+  </div>
+
+  <!-- 方案 D -->
+  <div class="col">
+    <div class="phone"><div class="island"></div><div class="status"><span>9:41</span><span>●●● ⌁ ▮</span></div>
+      <div class="bar"><div class="rbtn">‹</div><div class="pill marquee" style="max-width:190px"><span>乌鲁木齐地窝堡国际机场 → 库尔勒梨城机场（独库公路北段自驾）　　</span></div></div>
+      <div class="pad" style="margin-top:8px">
+        <div class="card">
+          <div class="t1" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">乌鲁木齐地窝堡国际机场 → 库尔勒梨城机场（独库公路北段自驾）</div>
+          <div class="t2">提示：点按标题可停靠并展开完整名称</div>
+        </div>
+        <div class="card" style="margin-top:10px">
+          <div class="t1">乌鲁木齐地窝堡国际机场 → 库尔勒梨城机场（独库公路北段自驾）</div>
+          <div class="more" style="margin-top:6px">已停靠，完整显示 · 再次轻触收起</div>
+        </div>
+      </div><div class="homebar"></div>
+    </div>
+    <div class="cap"><span class="tag">方案 D</span><b><i>标题跑马灯 + 点击停靠</i></b><span>顶部标题药丸/超长标题横向缓慢滚动（marquee），轻触「停靠」展开完整名称并换行显示。适合标题栏这类固定高度、又要看到全名的位置。</span></div>
+  </div>
+</div>
+
+<div class="matrix">
+  <h2>各页推荐组合</h2>
+  <table>
+    <tr><th>位置</th><th>现状问题</th><th>推荐</th></tr>
+    <tr><td>行程卡片标题 / 路段列表</td><td>单行省略，看不到全名</td><td><b>C</b> 主名 2 行 + 副名完整；超长补充 <b>A</b>「展开」</td></tr>
+    <tr><td>行程详情 / 行程地图抽屉标题</td><td>单行省略</td><td><b>A</b> 两行换行 + 展开；地图抽屉用 <b>D</b> 跑马灯/停靠</td></tr>
+    <tr><td>点位时间轴</td><td>单行省略</td><td><b>C</b> 主名 + 行政区分行</td></tr>
+    <tr><td>地点列表（多选）</td><td>单行省略</td><td><b>B</b> 轻触详情气泡看全名 + 复制</td></tr>
+    <tr><td>地图 marker 标注</td><td>仅有图标</td><td>点选 marker 弹 <b>InfoWindow 完整名称</b>（配合 序号/图标）</td></tr>
+    <tr><td>搜索 / 分享 / 报告</td><td>截断</td><td><b>C</b> 结构化 + 长图 <b>A</b> 两行</td></tr>
+  </table>
+</div>
+</body>
+</html>

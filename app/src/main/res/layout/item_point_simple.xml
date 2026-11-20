@@ -47,10 +47,20 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:ellipsize="end"
-            android:maxLines="1"
+            android:maxLines="2"
             android:textColor="@color/ink"
             android:textStyle="bold"
-            tools:text="北京首都机场" />
+            tools:text="红其拉甫口岸" />
+
+        <TextView
+            android:id="@+id/tvAdmin"
+            style="@style/TextAppearance.MarkMap.Caption"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:ellipsize="end"
+            android:maxLines="2"
+            tools:text="新疆维吾尔自治区 · 喀什地区 · 塔什库尔干塔吉克自治县" />
 
         <TextView
             android:id="@+id/tvStartTime"

@@ -106,11 +106,12 @@ class LineMapActivity : AppCompatActivity() {
 
             fun bind(mapPoint: MapPointEntity, position: Int, total: Int) {
                 val point = mapPoint.point
-                binding.tvPointDescription.text = when {
-                    !point.description.isNullOrBlank() -> point.description
-                    !point.address.isNullOrBlank() -> point.address
-                    else -> "${point.latitude}, ${point.longitude}"
-                }
+                val split = com.zuxing.markmap.domain.PlaceText.split(
+                    point.description, point.address, point.province, point.city, point.district
+                )
+                binding.tvPointDescription.text = split.main
+                binding.tvAdmin.text = split.admin
+                binding.tvAdmin.visibility = if (split.admin.isBlank()) android.view.View.GONE else android.view.View.VISIBLE
                 binding.tvDistance.text = formatDistance(mapPoint.distanceFromStart)
                 binding.tvStartTime.text = SimpleDateFormat("MM.dd HH:mm", Locale.getDefault())
                     .format(Date(point.createTime))
@@ -318,6 +319,7 @@ class LineMapActivity : AppCompatActivity() {
                     mapPoint.copy(distanceFromStart = distances.getOrElse(index) { 0.0 })
                 }
 
+                binding.tvName.isSelected = true
                 if (lineId != -1L) {
                     val line = app.repository.getLineById(lineId)
                     line?.let {
@@ -431,6 +433,8 @@ class LineMapActivity : AppCompatActivity() {
             polylineOverlay = mapView.map.addOverlay(polylineOptions)
         }
 
+        bindMarkerClick()
+
         if (latLngList.isNotEmpty()) {
             val builder = LatLngBounds.Builder()
             latLngList.forEach { builder.include(it) }
@@ -438,6 +442,16 @@ class LineMapActivity : AppCompatActivity() {
 
             val update = MapStatusUpdateFactory.newLatLngBounds(bounds)
             mapView.map.animateMapStatus(update)
+        }
+    }
+
+    private fun bindMarkerClick() {
+        mapView.map.setOnMarkerClickListener { marker ->
+            val t = marker.title
+            if (!t.isNullOrBlank()) {
+                com.zuxing.markmap.widget.PlaceSheet.show(this, t, "")
+            }
+            true
         }
     }
 

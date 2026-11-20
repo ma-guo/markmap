@@ -67,13 +67,18 @@ object ShareCardGenerator {
             textSize = 62f
             typeface = Typeface.create("serif", Typeface.BOLD)
         }
-        val safeTitle = TextUtils.ellipsize(
-            title.ifBlank { "我的行程" },
-            titlePaint,
-            (WIDTH - 160).toFloat(),
-            TextUtils.TruncateAt.END
-        ).toString()
-        canvas.drawText(safeTitle, 80f, 208f, titlePaint)
+        val fullTitle = title.ifBlank { "我的行程" }
+        val maxW = (WIDTH - 160).toFloat()
+        if (titlePaint.measureText(fullTitle) <= maxW) {
+            canvas.drawText(fullTitle, 80f, 208f, titlePaint)
+        } else {
+            var line1 = fullTitle
+            while (line1.length > 1 && titlePaint.measureText(line1) > maxW) line1 = line1.dropLast(1)
+            val line2 = fullTitle.substring(line1.length)
+            canvas.drawText(line1, 80f, 196f, titlePaint)
+            val safe2 = TextUtils.ellipsize(line2, titlePaint, maxW, TextUtils.TruncateAt.END).toString()
+            canvas.drawText(safe2, 80f, 196f + 66f, titlePaint)
+        }
 
         val subtitle = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = Color.parseColor(INK_SECONDARY)

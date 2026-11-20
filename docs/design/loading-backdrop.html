@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>MarkMap · 加载动效底衬方案</title>
+<style>
+  *{box-sizing:border-box;}
+  :root{--dai:#2E5D5C;--clay:#B96A4B;--gold:#BE9F66;}
+  html,body{margin:0;background:#E7E5DC;font-family:-apple-system,"PingFang SC",Arial;color:#1F2B2C;-webkit-font-smoothing:antialiased;}
+  .sec{padding:26px 40px 0;color:#1F2B2C;} h1{font-size:20px;margin:0;}
+  .sub{font-size:12px;color:#5c5c5c;margin:6px 0 0;line-height:1.6;}
+  .board{display:flex;gap:24px;padding:16px 40px 36px;flex-wrap:wrap;}
+  .col{display:flex;flex-direction:column;gap:10px;} .cap{width:260px}
+  .cap b{display:block;font-size:13px;} .cap b i{font-style:normal;color:var(--dai);}
+  .cap span{display:block;font-size:11.5px;color:#5c5c5c;margin-top:5px;line-height:1.6;}
+  .tag{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.12em;color:#fff;background:var(--dai);border-radius:20px;padding:3px 10px;margin-bottom:6px;}
+  .phone{position:relative;width:260px;height:480px;border-radius:28px;overflow:hidden;border:1px solid rgba(0,0,0,.1);box-shadow:0 22px 60px rgba(20,30,30,.2);background:#EAF0EE}
+  .map{position:absolute;inset:0}.map svg{width:100%;height:100%;display:block}
+  .center{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:132px;height:132px;display:flex;align-items:center;justify-content:center}
+  .orbit{position:relative;width:72px;height:72px;border-radius:50%}
+  .ball{position:absolute;left:50%;top:50%;width:8px;height:8px;margin:-4px;border-radius:50%}
+  .b1{background:var(--dai);transform:translate(36px,0)}
+  .b2{background:var(--clay);transform:rotate(140deg) translate(36px,0)}
+  .b3{background:var(--gold);transform:rotate(250deg) translate(36px,0)}
+  /* A 无底衬 */
+  /* B 白 65% + 阴影 */
+  .bg-white{background:rgba(255,255,255,.65);box-shadow:0 12px 30px rgba(20,30,30,.18);border-radius:50%}
+  /* C 米纸 88% + 描边 */
+  .bg-paper{background:rgba(246,245,238,.88);border:1px solid rgba(31,43,44,.12);border-radius:50%}
+  /* D 径向光晕 */
+  .bg-glow{background:radial-gradient(circle, rgba(46,93,92,.28) 0%, rgba(46,93,92,.10) 55%, rgba(46,93,92,0) 75%)}
+  /* E 双层圆 */
+  .bg-rings{border-radius:50%;border:1px solid rgba(255,255,255,.55);box-shadow:inset 0 0 0 10px rgba(255,255,255,.12)}
+  /* F 毛玻璃 */
+  .bg-blur{background:rgba(255,255,255,.5);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.55);border-radius:50%}
+  .mapart{position:absolute;inset:0}
+</style></head>
+<body>
+<div class="sec"><h1>足迹加载动效 · 底衬方案</h1>
+<p class="sub">动效已按 0.9× 缩小（80dp / 球 0.09）。以下为「是否加半透明圆底衬」的 6 个版本（背景用花哨地图以看区分度）。请选择。</p></div>
+<div class="board">
+
+  <div class="col"><div class="phone"><div class="mapart">
+    <svg viewBox="0 0 260 480" preserveAspectRatio="none"><rect width="260" height="480" fill="#E6EFE9"/><path d="M0,140 C40,110 70,150 110,120 S180,90 260,120 L260,480 L0,480Z" fill="#C7D8CF"/><path d="M0,220 C50,190 90,230 140,200 S220,180 260,205 L260,480 L0,480Z" fill="#B3C8BE"/><path d="M0,300 C60,275 110,305 170,280 S240,265 260,285 L260,480 L0,480Z" fill="#A2B9AE"/><path d="M20,330 C70,220 120,270 170,200 S220,150 250,120" fill="none" stroke="#2E5D5C" stroke-width="3"/><path d="M10,360 L80,300 L140,340 L200,280 L250,310" fill="none" stroke="#B96A4B" stroke-width="2" stroke-dasharray="6 5"/><circle cx="60" cy="120" r="3" fill="#2E5D5C"/><circle cx="200" cy="90" r="3" fill="#B96A4B"/><rect x="150" y="330" width="60" height="30" fill="#D9E6DF"/><rect x="30" y="380" width="80" height="26" fill="#EADFD3"/></svg></div>
+    <div class="center"><div class="orbit"><div class="ball b1"></div><div class="ball b2"></div><div class="ball b3"></div></div></div></div>
+  <div class="cap"><span class="tag">A</span><b><i>无底衬（现状）</i></b><span>最干净，但花哨底图上对比不足，可能看不清。</span></div></div>
+
+  <div class="col"><div class="phone"><div class="mapart">
+    <svg viewBox="0 0 260 480" preserveAspectRatio="none"><rect width="260" height="480" fill="#E6EFE9"/><path d="M0,140 C40,110 70,150 110,120 S180,90 260,120 L260,480 L0,480Z" fill="#C7D8CF"/><path d="M0,220 C50,190 90,230 140,200 S220,180 260,205 L260,480 L0,480Z" fill="#B3C8BE"/><path d="M20,330 C70,220 120,270 170,200 S220,150 250,120" fill="none" stroke="#2E5D5C" stroke-width="3"/><circle cx="60" cy="120" r="3" fill="#2E5D5C"/><circle cx="200" cy="90" r="3" fill="#B96A4B"/><rect x="150" y="330" width="60" height="30" fill="#D9E6DF"/></svg></div>
+    <div class="center"><div class="bg-white" style="width:132px;height:132px;display:flex;align-items:center;justify-content:center"><div class="orbit"><div class="ball b1"></div><div class="ball b2"></div><div class="ball b3"></div></div></div></div></div>
+  <div class="cap"><span class="tag">B</span><b><i>白色半透明 + 轻投影</i></b><span>最通用，像“悬浮玻璃片”，区分度好、不过重。</span></div></div>
+
+  <div class="col"><div class="phone"><div class="mapart">
+    <svg viewBox="0 0 260 480" preserveAspectRatio="none"><rect width="260" height="480" fill="#E6EFE9"/><path d="M0,140 C40,110 70,150 110,120 S180,90 260,120 L260,480 L0,480Z" fill="#C7D8CF"/><path d="M0,220 C50,190 90,230 140,200 S220,180 260,205 L260,480 L0,480Z" fill="#B3C8BE"/><path d="M20,330 C70,220 120,270 170,200 S220,150 250,120" fill="none" stroke="#2E5D5C" stroke-width="3"/><circle cx="60" cy="120" r="3" fill="#2E5D5C"/><rect x="150" y="330" width="60" height="30" fill="#D9E6DF"/></svg></div>
+    <div class="center"><div class="bg-paper" style="width:132px;height:132px;display:flex;align-items:center;justify-content:center"><div class="orbit"><div class="ball b1"></div><div class="ball b2"></div><div class="ball b3"></div></div></div></div></div>
+  <div class="cap"><span class="tag">C</span><b><i>米纸底 + 细描边</i></b><span>与品牌色最一致（米纸），描边增强边界，质感偏中式。</span></div></div>
+
+  <div class="col"><div class="phone"><div class="mapart">
+    <svg viewBox="0 0 260 480" preserveAspectRatio="none"><rect width="260" height="480" fill="#E6EFE9"/><path d="M0,140 C40,110 70,150 110,120 S180,90 260,120 L260,480 L0,480Z" fill="#C7D8CF"/><path d="M0,220 C50,190 90,230 140,200 S220,180 260,205 L260,480 L0,480Z" fill="#B3C8BE"/><path d="M20,330 C70,220 120,270 170,200 S220,150 250,120" fill="none" stroke="#2E5D5C" stroke-width="3"/></svg></div>
+    <div class="center"><div class="bg-glow" style="width:150px;height:150px;display:flex;align-items:center;justify-content:center"><div class="orbit"><div class="ball b1"></div><div class="ball b2"></div><div class="ball b3"></div></div></div></div></div>
+  <div class="cap"><span class="tag">D</span><b><i>径向黛青光晕</i></b><span>无硬边、像“呼吸光晕”，最柔和不打扰地图。</span></div></div>
+
+  <div class="col"><div class="phone"><div class="mapart">
+    <svg viewBox="0 0 260 480" preserveAspectRatio="none"><rect width="260" height="480" fill="#E6EFE9"/><path d="M0,140 C40,110 70,150 110,120 S180,90 260,120 L260,480 L0,480Z" fill="#C7D8CF"/><path d="M0,220 C50,190 90,230 140,200 S220,180 260,205 L260,480 L0,480Z" fill="#B3C8BE"/><path d="M20,330 C70,220 120,270 170,200 S220,150 250,120" fill="none" stroke="#2E5D5C" stroke-width="3"/></svg></div>
+    <div class="center"><div class="bg-rings" style="width:132px;height:132px;display:flex;align-items:center;justify-content:center"><div class="orbit"><div class="ball b1"></div><div class="ball b2"></div><div class="ball b3"></div></div></div></div></div>
+  <div class="cap"><span class="tag">E</span><b><i>双层同心圆（描边）</i></b><span>只用极淡圆环界定范围，几乎不遮挡地图，最“无痕”。</span></div></div>
+
+  <div class="col"><div class="phone"><div class="mapart">
+    <svg viewBox="0 0 260 480" preserveAspectRatio="none"><rect width="260" height="480" fill="#E6EFE9"/><path d="M0,140 C40,110 70,150 110,120 S180,90 260,120 L260,480 L0,480Z" fill="#C7D8CF"/><path d="M0,220 C50,190 90,230 140,200 S220,180 260,205 L260,480 L0,480Z" fill="#B3C8BE"/><path d="M20,330 C70,220 120,270 170,200 S220,150 250,120" fill="none" stroke="#2E5D5C" stroke-width="3"/><rect x="150" y="330" width="60" height="30" fill="#D9E6DF"/></svg></div>
+    <div class="center"><div class="bg-blur" style="width:132px;height:132px;display:flex;align-items:center;justify-content:center"><div class="orbit"><div class="ball b1"></div><div class="ball b2"></div><div class="ball b3"></div></div></div></div></div>
+  <div class="cap"><span class="tag">F</span><b><i>毛玻璃（模糊）</i></b><span>模糊背景、突出小球，最具“现代 iOS”感；实现需较新系统。</span></div></div>
+
+</div>
+</body></html>

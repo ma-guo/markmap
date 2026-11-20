@@ -100,6 +100,7 @@ class TrainMapActivity : AppCompatActivity() {
 
             fun bind(item: StationInfo, position: Int, total: Int) {
                 binding.tvPointDescription.text = item.name.ifEmpty { "车站" }
+                binding.tvAdmin.visibility = android.view.View.GONE
                 binding.tvStartTime.text = formatTime(item.startTime)
                 binding.tvDistance.text = formatDistance(item.distanceFromStart)
                 binding.node.setBackgroundResource(

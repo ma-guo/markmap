@@ -39,7 +39,7 @@
                     android:layout_weight="1"
                     android:ellipsize="end"
                     android:fontFamily="serif"
-                    android:maxLines="1"
+                    android:maxLines="2"
                     android:textColor="@color/ink"
                     android:textSize="18sp"
                     android:textStyle="bold"

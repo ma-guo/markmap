@@ -19,12 +19,13 @@
         app:navigationIcon="@drawable/ic_arrow_back"
         app:title="足迹" />
 
-    <androidx.core.widget.NestedScrollView
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/coverageCard"
+        style="@style/Widget.MarkMap.Card"
         android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:clipToPadding="false"
-        android:paddingBottom="@dimen/space_l"
-        app:layout_constraintBottom_toBottomOf="parent"
+        android:layout_height="wrap_content"
+        android:layout_marginHorizontal="@dimen/screen_padding"
+        android:layout_marginTop="@dimen/space_s"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/toolbar">
@@ -33,98 +34,290 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingHorizontal="@dimen/screen_padding">
+            android:padding="@dimen/card_padding">
 
-            <com.google.android.material.card.MaterialCardView
-                style="@style/Widget.MarkMap.Card"
+            <TextView
+                android:id="@+id/tvCoverage"
+                style="@style/TextAppearance.MarkMap.Headline"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                tools:text="已点亮 12/34 省 · 30/71 市" />
+
+            <TextView
+                style="@style/TextAppearance.MarkMap.Caption"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="仅点亮每段行程的端点城市；途经城市不点亮。" />
+
+            <ProgressBar
+                android:id="@+id/pbProvince"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="6dp"
+                android:layout_marginTop="12dp"
+                android:max="100"
+                android:progressTint="@color/primary"
+                android:progressBackgroundTint="@color/divider" />
+
+            <ProgressBar
+                android:id="@+id/pbCity"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="6dp"
+                android:layout_marginTop="8dp"
+                android:max="100"
+                android:progressTint="@color/accent"
+                android:progressBackgroundTint="@color/divider" />
+
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <LinearLayout
+        android:id="@+id/segTrack"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/space_m"
+        android:layout_marginEnd="@dimen/screen_padding"
+        android:background="@drawable/bg_seg_track"
+        android:orientation="horizontal"
+        android:padding="3dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/coverageCard">
+
+        <TextView
+            android:id="@+id/tvList"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_seg_on"
+            android:paddingStart="18dp"
+            android:paddingTop="7dp"
+            android:paddingEnd="18dp"
+            android:paddingBottom="7dp"
+            android:text="列表"
+            android:textColor="@color/primary"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvMap"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingStart="18dp"
+            android:paddingTop="7dp"
+            android:paddingEnd="18dp"
+            android:paddingBottom="7dp"
+            android:text="地图"
+            android:textColor="@color/ink_tertiary"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <FrameLayout
+        android:id="@+id/content"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="@dimen/space_s"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/segTrack">
+
+        <androidx.core.widget.NestedScrollView
+            android:id="@+id/listScroll"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:paddingHorizontal="@dimen/screen_padding"
+            android:paddingBottom="@dimen/space_l">
+
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="@dimen/space_s">
+                android:orientation="vertical">
 
-                <LinearLayout
+                <TextView
+                    android:id="@+id/tvProvSection"
+                    style="@style/TextAppearance.MarkMap.SectionHead"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="@dimen/space_s"
+                    android:layout_marginBottom="8dp"
+                    android:text="已点亮省份" />
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvProvinces"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="@dimen/card_padding">
+                    android:nestedScrollingEnabled="false" />
 
-                    <TextView
-                        android:id="@+id/tvCoverage"
-                        style="@style/TextAppearance.MarkMap.Headline"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        tools:text="已点亮 12/34 省 · 30/70 市" />
+                <TextView
+                    android:id="@+id/tvCitySection"
+                    style="@style/TextAppearance.MarkMap.SectionHead"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp"
+                    android:layout_marginBottom="8dp"
+                    android:text="已点亮城市" />
 
-                    <TextView
-                        style="@style/TextAppearance.MarkMap.Caption"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
-                        android:text="仅点亮每段行程的端点城市；途经城市不点亮。" />
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvCities"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:nestedScrollingEnabled="false" />
 
-                    <ProgressBar
-                        android:id="@+id/pbProvince"
-                        style="?android:attr/progressBarStyleHorizontal"
-                        android:layout_width="match_parent"
-                        android:layout_height="6dp"
-                        android:layout_marginTop="12dp"
-                        android:max="100"
-                        android:progressTint="@color/primary"
-                        android:progressBackgroundTint="@color/divider" />
+                <TextView
+                    android:id="@+id/tvCityEmpty"
+                    style="@style/TextAppearance.MarkMap.Caption"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="尚未点亮任何城市，记录并保存行程后会自动点亮。"
+                    android:visibility="gone" />
 
-                    <ProgressBar
-                        android:id="@+id/pbCity"
-                        style="?android:attr/progressBarStyleHorizontal"
-                        android:layout_width="match_parent"
-                        android:layout_height="6dp"
-                        android:layout_marginTop="8dp"
-                        android:max="100"
-                        android:progressTint="@color/accent"
-                        android:progressBackgroundTint="@color/divider" />
+            </LinearLayout>
+        </androidx.core.widget.NestedScrollView>
 
-                    <TextView
-                        android:id="@+id/btnShareFootprint"
-                        android:layout_width="match_parent"
-                        android:layout_height="@dimen/button_height"
-                        android:layout_marginTop="14dp"
-                        android:background="@drawable/bg_btn_primary"
-                        android:gravity="center"
-                        android:text="分享足迹"
-                        android:textColor="@color/white"
-                        android:textSize="15sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
+        <FrameLayout
+            android:id="@+id/mapBox"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone">
+
+            <com.amap.api.maps.MapView
+                android:id="@+id/amapView"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
 
             <TextView
-                style="@style/TextAppearance.MarkMap.SectionHead"
+                android:id="@+id/tvMapCoverage"
+                style="@style/TextAppearance.MarkMap.BodySmall"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="18dp"
-                android:layout_marginBottom="8dp"
-                android:text="省级行政区" />
-
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvProvinces"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:nestedScrollingEnabled="false"
-                tools:itemCount="6" />
+                android:layout_gravity="top|start"
+                android:layout_margin="@dimen/space_m"
+                android:background="@drawable/bg_pill"
+                android:paddingStart="12dp"
+                android:paddingTop="7dp"
+                android:paddingEnd="12dp"
+                android:paddingBottom="7dp"
+                android:textColor="@color/ink"
+                tools:text="已点亮 8/34 省 · 11/71 市" />
 
             <TextView
-                style="@style/TextAppearance.MarkMap.SectionHead"
+                android:id="@+id/tvMapHint"
+                style="@style/TextAppearance.MarkMap.Caption"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="18dp"
-                android:layout_marginBottom="8dp"
-                android:text="城市" />
+                android:layout_gravity="top|center_horizontal"
+                android:layout_marginTop="@dimen/space_s"
+                android:background="@drawable/bg_pill"
+                android:paddingStart="12dp"
+                android:paddingTop="6dp"
+                android:paddingEnd="12dp"
+                android:paddingBottom="6dp"
+                android:text="加载行政区色块…"
+                android:visibility="gone" />
 
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvCities"
-                android:layout_width="match_parent"
+            <com.zuxing.markmap.widget.OrbitLoadingView
+                android:id="@+id/orbit"
+                android:layout_width="120dp"
+                android:layout_height="120dp"
+                android:layout_gravity="center" />
+
+            <LinearLayout
+                android:id="@+id/legend"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:nestedScrollingEnabled="false"
-                tools:itemCount="8" />
-        </LinearLayout>
-    </androidx.core.widget.NestedScrollView>
+                android:layout_gravity="bottom|start"
+                android:layout_margin="@dimen/space_m"
+                android:background="@drawable/bg_pill"
+                android:orientation="horizontal"
+                android:paddingStart="10dp"
+                android:paddingTop="6dp"
+                android:paddingEnd="12dp"
+                android:paddingBottom="6dp">
+
+                <View
+                    android:layout_width="10dp"
+                    android:layout_height="10dp"
+                    android:layout_gravity="center_vertical"
+                    android:background="@color/primary" />
+
+                <TextView
+                    style="@style/TextAppearance.MarkMap.Caption"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:text="已点亮" />
+
+                <View
+                    android:layout_width="10dp"
+                    android:layout_height="10dp"
+                    android:layout_gravity="center_vertical"
+                    android:layout_marginStart="12dp"
+                    android:background="@color/paper_alt" />
+
+                <TextView
+                    style="@style/TextAppearance.MarkMap.Caption"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:text="未点亮" />
+            </LinearLayout>
+
+
+
+            <LinearLayout
+                android:id="@+id/segLevel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|end"
+                android:layout_margin="@dimen/space_m"
+                android:background="@drawable/bg_seg_track"
+                android:orientation="horizontal"
+                android:padding="3dp">
+
+                <TextView
+                    android:id="@+id/tvProvinceLevel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_seg_on"
+                    android:paddingStart="14dp"
+                    android:paddingTop="6dp"
+                    android:paddingEnd="14dp"
+                    android:paddingBottom="6dp"
+                    android:text="省级"
+                    android:textColor="@color/primary"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvCityLevel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:paddingStart="14dp"
+                    android:paddingTop="6dp"
+                    android:paddingEnd="14dp"
+                    android:paddingBottom="6dp"
+                    android:text="市级"
+                    android:textColor="@color/ink_tertiary"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+
+            </LinearLayout>
+        </FrameLayout>
+    </FrameLayout>
+
+    <ProgressBar
+        android:id="@+id/progressBar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:indeterminateTint="@color/primary"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

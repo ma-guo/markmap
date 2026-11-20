@@ -24,7 +24,7 @@
         android:layout_width="36dp"
         android:layout_height="36dp"
         android:contentDescription="中心标记"
-        android:src="@drawable/my_location_24px"
+        android:src="@drawable/ic_current_location_24"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"

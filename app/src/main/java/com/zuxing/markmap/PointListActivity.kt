@@ -76,9 +76,17 @@ class PointListActivity : AppCompatActivity() {
     }
 
     private fun setupRecyclerView() {
-        adapter = PointAdapter { point ->
-            navigateToEdit(point.id)
-        }
+        adapter = PointAdapter(
+            onItemClick = { point -> navigateToEdit(point.id) },
+            onItemLongClick = { point ->
+                val split = com.zuxing.markmap.domain.PlaceText.split(
+                    point.description, point.address, point.province, point.city, point.district
+                )
+                com.zuxing.markmap.widget.PlaceSheet.show(
+                    this, split.main, split.admin, onMap = { navigateToLineMap() }
+                )
+            }
+        )
         binding.recyclerView.layoutManager = LinearLayoutManager(this)
         binding.recyclerView.adapter = adapter
 

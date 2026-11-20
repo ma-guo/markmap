@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<title>MarkMap · 足迹加载样式方案</title>
+<style>
+  *{box-sizing:border-box;}
+  :root{--ink:#1F2B2C;--ink2:#5F6F6D;--ink3:#98A4A0;--paper:#F6F5EE;--paper2:#EFEEE6;--surface:#FFF;
+    --dai:#2E5D5C;--daiDeep:#1F4241;--daiSoft:#E4EDE8;--clay:#B96A4B;--gold:#BE9F66;--line:rgba(31,43,44,.09);
+    --shadow:0 12px 32px rgba(31,43,44,.07);}
+  html,body{margin:0;background:#E7E5DC;font-family:-apple-system,"PingFang SC",Arial;color:var(--ink);-webkit-font-smoothing:antialiased;}
+  .sec{padding:26px 40px 0;} h1{font-size:20px;margin:0;}
+  .sub{font-size:12px;color:#5c5c5c;margin:6px 0 0;line-height:1.6;}
+  .board{display:flex;gap:24px;padding:16px 40px 34px;flex-wrap:wrap;align-items:flex-start;}
+  .col{display:flex;flex-direction:column;gap:10px;}
+  .cap{width:300px;} .cap b{display:block;font-size:13px;} .cap b i{font-style:normal;color:var(--dai);}
+  .cap span{display:block;font-size:11.5px;color:#5c5c5c;margin-top:5px;line-height:1.65;}
+  .tag{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.12em;color:#fff;background:var(--dai);border-radius:20px;padding:3px 10px;margin-bottom:6px;}
+  .phone{position:relative;width:300px;height:560px;border-radius:30px;overflow:hidden;background:var(--paper);border:1px solid rgba(0,0,0,.1);box-shadow:0 22px 60px rgba(20,30,30,.2);}
+  .map{position:absolute;inset:0;background:#EAF0EE}
+  .map svg{width:100%;height:100%;display:block}
+  .veil{position:absolute;inset:0;background:rgba(20,30,30,.28);backdrop-filter:blur(1px);display:flex;align-items:center;justify-content:center}
+  .card{background:rgba(255,255,255,.96);border:1px solid var(--line);border-radius:20px;box-shadow:0 18px 40px rgba(20,30,30,.18);padding:18px 20px;text-align:center;width:220px}
+  .txt{font-size:12px;color:var(--ink);margin-top:12px}
+  .sub2{font-size:10px;color:var(--ink3);margin-top:4px}
+  .pbar{height:6px;border-radius:3px;background:#E7E5DC;overflow:hidden;margin-top:12px}
+  .pbar i{display:block;height:100%;background:var(--dai);border-radius:3px}
+  /* 1 涟漪 */
+  .ripple{position:relative;width:64px;height:64px;margin:0 auto}
+  .ripple .core{position:absolute;left:50%;top:50%;width:14px;height:14px;margin:-7px;border-radius:50%;background:var(--dai)}
+  .ripple .w{position:absolute;left:50%;top:50%;width:14px;height:14px;margin:-7px;border-radius:50%;border:2px solid var(--dai);opacity:.6;animation:rp 2s infinite}
+  .ripple .w:nth-child(2){animation-delay:.66s}.ripple .w:nth-child(3){animation-delay:1.33s}
+  @keyframes rp{0%{transform:scale(.3);opacity:.7}100%{transform:scale(4.6);opacity:0}}
+  /* 2 雷达 */
+  .radar{position:relative;width:80px;height:80px;margin:0 auto;border-radius:50%;border:2px solid var(--daiSoft);overflow:hidden}
+  .radar .ring{position:absolute;border:1px solid var(--daiSoft);border-radius:50%;left:50%;top:50%;transform:translate(-50%,-50%)}
+  .radar .r1{width:32px;height:32px}.radar .r2{width:56px;height:56px}
+  .radar .sweep{position:absolute;inset:0;background:conic-gradient(from 0deg, rgba(46,93,92,.55), rgba(46,93,92,0) 40%);animation:sp 1.6s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  /* 3 骨架 */
+  .skeleton{position:relative;width:200px;height:96px;border-radius:14px;overflow:hidden;background:
+    repeating-linear-gradient(0deg,#EDEAE3 0 1px,transparent 1px 16px),
+    repeating-linear-gradient(90deg,#EDEAE3 0 1px,transparent 1px 16px), #F7F6F1}
+  .skeleton::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(46,93,92,.18),transparent);transform:translateX(-100%);animation:sh 1.4s infinite}
+  @keyframes sh{to{transform:translateX(100%)}}
+  /* 4 足迹点亮 */
+  .steps{display:flex;gap:12px;justify-content:center}
+  .step{width:12px;height:12px;border-radius:50%;background:var(--daiSoft)}
+  .step.on{background:var(--dai)}.step.c{background:var(--clay)}
+  .step{animation:bl 1.6s infinite}
+  .step:nth-child(2){animation-delay:.2s}.step:nth-child(3){animation-delay:.4s}.step:nth-child(4){animation-delay:.6s}.step:nth-child(5){animation-delay:.8s}
+  @keyframes bl{0%,100%{opacity:.35}50%{opacity:1}}
+  /* 5 极简 */
+  .minimal{width:180px}
+</style></head>
+<body>
+<div class="sec"><h1>足迹加载动效 · 方案（城市边界）</h1>
+<p class="sub">统一新风格（米纸 / 黛青 / 陶土）。都带「已加载 x/y」与进度反馈，命中缓存时可直接隐藏。请选一个（A–E）。</p></div>
+<div class="board">
+
+  <!-- A 涟漪脉冲 -->
+  <div class="col"><div class="phone"><div class="map"><svg viewBox="0 0 300 560" preserveAspectRatio="none"><rect width="300" height="560" fill="#EAF0EE"/><path d="M30,150 L120,110 L180,160 L240,120 L290,170 L270,300 L300,420 L220,500 L130,530 L70,450 L50,330 L20,260 Z" fill="#DDE7E1" stroke="#C7D8CF"/><path d="M120,110 L180,160 L205,250 L140,235 L115,175 Z" fill="#2E5D5C" opacity=".75"/></svg></div>
+  <div class="veil"><div class="card">
+    <div class="ripple"><div class="core"></div><div class="w"></div><div class="w"></div><div class="w"></div></div>
+    <div class="txt">正在点亮足迹…</div><div class="sub2">已加载 160 / 300</div><div class="pbar"><i style="width:53%"></i></div>
+  </div></div></div>
+  <div class="cap"><span class="tag">A</span><b><i>涟漪脉冲</i></b><span>同心涟漪 + 中心点，柔和、有“扩散点亮”的语义；配进度条与计数。与品牌色最契合。</span></div></div>
+
+  <!-- B 雷达扫描 -->
+  <div class="col"><div class="phone"><div class="map"><svg viewBox="0 0 300 560" preserveAspectRatio="none"><rect width="300" height="560" fill="#EAF0EE"/><path d="M30,150 L120,110 L180,160 L240,120 L290,170 L270,300 L300,420 L220,500 L130,530 L70,450 L50,330 L20,260 Z" fill="#DDE7E1" stroke="#C7D8CF"/><path d="M120,110 L180,160 L205,250 L140,235 L115,175 Z" fill="#2E5D5C" opacity=".75"/></svg></div>
+  <div class="veil"><div class="card">
+    <div class="radar"><div class="ring r1"></div><div class="ring r2"></div><div class="sweep"></div></div>
+    <div class="txt">扫描城市边界…</div><div class="sub2">批次 3 / 4 · 已加载 260 / 300</div><div class="pbar"><i style="width:86%"></i></div>
+  </div></div></div>
+  <div class="cap"><span class="tag">B</span><b><i>雷达扫描</i></b><span>雷达扫描线 + 同心环，强调“搜索/获取边界”；适合批量拉取的进度感。</span></div></div>
+
+  <!-- C 骨架呼吸 -->
+  <div class="col"><div class="phone"><div class="map"><svg viewBox="0 0 300 560" preserveAspectRatio="none"><rect width="300" height="560" fill="#EAF0EE"/><path d="M30,150 L120,110 L180,160 L240,120 L290,170 L270,300 L300,420 L220,500 L130,530 L70,450 L50,330 L20,260 Z" fill="#DDE7E1" stroke="#C7D8CF"/></svg></div>
+  <div class="veil"><div class="card">
+    <div class="skeleton"></div>
+    <div class="txt">正在绘制边界…</div><div class="sub2">已加载 96 / 300</div><div class="pbar"><i style="width:32%"></i></div>
+  </div></div></div>
+  <div class="cap"><span class="tag">C</span><b><i>骨架呼吸</i></b><span>网格骨架 + 扫光，像地图在“生成”；信息安静，适合较长等待。</span></div></div>
+
+  <!-- D 足迹点亮 -->
+  <div class="col"><div class="phone"><div class="map"><svg viewBox="0 0 300 560" preserveAspectRatio="none"><rect width="300" height="560" fill="#EAF0EE"/><path d="M30,150 L120,110 L180,160 L240,120 L290,170 L270,300 L300,420 L220,500 L130,530 L70,450 L50,330 L20,260 Z" fill="#DDE7E1" stroke="#C7D8CF"/><path d="M30,150 L120,110 L115,175 L50,330 Z" fill="#2E5D5C" opacity=".85"/></svg></div>
+  <div class="veil"><div class="card">
+    <div class="steps"><div class="step on"></div><div class="step on"></div><div class="step on"></div><div class="step c"></div><div class="step"></div><div class="step"></div></div>
+    <div class="txt">逐个点亮城市…</div><div class="sub2">已点亮 11 / 34 省 · 160 / 300 城</div><div class="pbar"><i style="width:53%"></i></div>
+  </div></div></div>
+  <div class="cap"><span class="tag">D</span><b><i>足迹点亮</i></b><span>一串节点依次亮起（黛青→陶土），直白表达“点亮足迹”，与页面主题强关联。</span></div></div>
+
+  <!-- E 极简 -->
+  <div class="col"><div class="phone"><div class="map"><svg viewBox="0 0 300 560" preserveAspectRatio="none"><rect width="300" height="560" fill="#EAF0EE"/><path d="M30,150 L120,110 L180,160 L240,120 L290,170 L270,300 L300,420 L220,500 L130,530 L70,450 L50,330 L20,260 Z" fill="#DDE7E1" stroke="#C7D8CF"/></svg></div>
+  <div class="veil"><div class="card minimal" style="padding:14px 16px">
+    <div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-size:12px;color:var(--ink2)">加载边界</span><span class="serif" style="font-weight:700">53%</span></div>
+    <div class="pbar" style="margin-top:10px"><i style="width:53%"></i></div>
+  </div></div></div>
+  <div class="cap"><span class="tag">E</span><b><i>极简进度</i></b><span>只保留「进度 + 百分比」，最克制、最苹果；弱化存在感，适合短等待。</span></div></div>
+
+</div>
+</body></html>

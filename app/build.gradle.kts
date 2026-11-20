@@ -87,6 +87,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
 
     implementation("com.baidu.lbsyun:BaiduMapSDK_Map:7.6.4")
+    implementation("com.amap.api:3dmap:10.0.600")
     implementation("com.baidu.lbsyun:BaiduMapSDK_Location:9.6.4")
     implementation("com.baidu.lbsyun:BaiduMapSDK_Search:7.6.4")
     implementation("com.baidu.lbsyun:BaiduMapSDK_Util:7.6.4")

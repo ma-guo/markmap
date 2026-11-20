@@ -1,0 +1,44 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><title>足迹 三级展现</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#E7E5DC;font-family:-apple-system,"PingFang SC",Arial;color:#1F2B2C}
+.sec{padding:24px 40px 0}h1{font-size:19px;margin:0}.sub{font-size:12px;color:#5c5c5c;margin:6px 0 0;line-height:1.6}
+.board{display:flex;gap:26px;padding:16px 40px 36px;align-items:flex-start}
+.phone{position:relative;width:340px;height:680px;border-radius:32px;overflow:hidden;background:#F6F5EE;border:1px solid rgba(0,0,0,.1);box-shadow:0 22px 60px rgba(20,30,30,.2)}
+.island{position:absolute;top:8px;left:50%;transform:translateX(-50%);width:90px;height:22px;border-radius:13px;background:#101615;z-index:30}
+.status{height:36px;display:flex;justify-content:space-between;align-items:flex-end;padding:0 20px 4px;font-size:9px;font-weight:600}
+.bar{height:42px;display:flex;align-items:center;padding:0 14px;gap:10px}.rbtn{width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.8);border:1px solid rgba(31,43,44,.09);display:flex;align-items:center;justify-content:center;font-size:13px}
+.ttl{font-size:14px;font-weight:700}.seg{display:flex;background:#EFEEE6;border:1px solid rgba(31,43,44,.09);border-radius:13px;padding:3px}
+.seg .it{padding:6px 16px;border-radius:10px;font-size:11px;color:#5F6F6D;font-weight:700}.seg .it.on{background:#fff;color:#2E5D5C;box-shadow:0 2px 6px rgba(31,43,44,.08)}
+.pad{padding:0 14px}.card{background:#fff;border:1px solid rgba(31,43,44,.09);border-radius:16px;box-shadow:0 12px 32px rgba(31,43,44,.07);padding:14px}
+.big{font-family:"Songti SC",serif;font-size:22px;font-weight:700}
+.prog{height:6px;border-radius:3px;background:#E7E5DC;overflow:hidden;margin-top:8px}.prog i{display:block;height:100%;background:#2E5D5C}.prog i.c{background:#B96A4B}.prog i.m{background:#70897A}
+.chip{display:inline-block;font-size:11px;font-weight:700;padding:6px 11px;border-radius:20px;background:#E4EDE8;color:#2E5D5C;margin:4px 5px 0 0}
+.sh{font-size:12px;font-weight:700;color:#5F6F6D;letter-spacing:.1em;margin:16px 0 8px}
+.map{position:absolute;inset:0;background:#EAF0EE}
+.legend{position:absolute;left:14px;bottom:14px;background:rgba(255,255,255,.88);border:1px solid rgba(31,43,44,.09);border-radius:12px;padding:8px 10px;font-size:10px;color:#5F6F6D}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:middle}
+</style></head><body>
+<div class="sec"><h1>足迹 · 三级（省/市/区县）展现</h1>
+<p class="sub">分母用后端全量（省/市/区县），列表只列「已点亮」项；地图支持省/市/区县三级切换，联网拉边界时显示加载动效。</p></div>
+<div class="board">
+ <div><div class="phone"><div class="island"></div><div class="status"><span>9:41</span><span>●●● ⌁ ▮</span></div>
+  <div class="bar"><div class="rbtn">‹</div><div class="ttl">足迹</div><div style="flex:1"></div><div class="seg"><div class="it on">列表</div><div class="it">地图</div></div></div>
+  <div class="pad"><div class="card">
+    <div class="big">8/34 省 · 11/416 市 · 9/3615 区县</div>
+    <div class="prog"><i style="width:23%"></i></div><div class="prog"><i class="c" style="width:3%"></i></div><div class="prog"><i class="m" style="width:1%"></i></div>
+  </div>
+  <div class="sh">已点亮省份（8/34）</div>
+  <span class="chip">北京</span><span class="chip">上海</span><span class="chip">四川</span><span class="chip">广东</span><span class="chip">新疆</span><span class="chip">西藏</span>
+  <div class="sh">已点亮城市（11/416）</div>
+  <span class="chip">成都</span><span class="chip">广州</span><span class="chip">拉萨</span><span class="chip">喀什</span><span class="chip">乌鲁木齐</span>
+  <div class="sh">已点亮区县（9/3615）</div>
+  <span class="chip">塔什库尔干塔吉克自治县</span><span class="chip">和静县</span><span class="chip">阿克陶县</span>
+  </div></div></div>
+ <div><div class="phone">
+  <div class="map"><svg viewBox="0 0 340 680" preserveAspectRatio="none" style="width:100%;height:100%"><rect width="340" height="680" fill="#EAF0EE"/><path d="M40,150 L140,110 L200,160 L260,120 L320,170 L300,300 L330,420 L250,520 L150,560 L90,470 L60,340 L30,260 Z" fill="#DDE7E1" stroke="#C7D8CF"/><path d="M140,110 L200,160 L230,260 L160,240 L130,180 Z" fill="#2E5D5C" opacity=".85"/><path d="M260,120 L320,170 L300,300 L230,260 Z" fill="#2E5D5C" opacity=".35"/></svg></div>
+  <div class="bar" style="position:relative;z-index:5"><div class="rbtn">‹</div><div class="ttl" style="background:rgba(255,255,255,.8);padding:6px 12px;border-radius:14px;border:1px solid rgba(31,43,44,.09)">足迹地图</div><div style="flex:1"></div><div class="rbtn">⛶</div></div>
+  <div style="position:absolute;left:14px;top:96px;background:rgba(255,255,255,.85);border:1px solid rgba(31,43,44,.09);border-radius:20px;padding:8px 12px;font-size:11px">已点亮 8/34 省 · 11/416 市</div>
+  <div class="legend"><i style="background:#2E5D5C"></i>已点亮 <i style="background:#DDE7E1;margin-left:8px"></i>未点亮</div>
+  <div style="position:absolute;right:14px;bottom:14px"><div class="seg"><div class="it on">省级</div><div class="it">市级</div><div class="it">区县</div></div></div>
+ </div></div>
+</div></body></html>

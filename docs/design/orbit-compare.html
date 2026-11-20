@@ -1,0 +1,24 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+body{margin:0;background:#E7E5DC;font-family:-apple-system,"PingFang SC",Arial;color:#1F2B2C;padding:22px 28px}
+h1{font-size:18px;margin:0 0 4px}.s{font-size:12px;color:#5c5c5c;margin:0 0 18px}
+.row{display:flex;gap:28px}
+.col{display:flex;flex-direction:column;gap:8px}
+.t{font-size:12px;font-weight:700}
+.box{width:300px;height:300px;border-radius:18px;overflow:hidden;border:1px solid rgba(0,0,0,.12);position:relative;background:#EAF0EE}
+/* design D reproduction: glow150 orbit72 ball8 */
+.glow{position:absolute;left:50%;top:50%;width:150px;height:150px;transform:translate(-50%,-50%);border-radius:50%;
+ background:radial-gradient(circle, rgba(46,93,92,.28) 0%, rgba(46,93,92,.10) 55%, rgba(46,93,92,0) 78%)}
+.orbit{position:absolute;left:50%;top:50%;width:72px;height:72px;transform:translate(-50%,-50%)}
+.ball{position:absolute;left:50%;top:50%;width:8px;height:8px;margin:-4px;border-radius:50%}
+.b1{background:#2E5D5C;transform:translate(36px,0)}
+.b2{background:#B96A4B;transform:rotate(140deg) translate(36px,0)}
+.b3{background:#BE9F66;transform:rotate(250deg) translate(36px,0)}
+img{width:300px;height:300px;display:block}
+</style></head><body>
+<h1>D 方案 · UI 对比（左=设计稿 / 右=真机）</h1>
+<p class="s">比例目标：光晕直径 ≈ 轨道直径的 2.08 倍；球直径 ≈ 轨道的 1/9。</p>
+<div class="row">
+ <div class="col"><div class="t">设计稿 D（按规范重现）</div><div class="box"><div class="glow"></div><div class="orbit"><div class="ball b1"></div><div class="ball b2"></div><div class="ball b3"></div></div></div></div>
+ <div class="col"><div class="t">真机截图（中心裁剪）</div><div class="box"><img src="_dev_crop.png"></div></div>
+</div>
+</body></html>
